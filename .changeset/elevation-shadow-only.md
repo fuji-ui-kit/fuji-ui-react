@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 `regular` and `floating` elevation now use **identical** control heights and

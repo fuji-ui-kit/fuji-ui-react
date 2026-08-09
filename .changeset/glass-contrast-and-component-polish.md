@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 Fix an "earth" tone contrast bug and recolor `earth`/`forest` to genuine

@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": patch
+"@fujiui/react": patch
 ---
 
 Fix native browser chrome appearing on raw `<button>`, `<input>`, and

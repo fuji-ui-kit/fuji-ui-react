@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 Replace `ComponentVariant` with a warmer, more distinctive "tone" vocabulary,

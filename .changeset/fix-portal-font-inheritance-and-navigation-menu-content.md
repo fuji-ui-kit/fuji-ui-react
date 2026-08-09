@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": patch
+"@fujiui/react": patch
 ---
 
 Fix several portaled and navigation-menu components rendering with the

@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 Add `ChatBubble`, a Fuji-native chat message bubble for messaging/inbox-style

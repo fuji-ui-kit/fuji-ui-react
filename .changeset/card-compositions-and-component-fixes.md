@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 Add `Card.Media`/`Card.Overlay` composition primitives, a `size` prop to

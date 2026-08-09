@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": minor
+"@fujiui/react": minor
 ---
 
 Made the compiled `styles.css` fully isolated from a consumer's own Tailwind

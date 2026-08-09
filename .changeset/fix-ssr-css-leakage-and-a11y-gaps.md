@@ -1,5 +1,5 @@
 ---
-"@fuji-ui/react": patch
+"@fujiui/react": patch
 ---
 
 Fix several correctness, SSR, CSS-scoping, and accessibility issues found in
