@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Preview, Decorator } from "@storybook/react";
 // Real, compiled output - the exact stylesheet consumers import as
-// `@fuji-ui/react/styles.css`. Never hand-write or duplicate Fuji styles
+// `@fujiui/react/styles.css`. Never hand-write or duplicate Fuji styles
 // here; if this file is missing, run `npm run build:css` (the `storybook`
 // and `storybook:build` npm scripts already do this before starting).
 import "./generated/storybook.css";
@@ -14,8 +14,8 @@ import "../dist/styles.css";
 // Storybook-only typography baseline (Inter / Zen Kaku Gothic New / Mochiy
 // Pop One + font smoothing) - see fonts.css and preview-head.html for why.
 import "./fonts.css";
-import { FujiProvider } from "@fuji-ui/react";
-import type { FujiElevation, FujiRadius, FujiTheme } from "@fuji-ui/react";
+import { FujiProvider } from "@fujiui/react";
+import type { FujiElevation, FujiRadius, FujiTheme } from "@fujiui/react";
 
 const THEMES: FujiTheme[] = ["light", "dark", "glass"];
 const RADII: FujiRadius[] = ["cornered", "soft"];

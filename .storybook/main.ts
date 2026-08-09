@@ -105,13 +105,13 @@ const config: StorybookConfig = {
     viteConfig.resolve ??= {};
     viteConfig.resolve.alias = [
       ...(Array.isArray(viteConfig.resolve.alias) ? viteConfig.resolve.alias : []),
-      // Stories import from "@fuji-ui/react", exactly like a real consumer -
+      // Stories import from "@fujiui/react", exactly like a real consumer -
       // this alias points that at the live TypeScript source (fast HMR while
       // authoring components) rather than requiring a `tsup` build between
       // every edit. Only the JS/TSX side is aliased; CSS is loaded from the
       // real compiled `dist/styles.css` in preview.tsx (see its own comment)
       // so the stylesheet previewed here is the one consumers actually get.
-      { find: "@fuji-ui/react", replacement: join(projectRoot, "src/index.ts") },
+      { find: "@fujiui/react", replacement: join(projectRoot, "src/index.ts") },
     ];
     viteConfig.plugins ??= [];
     viteConfig.plugins.push(fujiCssWatchPlugin(projectRoot));
