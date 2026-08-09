@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Play } from "lucide-react";
-import { Avatar, ChatBubble } from "@fuji-ui/react";
+import { Avatar, ChatBubble } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/ChatBubble",

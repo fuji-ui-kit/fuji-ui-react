@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AvatarGroup } from "@fuji-ui/react";
+import { AvatarGroup } from "@fujiui/react";
 import { placeholderAvatar } from "../lib/placeholder-image";
 
 const team = [

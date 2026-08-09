@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Checkbox } from "@fuji-ui/react";
+import { Checkbox } from "@fujiui/react";
 
 const meta = {
   title: "Forms/Checkbox",

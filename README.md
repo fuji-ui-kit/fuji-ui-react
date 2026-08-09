@@ -1,4 +1,4 @@
-# @fuji-ui/react
+# @fujiui/react
 
 Fuji is a themeable, accessible React component system: light, dark, and glass
 themes; cornered or soft radius; regular or floating elevation - all driven by
@@ -11,13 +11,13 @@ Carousel, Chart...), a compiled stylesheet, and full TypeScript types.
 - **SSR and hydration** safe
 - No Tailwind configuration required by consumers - one compiled stylesheet
 
-> Status: pre-1.0 (`0.1.0-alpha.x`). The public API is expected to be stable,
-> but breaking changes may still land under a minor version bump until 1.0.
+> Status: pre-1.0 (`0.1.x`). The public API is actively stabilizing, and
+> breaking changes may still land under a minor version bump until 1.0.
 
 ## Installation
 
 ```bash
-npm install @fuji-ui/react
+npm install @fujiui/react
 ```
 
 `react` and `react-dom` (^18.0.0 or ^19.0.0) are peer dependencies - install
@@ -28,7 +28,7 @@ them yourself if your project doesn't already have them.
 Import the compiled stylesheet **once**, at your app's root:
 
 ```ts
-import "@fuji-ui/react/styles.css";
+import "@fujiui/react/styles.css";
 ```
 
 That's it - no Tailwind config, no PostCSS setup, no build-step integration.
@@ -38,15 +38,15 @@ portal theming). See [docs/nextjs.md](docs/nextjs.md) and
 [docs/vite.md](docs/vite.md) for exactly where to put this per framework.
 
 If you only want the raw `--fuji-*` custom properties (e.g. to build your own
-utility layer against them), import `@fuji-ui/react/tokens.css` instead - it's
+utility layer against them), import `@fujiui/react/tokens.css` instead - it's
 already included inside `styles.css`, so only reach for it standalone if you
 specifically don't want the compiled utilities too.
 
 ## Quick start
 
 ```tsx
-import "@fuji-ui/react/styles.css";
-import { FujiProvider, Button } from "@fuji-ui/react";
+import "@fujiui/react/styles.css";
+import { FujiProvider, Button } from "@fujiui/react";
 
 export default function App() {
   return (
@@ -109,7 +109,7 @@ inside a provider; it returns the same `light`/`cornered`/`regular` fallback
 defaults when called with no provider ancestor:
 
 ```tsx
-import { useFujiConfig } from "@fuji-ui/react";
+import { useFujiConfig } from "@fujiui/react";
 
 function AppearanceLabel() {
   const { theme, radius, elevation, setTheme, setRadius, setElevation } = useFujiConfig();
@@ -145,10 +145,10 @@ work.
 ## Component imports
 
 Import everything from the package root - there are no per-component subpath
-imports (no `@fuji-ui/react/button`):
+imports (no `@fujiui/react/button`):
 
 ```tsx
-import { FujiProvider, Button, Card, Dialog, Input, Carousel, Chart, ChatBubble } from "@fuji-ui/react";
+import { FujiProvider, Button, Card, Dialog, Input, Carousel, Chart, ChatBubble } from "@fujiui/react";
 
 import type {
   ComponentSize,
@@ -158,7 +158,7 @@ import type {
   FujiTheme,
   FujiRadius,
   FujiElevation,
-} from "@fuji-ui/react";
+} from "@fujiui/react";
 ```
 
 ## TypeScript
@@ -198,7 +198,7 @@ name or a pre-rendered element - pass individually imported icons so unused
 icons stay tree-shakeable:
 
 ```tsx
-import { Icon } from "@fuji-ui/react";
+import { Icon } from "@fujiui/react";
 import { Check } from "lucide-react";
 
 <Icon icon={Check} label="Completed" />; // labeled: exposed to assistive tech

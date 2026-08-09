@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Bell, Heart, Mail, Settings, Star, Trash2 } from "lucide-react";
-import { Icon } from "@fuji-ui/react";
+import { Icon } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Icon",

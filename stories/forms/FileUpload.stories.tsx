@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { FileUpload } from "@fuji-ui/react";
+import { FileUpload } from "@fujiui/react";
 
 const meta = {
   title: "Forms/FileUpload",

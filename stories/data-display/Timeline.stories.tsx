@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Timeline } from "@fuji-ui/react";
+import { Timeline } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Timeline",

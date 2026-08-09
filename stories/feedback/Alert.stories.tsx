@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Alert } from "@fuji-ui/react";
+import { Alert } from "@fujiui/react";
 
 const meta = {
   title: "Feedback/Alert",

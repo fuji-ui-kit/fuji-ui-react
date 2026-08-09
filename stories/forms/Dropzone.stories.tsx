@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Dropzone } from "@fuji-ui/react";
+import { Dropzone } from "@fujiui/react";
 
 const meta = {
   title: "Forms/Dropzone",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Button, IconButton, Tooltip } from "@fuji-ui/react";
+import { Button, IconButton, Tooltip } from "@fujiui/react";
 import { Info } from "lucide-react";
 
 const meta = {

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
 import { Heart, Trash2 } from "lucide-react";
-import { IconButton } from "@fuji-ui/react";
+import { IconButton } from "@fujiui/react";
 
 const meta = {
   title: "Inputs/IconButton",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Tree } from "@fuji-ui/react";
+import { Tree } from "@fujiui/react";
 import { File } from "lucide-react";
 
 const DATA = [

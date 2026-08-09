@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Grid } from "@fuji-ui/react";
+import { Grid } from "@fujiui/react";
 
 function PlaceholderCard({ label }: { label: string }) {
   return (

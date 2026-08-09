@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Textarea } from "@fuji-ui/react";
+import { Textarea } from "@fujiui/react";
 
 const meta = {
   title: "Inputs/Textarea",

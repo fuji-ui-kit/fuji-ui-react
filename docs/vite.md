@@ -5,8 +5,8 @@ DOM tree: Vite, Create React App, or a bare Webpack/Rspack setup.
 
 ```tsx
 // src/main.tsx
-import "@fuji-ui/react/styles.css";
-import { FujiProvider } from "@fuji-ui/react";
+import "@fujiui/react/styles.css";
+import { FujiProvider } from "@fujiui/react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 

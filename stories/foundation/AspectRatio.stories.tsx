@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AspectRatio } from "@fuji-ui/react";
+import { AspectRatio } from "@fujiui/react";
 import { placeholderPhoto } from "../lib/placeholder-image";
 
 const meta = {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Progress } from "@fuji-ui/react";
+import { Progress } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Progress",

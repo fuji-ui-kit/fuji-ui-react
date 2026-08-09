@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { BarChart, DonutChart, LineChart } from "@fuji-ui/react";
+import { BarChart, DonutChart, LineChart } from "@fujiui/react";
 
 const REVENUE_SERIES = [
   {

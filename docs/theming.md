@@ -24,7 +24,7 @@ side by side" preview is built.
 
 ## Token families
 
-`@fuji-ui/react/tokens.css` defines roughly 90 custom properties. They fall into
+`@fujiui/react/tokens.css` defines roughly 90 custom properties. They fall into
 these groups:
 
 | Group           | Examples                                                                                                                                                   |
@@ -95,8 +95,8 @@ and your app runs its own Tailwind pass, map the tokens into your Tailwind theme
 so your pass can generate those utilities:
 
 ```css
-/* your global stylesheet, after importing @fuji-ui/react/styles.css */
-@import "@fuji-ui/react/styles.css";
+/* your global stylesheet, after importing @fujiui/react/styles.css */
+@import "@fujiui/react/styles.css";
 
 @theme inline {
   --color-fuji-background: var(--fuji-background);
@@ -121,7 +121,7 @@ If you are not using Tailwind, just reference the variables directly:
 
 ## CSS isolation
 
-Nothing about installation changes for this: `import "@fuji-ui/react/styles.css"`
+Nothing about installation changes for this: `import "@fujiui/react/styles.css"`
 is still the only step. This section explains what that stylesheet guarantees
 so you can trust it alongside your own Tailwind setup, a different CSS
 framework, or plain CSS - no Tailwind config, PostCSS plugin, or `@theme`

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { AlertDialog, Button } from "@fuji-ui/react";
+import { AlertDialog, Button } from "@fujiui/react";
 
 const meta = {
   title: "Overlays/AlertDialog",

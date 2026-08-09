@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { Bold, Italic, Underline } from "lucide-react";
-import { Button, ButtonGroup, IconButton } from "@fuji-ui/react";
+import { Button, ButtonGroup, IconButton } from "@fujiui/react";
 
 const meta = {
   title: "Inputs/ButtonGroup",

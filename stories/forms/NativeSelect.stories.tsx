@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { NativeSelect } from "@fuji-ui/react";
+import { NativeSelect } from "@fujiui/react";
 
 const meta = {
   title: "Forms/NativeSelect",

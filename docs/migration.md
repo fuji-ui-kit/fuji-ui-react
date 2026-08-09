@@ -2,12 +2,12 @@
 
 If your app currently has its own local copy of the Fuji component source
 (e.g. a `src/components/fuji` folder copied or symlinked from an earlier
-stage of this project), here's the path to replacing it with `@fuji-ui/react`.
+stage of this project), here's the path to replacing it with `@fujiui/react`.
 
 ## 1. Install the package
 
 ```bash
-npm install @fuji-ui/react
+npm install @fujiui/react
 ```
 
 While validating a migration before publishing, install a local tarball
@@ -29,7 +29,7 @@ single entry point - consolidate each file's Fuji imports into one:
 -import { Button } from "@/components/fuji/button";
 -import { Card } from "@/components/fuji/card";
 -import { FujiProvider } from "@/providers/FujiProvider";
-+import { Button, Card, FujiProvider } from "@fuji-ui/react";
++import { Button, Card, FujiProvider } from "@fujiui/react";
 ```
 
 **If you script this as a codemod**, scope the matcher tightly to real import
@@ -48,7 +48,7 @@ strong signal something went wrong.
 Replace a local `tokens.css`/hand-written base-rules import with:
 
 ```ts
-import "@fuji-ui/react/styles.css";
+import "@fujiui/react/styles.css";
 ```
 
 If your app also uses `bg-fuji-*`/`text-fuji-*`/etc. Tailwind utility classes
@@ -56,7 +56,7 @@ directly in app-only markup (not just via Fuji component props), keep a local
 `@theme inline` block mapping `--color-fuji-*` (etc.) to the `--fuji-*`
 variables in your own global CSS, so your app's own Tailwind pass can generate
 any such utility your own markup uses that the package's own components never
-needed to compile for themselves. Import `@fuji-ui/react/tokens.css` (or rely
+needed to compile for themselves. Import `@fujiui/react/tokens.css` (or rely
 on `styles.css`, which already includes them) to supply those `--fuji-*`
 source variables.
 

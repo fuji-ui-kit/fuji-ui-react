@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Badge, Table } from "@fuji-ui/react";
+import { Badge, Table } from "@fujiui/react";
 
 const ORDERS = [
   { id: "ORD-1042", customer: "Mia Torres", total: "$128.00", status: "Fulfilled" as const },

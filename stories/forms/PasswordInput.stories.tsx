@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { PasswordInput } from "@fuji-ui/react";
+import { PasswordInput } from "@fujiui/react";
 
 const meta = {
   title: "Forms/PasswordInput",

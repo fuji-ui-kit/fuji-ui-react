@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { NumberInput } from "@fuji-ui/react";
+import { NumberInput } from "@fujiui/react";
 
 const meta = {
   title: "Forms/NumberInput",

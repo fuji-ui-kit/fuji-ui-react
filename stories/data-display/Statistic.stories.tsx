@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Statistic } from "@fuji-ui/react";
+import { Statistic } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Statistic",

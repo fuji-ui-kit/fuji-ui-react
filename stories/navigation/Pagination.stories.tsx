@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
-import { Pagination } from "@fuji-ui/react";
+import { Pagination } from "@fujiui/react";
 
 const meta = {
   title: "Navigation/Pagination",

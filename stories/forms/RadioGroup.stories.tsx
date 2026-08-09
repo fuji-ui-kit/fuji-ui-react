@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { RadioGroup } from "@fuji-ui/react";
+import { RadioGroup } from "@fujiui/react";
 
 const meta = {
   title: "Forms/RadioGroup",

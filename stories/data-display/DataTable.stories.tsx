@@ -9,7 +9,7 @@ import {
   Input,
   Select,
   StatusIndicator,
-} from "@fuji-ui/react";
+} from "@fujiui/react";
 
 interface Order {
   id: string;

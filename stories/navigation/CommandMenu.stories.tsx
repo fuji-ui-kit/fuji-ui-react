@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Button, CommandMenu, type CommandMenuItem } from "@fuji-ui/react";
+import { Button, CommandMenu, type CommandMenuItem } from "@fujiui/react";
 import { Calendar, FileText, Settings, User } from "lucide-react";
 
 function CommandMenuDemo() {

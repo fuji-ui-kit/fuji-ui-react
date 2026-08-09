@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { TimePicker } from "@fuji-ui/react";
+import { TimePicker } from "@fujiui/react";
 
 const meta = {
   title: "Forms/TimePicker",

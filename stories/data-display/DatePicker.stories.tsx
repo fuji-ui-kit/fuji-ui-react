@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
-import { DatePicker } from "@fuji-ui/react";
+import { DatePicker } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/DatePicker",

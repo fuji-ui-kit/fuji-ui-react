@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { CodeBlock } from "@fuji-ui/react";
+import { CodeBlock } from "@fujiui/react";
 
 const SNIPPET = `function greet(name: string) {
   return \`Hello, \${name}!\`;

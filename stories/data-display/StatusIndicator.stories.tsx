@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { StatusIndicator } from "@fuji-ui/react";
+import { StatusIndicator } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/StatusIndicator",

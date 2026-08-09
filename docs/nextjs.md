@@ -6,8 +6,8 @@ Fuji works with the App Router (Next.js 13+) and React 18/19.
 
 ```tsx
 // app/layout.tsx
-import "@fuji-ui/react/styles.css";
-import { FujiProvider } from "@fuji-ui/react";
+import "@fujiui/react/styles.css";
+import { FujiProvider } from "@fujiui/react";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -39,7 +39,7 @@ Fuji ships two kinds of components:
 
   ```tsx
   // app/page.tsx - a Server Component
-  import { Icon } from "@fuji-ui/react";
+  import { Icon } from "@fujiui/react";
   import { SearchX } from "lucide-react";
 
   export default function Page() {
@@ -62,7 +62,7 @@ Compound components - `Dialog`, `Drawer`, `Popover`, `Tabs`, `Select`,
 dot-access:
 
 ```tsx
-import { Dialog, DialogContent, DialogTrigger } from "@fuji-ui/react";
+import { Dialog, DialogContent, DialogTrigger } from "@fujiui/react";
 ```
 
 A Server Component may render the root compound (`<Dialog>...</Dialog>`), but
@@ -81,6 +81,6 @@ Either import the named sub-export directly (`DialogContent` instead of
 
 ## Where to put the CSS import
 
-Import `@fuji-ui/react/styles.css` exactly once, in the root layout (as shown
+Import `@fujiui/react/styles.css` exactly once, in the root layout (as shown
 above) - not per-page, and not per-component. Next.js deduplicates/merges
 global CSS imports from `layout.tsx` automatically.

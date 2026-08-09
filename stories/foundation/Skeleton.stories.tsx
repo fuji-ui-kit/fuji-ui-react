@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Skeleton } from "@fuji-ui/react";
+import { Skeleton } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Skeleton",

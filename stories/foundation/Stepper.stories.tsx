@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { User, FileText, CheckCircle2, PartyPopper } from "lucide-react";
-import { Stepper, type StepperStep } from "@fuji-ui/react";
+import { Stepper, type StepperStep } from "@fujiui/react";
 
 const STEPS: StepperStep[] = [
   { label: "Account", description: "Create your login" },

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Rating } from "@fuji-ui/react";
+import { Rating } from "@fujiui/react";
 
 const meta = {
   title: "Forms/Rating",

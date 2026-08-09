@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { OTPInput } from "@fuji-ui/react";
+import { OTPInput } from "@fujiui/react";
 
 const meta = {
   title: "Forms/OTPInput",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { BottomNavigation } from "@fuji-ui/react";
+import { BottomNavigation } from "@fujiui/react";
 import { Bell, Home, Search, User } from "lucide-react";
 
 const ITEMS = [

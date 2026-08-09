@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Bell } from "lucide-react";
-import { Notification } from "@fuji-ui/react";
+import { Notification } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Notification",

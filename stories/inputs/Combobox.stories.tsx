@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Combobox, type ComboboxItem } from "@fuji-ui/react";
+import { Combobox, type ComboboxItem } from "@fujiui/react";
 
 const FRAMEWORKS: ComboboxItem[] = [
   { value: "react", label: "React" },

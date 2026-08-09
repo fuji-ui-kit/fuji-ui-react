@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Breadcrumb } from "@fuji-ui/react";
+import { Breadcrumb } from "@fujiui/react";
 
 const ITEMS = [{ label: "Home", href: "/" }, { label: "Settings", href: "/settings" }, { label: "Profile" }];
 

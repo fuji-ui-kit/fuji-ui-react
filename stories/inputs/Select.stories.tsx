@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Select } from "@fuji-ui/react";
+import { Select } from "@fujiui/react";
 
 const ROLES = [
   { value: "engineer", label: "Engineer" },

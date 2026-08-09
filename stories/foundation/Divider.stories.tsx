@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Divider } from "@fuji-ui/react";
+import { Divider } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Divider",

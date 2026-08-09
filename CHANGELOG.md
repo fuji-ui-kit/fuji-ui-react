@@ -1,4 +1,8 @@
-# @fuji-ui/react
+# @fujiui/react
+
+## 0.1.1
+
+- Updated package metadata and documentation for the public `@fujiui/react` package.
 
 ## 0.1.0-alpha.0
 

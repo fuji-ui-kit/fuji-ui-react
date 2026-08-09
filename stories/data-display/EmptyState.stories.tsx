@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Search } from "lucide-react";
-import { Button, EmptyState } from "@fuji-ui/react";
+import { Button, EmptyState } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/EmptyState",

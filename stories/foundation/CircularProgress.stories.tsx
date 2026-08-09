@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { CircularProgress } from "@fuji-ui/react";
+import { CircularProgress } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/CircularProgress",

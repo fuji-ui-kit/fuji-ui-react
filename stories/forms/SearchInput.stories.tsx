@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { SearchInput } from "@fuji-ui/react";
+import { SearchInput } from "@fujiui/react";
 
 const meta = {
   title: "Forms/SearchInput",

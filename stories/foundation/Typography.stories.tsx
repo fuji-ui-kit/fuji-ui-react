@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Typography } from "@fuji-ui/react";
+import { Typography } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Typography",

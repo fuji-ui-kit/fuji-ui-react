@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Slider } from "@fuji-ui/react";
+import { Slider } from "@fujiui/react";
 
 const meta = {
   title: "Forms/Slider",

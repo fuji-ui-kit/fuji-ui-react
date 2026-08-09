@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Sidebar } from "@fuji-ui/react";
+import { Sidebar } from "@fujiui/react";
 import { BarChart3, Home, Settings, Users } from "lucide-react";
 
 const meta = {

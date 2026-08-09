@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { NavigationMenu } from "@fuji-ui/react";
+import { NavigationMenu } from "@fujiui/react";
 
 const meta = {
   title: "Navigation/NavigationMenu",

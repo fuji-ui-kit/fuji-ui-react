@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
-import { Button, Toaster, ToastProvider, useToast } from "@fuji-ui/react";
+import { Button, Toaster, ToastProvider, useToast } from "@fujiui/react";
 
 interface ToastConfig {
   title: string;

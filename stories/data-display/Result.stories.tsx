@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Button, Result } from "@fuji-ui/react";
+import { Button, Result } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Result",

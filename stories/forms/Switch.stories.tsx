@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { Switch } from "@fuji-ui/react";
+import { Switch } from "@fujiui/react";
 
 const meta = {
   title: "Forms/Switch",

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ChevronRight, CreditCard, Globe, Shield } from "lucide-react";
-import { List } from "@fuji-ui/react";
+import { List } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/List",

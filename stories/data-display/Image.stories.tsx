@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Image } from "@fuji-ui/react";
+import { Image } from "@fujiui/react";
 import { placeholderPhoto } from "../lib/placeholder-image";
 
 const meta = {

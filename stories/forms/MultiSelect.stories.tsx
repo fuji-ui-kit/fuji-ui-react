@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { MultiSelect, type MultiSelectItem } from "@fuji-ui/react";
+import { MultiSelect, type MultiSelectItem } from "@fujiui/react";
 
 const SKILLS: MultiSelectItem[] = [
   { value: "react", label: "React" },

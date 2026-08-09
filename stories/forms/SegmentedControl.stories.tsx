@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import type { SegmentedControlOption } from "@fuji-ui/react";
-import { SegmentedControl } from "@fuji-ui/react";
+import type { SegmentedControlOption } from "@fujiui/react";
+import { SegmentedControl } from "@fujiui/react";
 
 const VIEW_OPTIONS: SegmentedControlOption[] = [
   { label: "List", value: "list" },

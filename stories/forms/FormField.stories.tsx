@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { FormField, Input } from "@fuji-ui/react";
+import { FormField, Input } from "@fujiui/react";
 
 const meta = {
   title: "Forms/FormField",

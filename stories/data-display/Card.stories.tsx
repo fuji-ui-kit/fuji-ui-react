@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Star, MapPin, Bookmark, Play } from "lucide-react";
-import { Avatar, Badge, Button, Card, Icon, IconButton, Image } from "@fuji-ui/react";
+import { Avatar, Badge, Button, Card, Icon, IconButton, Image } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Card",

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { ScrollArea } from "@fuji-ui/react";
+import { ScrollArea } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/ScrollArea",

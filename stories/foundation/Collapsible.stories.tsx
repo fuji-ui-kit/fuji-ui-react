@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Collapsible } from "@fuji-ui/react";
+import { Collapsible } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Collapsible",

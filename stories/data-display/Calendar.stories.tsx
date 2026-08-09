@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
-import { Calendar } from "@fuji-ui/react";
+import { Calendar } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Calendar",

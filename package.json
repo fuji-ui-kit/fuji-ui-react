@@ -1,16 +1,19 @@
 {
   "name": "@fujiui/react",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Fuji UI - a themeable, accessible React component system (light/dark/glass, cornered/soft radius, regular/floating elevation).",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Fuji UI",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fuji-ui/fuji-ui-react.git"
+    "url": "git+https://github.com/fuji-ui-kit/fuji-ui-react.git"
   },
-  "homepage": "https://github.com/fuji-ui/fuji-ui-react#readme",
+  "homepage": "https://github.com/fuji-ui-kit/fuji-ui-react#readme",
   "bugs": {
-    "url": "https://github.com/fuji-ui/fuji-ui-react/issues"
+    "url": "https://github.com/fuji-ui-kit/fuji-ui-react/issues"
   },
   "keywords": [
     "react",

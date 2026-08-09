@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ExternalLink } from "lucide-react";
-import { Link } from "@fuji-ui/react";
+import { Link } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Link",

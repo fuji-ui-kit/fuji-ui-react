@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Carousel } from "@fuji-ui/react";
+import { Carousel } from "@fujiui/react";
 
 interface Photo {
   id: number;

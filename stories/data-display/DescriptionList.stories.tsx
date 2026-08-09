@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { DescriptionList } from "@fuji-ui/react";
+import { DescriptionList } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/DescriptionList",

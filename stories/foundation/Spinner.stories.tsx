@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Spinner } from "@fuji-ui/react";
+import { Spinner } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Spinner",

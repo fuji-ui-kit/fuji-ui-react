@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Label } from "@fuji-ui/react";
+import { Label } from "@fujiui/react";
 
 const meta = {
   title: "Foundation/Label",

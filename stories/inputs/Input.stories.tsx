@@ -2,7 +2,7 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "@storybook/test";
 import { Mail, Search } from "lucide-react";
-import { Input } from "@fuji-ui/react";
+import { Input } from "@fujiui/react";
 
 const meta = {
   title: "Inputs/Input",
