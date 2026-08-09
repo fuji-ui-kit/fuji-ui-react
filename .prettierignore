@@ -1,0 +1,10 @@
+# Externally managed content, not authored or maintained by this repo -
+# reformatting it would just get overwritten (or drift back out of format) on
+# the next `npx skills add` install, and it isn't ours to reflow anyway.
+/.agents/
+
+# build output
+/dist
+/coverage
+/storybook-static
+/.storybook/generated

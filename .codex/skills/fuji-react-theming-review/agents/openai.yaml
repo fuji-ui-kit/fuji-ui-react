@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Theming Review"
+  short_description: "Review tokens and themes"
+  default_prompt: "Use $fuji-react-theming-review to audit token coverage, glass fallbacks, portal theming, and the theme matrix."

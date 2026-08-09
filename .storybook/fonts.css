@@ -1,0 +1,18 @@
+/*
+ * Storybook-only typography baseline - pairs with preview-head.html, which
+ * loads the actual font files. Real consumers set these `--fuji-font-*`
+ * variables themselves (see fuji-ui-website's `next/font` usage); Storybook
+ * has no consumer app to inherit that from, so it defines them here instead,
+ * pointed at the same three brand fonts the website loads. Preview tooling
+ * only - never imported by `src/`, never part of the published `dist/`.
+ */
+:root {
+  --fuji-font-inter: "Inter", sans-serif;
+  --fuji-font-zen: "Zen Kaku Gothic New", sans-serif;
+  --fuji-font-mochiy: "Mochiy Pop One", sans-serif;
+}
+
+/* Matches the smoothing the website applies on `body` in globals.css. */
+body {
+  -webkit-font-smoothing: antialiased;
+}

@@ -1,0 +1,20 @@
+/*
+ * A consumer who customizes their OWN Tailwind theme - the highest-risk case
+ * for CSS isolation. `--spacing` here is deliberately way off Tailwind's
+ * default (0.25rem) so any leak into Fuji's own spacing-based utilities
+ * would be immediately, visibly obvious (Fuji's control heights/padding
+ * would balloon or shrink). Same for a customized accent color that happens
+ * to share a name pattern with one of Fuji's own tone tokens.
+ */
+/* All @import statements must precede any other rule per the CSS spec - the
+   @theme customization below has to come after both imports, not between
+   them (an @import after a non-import rule is invalid and silently ignored
+   by the parser - exactly the trap this fixture is designed to avoid
+   tripping over). */
+@import "tailwindcss";
+@import "@fuji-ui/react/styles.css";
+
+@theme {
+  --spacing: 0.75rem; /* default is 0.25rem - 3x the norm, deliberately extreme */
+  --color-brand-500: #ff00aa; /* the host's own "brand" color, unrelated to Fuji's tones */
+}

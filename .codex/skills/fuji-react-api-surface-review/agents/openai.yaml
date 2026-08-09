@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React API Surface Review"
+  short_description: "Audit the public export surface"
+  default_prompt: "Use $fuji-react-api-surface-review to audit the public export surface and flag any breaking changes."

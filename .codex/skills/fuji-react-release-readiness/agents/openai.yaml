@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Release Readiness"
+  short_description: "Pre-publish release gate"
+  default_prompt: "Use $fuji-react-release-readiness to assess whether this package is ready to publish. Do not publish."

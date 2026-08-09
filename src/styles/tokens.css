@@ -1,0 +1,675 @@
+/* fuji-ui design tokens — authoritative values.
+   Scoped under [data-fuji-theme] / [data-fuji-radius] so multiple
+   provider roots (and portals) can coexist with different settings. */
+
+:root {
+  /* Safe pre-theme fallback, matching the light theme's own values below.
+     `<html>` carries the real `data-fuji-theme`/etc. attributes from the
+     server (see layout.tsx), so this is only ever load-bearing for the
+     instant before the beforeInteractive bootstrap script runs, or for any
+     future element that could render before a theme attribute applies -
+     without it, `border-color: var(--fuji-border)` on an unscoped element
+     resolves to nothing and falls back to a plain, un-themed border. */
+  --fuji-border: rgb(24 24 23 / 10%);
+  --fuji-border-strong: rgb(24 24 23 / 18%);
+
+  /* ---- radius: cornered (default) ---- */
+  --fuji-radius-control: 8px;
+  --fuji-radius-panel: 12px;
+  --fuji-radius-overlay: 14px;
+
+  /* ---- spacing scale ---- */
+  --fuji-space-1: 4px;
+  --fuji-space-2: 8px;
+  --fuji-space-3: 12px;
+  --fuji-space-4: 16px;
+  --fuji-space-5: 20px;
+  --fuji-space-6: 24px;
+  --fuji-space-8: 32px;
+  --fuji-space-10: 40px;
+  --fuji-space-12: 48px;
+  --fuji-space-16: 64px;
+
+  /* ---- control heights ---- */
+  --fuji-control-h-sm: 29px;
+  --fuji-control-h-md: 38px;
+  --fuji-control-h-lg: 45px;
+  /* Panel-style padding (Alert, Toast) - separate from --fuji-space-4 (which
+     is used pervasively for unrelated layout gaps) so elevation can scale it
+     independently. */
+  --fuji-panel-p: 16px;
+
+  /* ---- typography ---- */
+  /* System font — the base UI font, used by `body` and therefore, by
+     default, every component that doesn't opt into something else: buttons,
+     inputs, badges, nav, cards, etc. */
+  --fuji-font-sans: var(--fuji-font-inter, Inter), system-ui, sans-serif;
+  --fuji-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* Primary font — the brand's voice for authored content. Applied explicitly
+     by the Typography component (titles and descriptions) only; every other
+     component stays on the system font above. */
+  --fuji-font-primary: var(--fuji-font-zen, "Zen Kaku Gothic New"), var(--fuji-font-sans);
+  /* Display/heading typeface reserved solely for the brand wordmark. */
+  --fuji-font-display: var(--fuji-font-mochiy, "Mochiy Pop One"), var(--fuji-font-sans);
+  --fuji-text-xs: 13px;
+  --fuji-text-sm: 14px;
+  --fuji-text-base: 15px;
+  --fuji-text-md: 17px;
+  --fuji-text-lg: 21px;
+  --fuji-text-xl: 25px;
+  --fuji-text-2xl: 30px;
+  --fuji-text-3xl: 38px;
+
+  /* ---- motion ---- */
+  --fuji-duration-fast: 120ms;
+  --fuji-duration-base: 180ms;
+  --fuji-duration-slow: 240ms;
+  --fuji-ease: cubic-bezier(0.32, 0.72, 0, 1);
+  --fuji-press-scale: 0.98;
+  /* Gentle deceleration for content entrance (hero/scroll reveal) - distinct
+     from --fuji-ease, which is tuned for quick UI feedback (buttons,
+     toggles) at 120-240ms, not a several-hundred-ms content reveal. */
+  --fuji-ease-reveal: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ---- tone colors (identity constant across themes) ---- */
+  /* No-provider fallback - previously missing entirely (every sibling tone
+     has one), so a component styled with tone="earth" outside any
+     FujiProvider had no --fuji-earth to resolve at all. */
+  --fuji-earth: #8b5e3c;
+  --fuji-earth-foreground: #ffffff;
+  --fuji-forest: #52735b;
+  --fuji-forest-foreground: #ffffff;
+  --fuji-sun: #9c733d;
+  --fuji-sun-foreground: #ffffff;
+  --fuji-fire: #b84f4f;
+  --fuji-fire-foreground: #ffffff;
+  --fuji-water: #526d82;
+  --fuji-water-foreground: #ffffff;
+
+  /* Soft washes for ghost-hover / Alert backgrounds. */
+  --fuji-forest-soft: rgb(82 115 91 / 12%);
+  --fuji-forest-border: rgb(82 115 91 / 35%);
+  --fuji-sun-soft: rgb(156 115 61 / 12%);
+  --fuji-sun-border: rgb(156 115 61 / 35%);
+  --fuji-fire-soft: rgb(184 79 79 / 12%);
+  --fuji-fire-border: rgb(184 79 79 / 35%);
+  --fuji-water-soft: rgb(82 109 130 / 12%);
+  --fuji-water-border: rgb(82 109 130 / 35%);
+
+  /* ---- shadows: layered, soft — not generic tailwind shadows ---- */
+  --fuji-shadow-control: 0 1px 1px rgb(24 24 23 / 3%), 0 1px 2px rgb(24 24 23 / 4%);
+  --fuji-shadow-control-hover: 0 2px 4px rgb(24 24 23 / 5%), 0 1px 2px rgb(24 24 23 / 4%);
+  --fuji-shadow-card: 0 1px 3px rgb(24 24 23 / 4%), 0 6px 16px rgb(24 24 23 / 6%);
+  --fuji-shadow-panel: 0 3px 8px rgb(24 24 23 / 5%), 0 12px 28px rgb(24 24 23 / 8%);
+  --fuji-shadow-overlay: 0 6px 12px rgb(24 24 23 / 6%), 0 18px 36px rgb(24 24 23 / 10%);
+  --fuji-shadow-inset-highlight: inset 0 1px 0 rgb(255 255 255 / 40%);
+  /* Off-center highlight/shadow bevel on Switch's thumb - a plain uniform
+     circle looks identical at any rotation, so this asymmetric "glossy
+     bead" detail is what makes the thumb's roll animation actually visible.
+     Same raw black/white pairing in every theme (an inset gloss reads the
+     same regardless of the surrounding surface color), so it's a single
+     constant token here rather than redeclared per theme. */
+  --fuji-switch-thumb-shadow:
+    inset -1.5px -1.5px 2px rgb(0 0 0 / 18%), inset 1px 1px 1.5px rgb(255 255 255 / 55%);
+  /*
+ * "Contained" fill-surface tokens for Button/Badge "contained" appearance.
+ * Light and dark keep their solid tone fills. Glass overrides these with
+ * tinted translucent fills so tones keep their color without becoming flat
+ * opaque blocks.
+ */
+  --fuji-contained-default: var(--fuji-default);
+  --fuji-contained-earth: var(--fuji-earth);
+  --fuji-contained-forest: var(--fuji-forest);
+  --fuji-contained-sun: var(--fuji-sun);
+  --fuji-contained-fire: var(--fuji-fire);
+  --fuji-contained-water: var(--fuji-water);
+}
+
+[data-fuji-radius="soft"] {
+  --fuji-radius-control: 13px;
+  --fuji-radius-panel: 18px;
+  --fuji-radius-overlay: 22px;
+}
+
+/* =========================================================
+   LIGHT (default)
+   ========================================================= */
+[data-fuji-theme="light"] {
+  --fuji-page-background: var(--fuji-background);
+  --fuji-background: #f7f6f2;
+  --fuji-background-subtle: #fbfaf7;
+  /* Neutral near-white panel fills. Warmth lives in the page background and the
+     secondary control color, not in every subtle surface. */
+  --fuji-surface-subtle: #f5f4f1;
+  --fuji-surface: #ffffff;
+  --fuji-surface-strong: #edebe7;
+  --fuji-surface-overlay: #ffffff;
+  --fuji-foreground: #181817;
+  /* Darkened again from #716e68 — it still fell to ~4.26:1 on surface-strong,
+     just under WCAG AA (4.5:1). */
+  --fuji-foreground-muted: #6c6963;
+  /* Darkened from #96918a — the original failed WCAG AA (4.5:1) against every
+     surface it's actually painted on (as low as 2.6:1 on surface-strong). */
+  --fuji-foreground-subtle: #6b665e;
+  --fuji-border: rgb(24 24 23 / 10%);
+  --fuji-border-strong: rgb(24 24 23 / 18%);
+  --fuji-default: #181817;
+  --fuji-default-foreground: #ffffff;
+  /* Was #e8dfd0 (1.2:1 against the page, invisible), then #75603f (an
+     olive-brown that read more muddy than "beige"). This warm gold-tan -
+     sourced from Color Hunt's "beige" collection - clears WCAG AA against
+     the page (5.16:1) and its own white foreground text (5.58:1) while
+     actually looking like beige. */
+  --fuji-earth: #b87c4c;
+  --fuji-earth-foreground: #ffffff;
+  --fuji-focus-ring: #181817;
+  --fuji-backdrop-blur: none;
+  --fuji-backdrop-saturate: 100%;
+  /* Header stays near-opaque in every theme — sticky content must not bleed through it. */
+  --fuji-header-surface: rgb(255 255 255 / 94%);
+  --fuji-overlay-backdrop: rgb(24 24 23 / 30%);
+  /* forest/sun/fire/water darkened again from #3b754b/#8e5e18/#b83939/
+     #3b6e92 — those still fell to ~4.14-4.22:1 as the "soft" badge/Result
+     text on their own tint composited over the page background, just under
+     WCAG AA (4.5:1). */
+  /* Was #346742, a fairly saturated true forest-green. Replaced with a
+     muted sage green - sourced from Color Hunt's "sage" collection, paired
+     with the "beige" earth above - which still clears WCAG AA against the
+     page (7.9:1) and white foreground text (8.54:1) with a wide margin. */
+  --fuji-forest: #558467;
+  --fuji-forest-foreground: #ffffff;
+  --fuji-sun: #7f5415;
+  --fuji-sun-foreground: #ffffff;
+  --fuji-fire: #a53333;
+  --fuji-fire-foreground: #ffffff;
+  --fuji-water: #346181;
+  --fuji-water-foreground: #ffffff;
+  --fuji-forest-soft: rgb(64 81 59 / 14%);
+  --fuji-forest-border: rgb(64 81 59 / 38%);
+  --fuji-sun-soft: rgb(127 84 21 / 14%);
+  --fuji-sun-border: rgb(127 84 21 / 38%);
+  --fuji-fire-soft: rgb(165 51 51 / 14%);
+  --fuji-fire-border: rgb(165 51 51 / 38%);
+  --fuji-water-soft: rgb(52 97 129 / 14%);
+  --fuji-water-border: rgb(52 97 129 / 38%);
+  /* Re-declared per theme (not just inherited from :root) so a nested
+     [data-fuji-theme] scope — e.g. the homepage's per-theme showcase panels —
+     always resolves its own "contained" fill instead of leaking whatever
+     value cascades down from an ancestor scope with a different theme. */
+  --fuji-contained-default: var(--fuji-default);
+  --fuji-contained-earth: var(--fuji-earth);
+  --fuji-contained-forest: var(--fuji-forest);
+  --fuji-contained-sun: var(--fuji-sun);
+  --fuji-contained-fire: var(--fuji-fire);
+  --fuji-contained-water: var(--fuji-water);
+  color-scheme: light;
+}
+
+/* =========================================================
+   DARK
+   ========================================================= */
+[data-fuji-theme="dark"] {
+  --fuji-background: #111110;
+  --fuji-background-subtle: #151514;
+  --fuji-surface-subtle: #171716;
+  --fuji-surface: #191918;
+  --fuji-surface-strong: #22211f;
+  --fuji-surface-overlay: #1d1d1b;
+  --fuji-foreground: #f5f1e8;
+  --fuji-foreground-muted: #aaa69e;
+  /* Lightened from #7f7b74 — the original narrowly failed WCAG AA (4.5:1),
+     down to 3.8:1 on surface-strong. */
+  --fuji-foreground-subtle: #8f8b83;
+  --fuji-border: rgb(245 241 232 / 12%);
+  --fuji-border-strong: rgb(245 241 232 / 20%);
+  --fuji-default: #f5f1e8;
+  --fuji-default-foreground: #181817;
+  /* Was #39342d (1.53:1 against the page, invisible), then #c0a374. This
+     lighter warm tan - sourced from Color Hunt's "beige" collection, and
+     shared with the glass-fallback beige below - clears WCAG AA against the
+     page (8.41:1) and its own dark foreground text (7.46:1). */
+  --fuji-earth: #c8a96b;
+  --fuji-earth-foreground: #211d16;
+  --fuji-focus-ring: #f5f1e8;
+  --fuji-backdrop-blur: none;
+  --fuji-backdrop-saturate: 100%;
+  --fuji-shadow-control: 0 1px 1px rgb(0 0 0 / 14%), 0 1px 2px rgb(0 0 0 / 16%);
+  --fuji-shadow-control-hover: 0 2px 4px rgb(0 0 0 / 18%), 0 1px 2px rgb(0 0 0 / 14%);
+  --fuji-shadow-card: 0 1px 2px rgb(0 0 0 / 12%), 0 4px 10px rgb(0 0 0 / 14%);
+  --fuji-shadow-panel: 0 2px 8px rgb(0 0 0 / 18%), 0 10px 24px rgb(0 0 0 / 20%);
+  --fuji-shadow-overlay: 0 10px 20px rgb(0 0 0 / 22%), 0 28px 52px rgb(0 0 0 / 28%);
+  --fuji-shadow-inset-highlight: inset 0 1px 0 rgb(255 255 255 / 6%);
+  --fuji-header-surface: rgb(17 17 16 / 94%);
+  --fuji-overlay-backdrop: rgb(0 0 0 / 48%);
+  /* Was #83d292, a fairly saturated mint-green. Replaced with a muted sage
+     green - sourced from Color Hunt's "sage" collection - which still clears
+     WCAG AA against the page (9.14:1) and its existing dark foreground text
+     (8.2:1) with a wide margin. */
+  --fuji-forest: #a1bc98;
+  --fuji-forest-foreground: #102015;
+  --fuji-sun: #f2c36f;
+  --fuji-sun-foreground: #241a0b;
+  --fuji-fire: #ff8585;
+  --fuji-fire-foreground: #2b1010;
+  --fuji-water: #8bc8ed;
+  --fuji-water-foreground: #0d1b26;
+  --fuji-forest-soft: rgb(161 188 152 / 18%);
+  --fuji-forest-border: rgb(161 188 152 / 45%);
+  --fuji-sun-soft: rgb(242 195 111 / 18%);
+  --fuji-sun-border: rgb(242 195 111 / 45%);
+  --fuji-fire-soft: rgb(255 133 133 / 18%);
+  --fuji-fire-border: rgb(255 133 133 / 45%);
+  --fuji-water-soft: rgb(139 200 237 / 18%);
+  --fuji-water-border: rgb(139 200 237 / 45%);
+  /* Re-declared per theme (not just inherited from :root) so a nested
+     [data-fuji-theme] scope — e.g. the homepage's per-theme showcase panels —
+     always resolves its own "contained" fill instead of leaking whatever
+     value cascades down from an ancestor scope with a different theme. */
+  --fuji-contained-default: var(--fuji-default);
+  --fuji-contained-earth: var(--fuji-earth);
+  --fuji-contained-forest: var(--fuji-forest);
+  --fuji-contained-sun: var(--fuji-sun);
+  --fuji-contained-fire: var(--fuji-fire);
+  --fuji-contained-water: var(--fuji-water);
+  color-scheme: dark;
+}
+
+/* =========================================================
+   GLASS — atmospheric translucent surfaces over a cool, warm-lit canvas.
+   The background provides the visual material that transparent panels reveal.
+   ========================================================= */
+[data-fuji-theme="glass"] {
+  --fuji-page-background: transparent;
+  /* Brought back up from #1e2329 toward the approved medium-gray atmospheric
+     reference (#3d4652) — that previous near-black canvas over-corrected a
+     contrast problem that wasn't actually the canvas's fault: automated
+     contrast tooling can't see the atmosphere at all (it paints on an
+     `::before` pseudo-element, which isn't part of the accessibility tree),
+     so it was scoring every glass element against a phantom white fallback.
+     `:where(html)` below now carries a real, non-pseudo background-color so
+     that fallback no longer happens, and contrast is carried the rest of the
+     way by the semantic fills/foregrounds themselves (see -soft alphas and
+     Kbd below), not by an artificially dark canvas. */
+  --fuji-background: #2c323b;
+  --fuji-background-subtle: rgb(255 255 255 / 7%);
+  --fuji-surface-subtle: rgb(255 255 255 / 7%);
+  --fuji-surface: rgb(255 255 255 / 7%);
+  --fuji-surface-strong: rgb(255 255 255 / 20%);
+  --fuji-surface-overlay: rgb(255 255 255 / 24%);
+  --fuji-foreground: #ffffff;
+  /* muted/subtle raised again from 82%/78% — the atmosphere gradient darkened
+     above, but surface/surface-strong are white-tinted overlays, so they still
+     lighten whatever's behind them back up somewhat. 82%/78% white fell as low
+     as 4.3:1 on the worst-case (surface-strong over the atmosphere's brightest
+     sampled pixel, confirmed by rendering and reading back the actual
+     gradient); 90%/89% clears WCAG AA (4.5:1) there with margin, and by a wide
+     margin against the (only 7% white) plain surface. Kept muted > subtle so
+     the emphasis order still reads correctly. */
+  --fuji-foreground-muted: rgb(255 255 255 / 90%);
+  --fuji-foreground-subtle: rgb(255 255 255 / 89%);
+  --fuji-border: rgb(255 255 255 / 14%);
+  --fuji-border-strong: rgb(255 255 255 / 24%);
+  --fuji-default: rgb(8 10 12 / 92%);
+  --fuji-default-foreground: #ffffff;
+  /* A warm beige tint (not plain white) - sourced from Color Hunt's "beige"
+     collection (#f3e4c9) - so "earth" actually reads as its own tone here
+     too, not indistinguishable from a neutral highlight. Still 84% opaque,
+     so it stays comfortably light against the atmosphere regardless of
+     what's behind it. */
+  --fuji-earth: rgb(243 228 201 / 84%);
+  --fuji-earth-foreground: #181a1c;
+  --fuji-focus-ring: #ffffff;
+  --fuji-header-surface: rgb(35 40 47 / 92%);
+  --fuji-overlay-backdrop: rgb(8 10 12 / 30%);
+
+  /* Contained tone controls keep their identity without becoming opaque
+     blocks, matching the translucent button treatments in the reference. */
+  --fuji-contained-default: rgb(8 10 12 / 92%);
+  --fuji-contained-earth: rgb(243 228 201 / 84%);
+  /* Was #9bd8a8, a saturated mint. Replaced with a muted sage - sourced from
+     Color Hunt's "sage" collection - matching the light/dark direction;
+     10.4:1 against its existing dark foreground text. */
+  --fuji-forest: #b1d3b9;
+  --fuji-forest-foreground: #102015;
+  --fuji-sun: #f2c985;
+  --fuji-sun-foreground: #241a0b;
+  --fuji-fire: #ff9a9a;
+  --fuji-fire-foreground: #2b1010;
+  --fuji-water: #a2d5f2;
+  --fuji-water-foreground: #0d1b26;
+  /* Soft tints deepened to a dark, saturated fill (was a 22% wash of the same
+     light pastel used for the text) — the pastel text needs a genuinely dark
+     backdrop to hit WCAG AA, and a same-hue-but-lighter wash over glass's
+     already-dark surfaces couldn't get there at any text color choice: even
+     black text peaked around 3.8:1 against that wash. The pastel text itself
+     is unchanged — it already reads correctly on the raw canvas elsewhere. */
+  --fuji-forest-soft: rgb(16 66 36 / 60%);
+  --fuji-forest-border: rgb(155 216 168 / 54%);
+  --fuji-sun-soft: rgb(92 55 3 / 60%);
+  --fuji-sun-border: rgb(242 201 133 / 54%);
+  --fuji-fire-soft: rgb(96 22 22 / 60%);
+  --fuji-fire-border: rgb(255 154 154 / 54%);
+  --fuji-water-soft: rgb(22 45 74 / 60%);
+  --fuji-water-border: rgb(162 213 242 / 54%);
+  --fuji-contained-forest: rgb(120 180 135 / 82%);
+  --fuji-contained-sun: rgb(190 148 76 / 82%);
+  --fuji-contained-fire: rgb(205 93 93 / 82%);
+  --fuji-contained-water: rgb(112 157 187 / 82%);
+
+  /* Graduated blur strength by surface purpose: subtle (hover/inactive
+     regions) < default (cards) < strong (inputs, text-heavy areas) < overlay
+     (dialogs, drawers, menus, popovers, toasts) - implementing the tiering
+     described in the "Glass surfaces get real blur" comment below. Kept
+     modest outside overlays so a page with many glass cards still composites
+     cheaply while scrolling. */
+  --fuji-backdrop-blur-subtle: 6px;
+  --fuji-backdrop-saturate-subtle: 105%;
+  --fuji-backdrop-blur: 10px;
+  --fuji-backdrop-saturate: 110%;
+  --fuji-backdrop-blur-strong: 14px;
+  --fuji-backdrop-saturate-strong: 115%;
+  --fuji-backdrop-blur-overlay: 16px;
+  --fuji-backdrop-saturate-overlay: 120%;
+
+  --fuji-shadow-control: 0 1px 2px rgb(0 0 0 / 18%), 0 4px 12px rgb(0 0 0 / 18%);
+  --fuji-shadow-control-hover: 0 3px 8px rgb(0 0 0 / 22%), 0 8px 18px rgb(0 0 0 / 22%);
+  --fuji-shadow-card:
+    0 2px 6px rgb(0 0 0 / 16%), 0 16px 36px rgb(0 0 0 / 20%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-panel:
+    0 6px 16px rgb(0 0 0 / 18%), 0 24px 52px rgb(0 0 0 / 24%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-overlay:
+    0 12px 26px rgb(0 0 0 / 22%), 0 34px 68px rgb(0 0 0 / 30%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-inset-highlight: inset 0 1px 0 rgb(255 255 255 / 22%);
+  color-scheme: dark;
+}
+
+/* The atmospheric canvas paints only on the real document root — never on
+ * portal-only theme scopes (Dialog/Drawer/Popover backdrops and positioners
+ * all pick up `data-fuji-theme` via `usePortalThemeAttrs` purely so their CSS
+ * custom properties resolve outside the provider's DOM subtree). Scoping to
+ * `html` keeps those elements on the plain `--fuji-overlay-backdrop` scrim
+ * instead of clobbering it — an unlayered `background` shorthand here always
+ * beats a layered class rule regardless of source order or specificity.
+ *
+ * The canvas lives on a `position: fixed` pseudo-element rather than using
+ * `background-attachment: fixed` directly: mobile browsers can't hand a fixed
+ * background off to the compositor, so it repaints on every scroll frame.
+ * A fixed, negatively-stacked pseudo-element gets the same pinned-behind-
+ * content look via ordinary GPU-composited fixed positioning instead.
+ *
+ * `html` itself also gets a real, non-pseudo `background-color` (below) equal
+ * to this same tone: contrast tooling (and any context that can't render a
+ * `::before` pseudo, e.g. forced-colors/print) walks real DOM backgrounds
+ * only, and without this it falls through every transparent glass surface to
+ * an assumed white page — reporting failures on pastel-on-dark text that
+ * only "fail" against that phantom white, never against the real canvas. */
+[data-fuji-theme="glass"]:where(html) {
+  background-color: var(--fuji-background);
+}
+[data-fuji-theme="glass"]:where(html)::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--fuji-background);
+  /* `background-image` (not the `background` shorthand): the shorthand form
+     resets `background-color` to transparent whenever the value has no color
+     term, which would silently undo the solid fallback above. */
+  background-image:
+    radial-gradient(900px 680px at -8% -10%, rgb(56 71 86 / 86%), transparent 68%),
+    radial-gradient(960px 720px at 108% 0%, rgb(109 102 96 / 72%), transparent 64%),
+    radial-gradient(820px 640px at 50% 110%, rgb(55 66 68 / 76%), transparent 70%),
+    linear-gradient(135deg, #262e37 0%, #40464c 48%, #68635e 100%);
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+/* Reuse the same atmospheric canvas inside side-by-side theme previews. The
+ * real app paints it once on html; nested showcase providers need a local
+ * canvas so their glass surfaces have material to reveal. */
+[data-fuji-theme="glass"] .fuji-glass-atmosphere {
+  background-color: var(--fuji-background);
+  background-image:
+    radial-gradient(900px 680px at -8% -10%, rgb(56 71 86 / 86%), transparent 68%),
+    radial-gradient(960px 720px at 108% 0%, rgb(109 102 96 / 72%), transparent 64%),
+    radial-gradient(820px 640px at 50% 110%, rgb(55 66 68 / 76%), transparent 70%),
+    linear-gradient(135deg, #262e37 0%, #40464c 48%, #68635e 100%);
+  background-size: cover;
+}
+
+/* Example shells often use the background utility as a light/dark canvas. In
+ * Glass, let the single atmospheric root canvas show through that shell so
+ * panels can reveal the same material instead of creating a second flat layer.
+ * Excluded: elements inside a nested light/dark provider override (e.g. the
+ * homepage theme-comparison grid) — those must keep their own opaque
+ * background regardless of the outer app theme.
+ */
+[data-fuji-theme="glass"]
+  .fj\:bg-fuji-background:not(
+    [data-fuji-theme="light"],
+    [data-fuji-theme="dark"],
+    [data-fuji-theme="light"] *,
+    [data-fuji-theme="dark"] *
+  ) {
+  background-color: transparent;
+}
+
+/* Kbd's neutral white-tinted chip lightens further on top of an already-light
+ * glass surface (e.g. the header), leaving its muted text under WCAG AA. A
+ * dark, moderately opaque chip keeps that same white text legible against any
+ * backdrop the canvas can produce, without needing the whole canvas darker. */
+[data-fuji-theme="glass"] .fuji-kbd-surface {
+  background-color: rgb(8 10 12 / 40%);
+}
+
+/*
+ * Glass surfaces get real blur where supported, graduated by purpose:
+ * subtle (hover/inactive regions) < default (cards) < strong (inputs, text-
+ * heavy areas) < overlay (dialogs, drawers, menus, popovers, toasts). Also
+ * Overlays are the only elements that need a live backdrop. Ordinary cards,
+ * fields, and controls remain translucent without creating dozens of costly
+ * compositing layers during scrolling.
+ */
+@supports (backdrop-filter: blur(1px)) {
+  [data-fuji-theme="glass"] .fuji-glass-surface-subtle {
+    backdrop-filter: blur(var(--fuji-backdrop-blur-subtle)) saturate(var(--fuji-backdrop-saturate-subtle));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface {
+    backdrop-filter: blur(var(--fuji-backdrop-blur)) saturate(var(--fuji-backdrop-saturate));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface-strong {
+    backdrop-filter: blur(var(--fuji-backdrop-blur-strong)) saturate(var(--fuji-backdrop-saturate-strong));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface-overlay {
+    background-color: var(--fuji-surface-overlay);
+    backdrop-filter: blur(var(--fuji-backdrop-blur-overlay)) saturate(var(--fuji-backdrop-saturate-overlay));
+  }
+}
+
+/* Keep the prefixed path separate so CSS compilation preserves both it and
+ * the standard declaration for browsers that support either implementation. */
+@supports (-webkit-backdrop-filter: blur(1px)) {
+  [data-fuji-theme="glass"] .fuji-glass-surface-subtle {
+    -webkit-backdrop-filter: blur(var(--fuji-backdrop-blur-subtle))
+      saturate(var(--fuji-backdrop-saturate-subtle));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface {
+    -webkit-backdrop-filter: blur(var(--fuji-backdrop-blur)) saturate(var(--fuji-backdrop-saturate));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface-strong {
+    -webkit-backdrop-filter: blur(var(--fuji-backdrop-blur-strong))
+      saturate(var(--fuji-backdrop-saturate-strong));
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface-overlay {
+    -webkit-backdrop-filter: blur(var(--fuji-backdrop-blur-overlay))
+      saturate(var(--fuji-backdrop-saturate-overlay));
+  }
+}
+
+/* Opaque fallback when backdrop-filter is unsupported — solid near-white. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  [data-fuji-theme="glass"] {
+    --fuji-page-background: var(--fuji-background);
+    --fuji-surface-subtle: #424d5a;
+    --fuji-surface: #4b5663;
+    --fuji-surface-strong: #56616d;
+    --fuji-surface-overlay: #5d6873;
+    --fuji-earth: #f3e4c9;
+    --fuji-earth-foreground: #181a1c;
+    --fuji-border: rgb(255 255 255 / 16%);
+  }
+}
+
+/* Respect reduced-transparency: flatten glass to opaque near-white surfaces. */
+@media (prefers-reduced-transparency: reduce) {
+  [data-fuji-theme="glass"] {
+    --fuji-page-background: var(--fuji-background);
+    --fuji-surface-subtle: #424d5a;
+    --fuji-surface: #4b5663;
+    --fuji-surface-strong: #56616d;
+    --fuji-surface-overlay: #5d6873;
+    --fuji-earth: #f3e4c9;
+    --fuji-earth-foreground: #181a1c;
+    --fuji-border: rgb(255 255 255 / 16%);
+    --fuji-backdrop-blur-subtle: 0px;
+    --fuji-backdrop-blur: 0px;
+    --fuji-backdrop-blur-strong: 0px;
+    --fuji-backdrop-blur-overlay: 0px;
+  }
+  [data-fuji-theme="glass"]:where(html) {
+    background: var(--fuji-background);
+  }
+  [data-fuji-theme="glass"] .fuji-glass-surface,
+  [data-fuji-theme="glass"] .fuji-glass-surface-subtle,
+  [data-fuji-theme="glass"] .fuji-glass-surface-strong,
+  [data-fuji-theme="glass"] .fuji-glass-surface-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* =========================================================
+   ELEVATION: floating. Deeper, softly layered shadows + inset highlight
+   swapped in at meaningful boundaries via the shared shadow tokens. No
+   scale or hover motion is added — only shadow depth changes. `regular`
+   is the default and simply keeps each theme's baseline shadows above.
+   Compound selectors keep floating theme-aware and win over the single
+   theme block by specificity.
+   ========================================================= */
+[data-fuji-theme="light"][data-fuji-elevation="floating"] {
+  --fuji-shadow-control: 0 1px 2px rgb(24 24 23 / 4%), 0 2px 5px rgb(24 24 23 / 6%);
+  --fuji-shadow-control-hover: 0 2px 5px rgb(24 24 23 / 6%), 0 4px 10px rgb(24 24 23 / 8%);
+  --fuji-shadow-card:
+    0 2px 5px rgb(24 24 23 / 5%), 0 10px 24px rgb(24 24 23 / 10%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-panel:
+    0 4px 12px rgb(24 24 23 / 6%), 0 18px 40px rgb(24 24 23 / 11%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-overlay:
+    0 10px 20px rgb(24 24 23 / 8%), 0 28px 52px rgb(24 24 23 / 14%), var(--fuji-shadow-inset-highlight);
+}
+
+/* Dark floating: deepen the same black-tinted shadow direction the baseline
+   dark theme already uses (not a light/cream tint - a light-colored shadow
+   on a near-black canvas reads as a pale halo/glow rather than elevation).
+   A subtle top inset highlight still catches light on the raised edge,
+   matching how light/glass floating both add one. */
+[data-fuji-theme="dark"][data-fuji-elevation="floating"] {
+  --fuji-shadow-inset-highlight: inset 0 1px 0 rgb(255 255 255 / 10%);
+  --fuji-shadow-control: 0 1px 2px rgb(0 0 0 / 30%), 0 2px 5px rgb(0 0 0 / 32%);
+  --fuji-shadow-control-hover: 0 2px 5px rgb(0 0 0 / 34%), 0 4px 10px rgb(0 0 0 / 30%);
+  --fuji-shadow-card:
+    0 2px 6px rgb(0 0 0 / 30%), 0 10px 24px rgb(0 0 0 / 36%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-panel:
+    0 4px 14px rgb(0 0 0 / 34%), 0 18px 40px rgb(0 0 0 / 40%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-overlay:
+    0 10px 22px rgb(0 0 0 / 38%), 0 28px 56px rgb(0 0 0 / 44%), var(--fuji-shadow-inset-highlight);
+}
+
+[data-fuji-theme="glass"][data-fuji-elevation="floating"] {
+  --fuji-shadow-control: 0 3px 8px rgb(0 0 0 / 22%), 0 8px 18px rgb(0 0 0 / 24%);
+  --fuji-shadow-control-hover: 0 5px 12px rgb(0 0 0 / 26%), 0 12px 24px rgb(0 0 0 / 28%);
+  --fuji-shadow-card:
+    0 3px 8px rgb(0 0 0 / 22%), 0 18px 42px rgb(0 0 0 / 28%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-panel:
+    0 8px 20px rgb(0 0 0 / 24%), 0 26px 60px rgb(0 0 0 / 32%), var(--fuji-shadow-inset-highlight);
+  --fuji-shadow-overlay:
+    0 14px 30px rgb(0 0 0 / 28%), 0 42px 78px rgb(0 0 0 / 36%), var(--fuji-shadow-inset-highlight);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --fuji-duration-fast: 0ms;
+    --fuji-duration-base: 0ms;
+    --fuji-duration-slow: 0ms;
+  }
+
+  /* Tailwind's animate-* utilities use their own hardcoded keyframe durations,
+     not the --fuji-duration-* tokens above, so they need their own override.
+     Selectors target the `fj:`-prefixed generated class names (see
+     scripts/css-entry.css's "CSS isolation strategy" comment) - the colon in
+     a class selector must be escaped for CSS to parse it literally rather
+     than as a pseudo-class. */
+  .fj\:animate-pulse,
+  .fj\:animate-spin,
+  .fj\:animate-bounce {
+    animation: none;
+  }
+
+  .fuji-progress-indeterminate[data-indeterminate] {
+    animation: none;
+  }
+}
+
+@keyframes fuji-progress-indeterminate-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+/* Active carousel dot fill — grows to full width over one autoplay interval. */
+@keyframes fuji-carousel-progress {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Continuous-mode carousel marquee. One shared keyframe for every instance
+   on the page: the body only ever references `--fuji-cv-count`/
+   `--fuji-cv-per`, both supplied per-instance via the scoped
+   `[data-fuji-carousel]` custom properties, so a per-instance `@keyframes`
+   (as this used to be, named per `styleId`) duplicated identical rules with
+   nothing but the name differing. */
+@keyframes fuji-cv-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(var(--fuji-cv-count) * (-100% / var(--fuji-cv-per))));
+  }
+}
+
+/* Sliding bar for Progress's indeterminate state — scoped to Base UI's own data-indeterminate attribute. */
+.fuji-progress-indeterminate[data-indeterminate] {
+  animation: fuji-progress-indeterminate-slide 1.4s ease-in-out infinite;
+}
+
+@media print {
+  [data-fuji-theme] {
+    --fuji-surface-subtle: #ffffff;
+    --fuji-surface: #ffffff;
+    --fuji-surface-strong: #ffffff;
+    --fuji-surface-overlay: #ffffff;
+    --fuji-background: #ffffff;
+    --fuji-foreground: #000000;
+    background: #ffffff !important;
+  }
+  [data-fuji-theme] .fuji-glass-surface {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}

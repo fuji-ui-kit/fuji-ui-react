@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Storybook config/story files are never built into a published
+    // declaration (they live outside tsup's `src/**` glob and are excluded
+    // from the npm package entirely - see AGENTS.md). `declaration: true`
+    // makes tsc additionally verify every exported symbol's type is
+    // "portable" enough to name in a .d.ts it will never actually emit here;
+    // that check is meaningless for these files and produces noise
+    // (TS4023/TS2742) on ordinary CSF `meta`/`Story` exports whose inferred
+    // types reference deep internal paths from `@fuji-ui/react`'s own dist
+    // or `@base-ui/react`. Turning it off only for this project keeps the
+    // real package source (`tsconfig.json`, unchanged) exactly as strict as
+    // before.
+    "declaration": false,
+    "declarationMap": false
+  },
+  "include": [".storybook", "stories"]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Component Authoring"
+  short_description: "Author or change a component"
+  default_prompt: "Use $fuji-react-component-authoring to implement this component change following the package conventions."

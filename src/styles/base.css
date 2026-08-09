@@ -1,0 +1,172 @@
+/*
+ * Reusable Fuji design-system base rules. Deliberately excludes Tailwind's
+ * preflight/reset - consumers keep their own global reset, and this package
+ * only ships the rules its own components depend on.
+ */
+
+/*
+ * Opt-in hook: if a consumer wires up their own pre-paint appearance
+ * bootstrap script (see docs/ssr.md) that stamps `data-fuji-boot` onto
+ * `<html>` before swapping in the persisted theme/radius/elevation, this
+ * suppresses the transition below during that one swap so it doesn't
+ * animate from the default appearance to the persisted one. No-op otherwise.
+ */
+html[data-fuji-boot] * {
+  transition: none !important;
+}
+
+@layer fuji.base {
+  .fuji-theme-scope {
+    font-family: var(--fuji-font-sans);
+    color: var(--fuji-foreground);
+    background-color: var(--fuji-page-background, var(--fuji-background));
+  }
+
+  /*
+   * Base UI's own portals (Dialog/Popover/Select/Combobox/Menu/...) attach to
+   * `document.body`, outside `.fuji-theme-scope` entirely - they only carry
+   * `data-fuji-theme` (via `usePortalThemeAttrs`, see its own comment) so
+   * token *values* resolve there. `color` is inherited, so portaled content
+   * already picks up the right text color through the DOM's normal ancestor
+   * chain regardless. `font-family` is also inherited but nothing else in
+   * this stylesheet ever sets it, so without this rule a portaled dialog
+   * title, dropdown item, or select popup silently renders in the browser's
+   * un-set default font (serif in most browsers) instead of Fuji's. Scoped
+   * to font-family only, not color/background-color like `.fuji-theme-scope`
+   * above - painting a background here would paint over invisible
+   * floating-ui positioner wrappers that must stay transparent.
+   */
+  [data-fuji-theme] {
+    font-family: var(--fuji-font-sans);
+  }
+
+  .fuji-theme-scope,
+  .fuji-theme-scope .fuji-glass-surface,
+  .fuji-theme-scope .fuji-glass-surface-subtle,
+  .fuji-theme-scope .fuji-glass-surface-strong,
+  .fuji-theme-scope .fuji-glass-surface-overlay {
+    transition-property: background-color, color, border-color, box-shadow;
+    transition-duration: var(--fuji-duration-base);
+    transition-timing-function: var(--fuji-ease);
+  }
+
+  /*
+   * No `*`, `:focus-visible`, or bare `a[href]` selector here on purpose -
+   * this stylesheet is imported once, globally, by every consumer, so a
+   * universal/unscoped rule would silently restyle the consumer's own
+   * non-Fuji markup too (every button's focus ring, every border color,
+   * anywhere on the page - not just Fuji's own components). Every Fuji
+   * component that needs a border color or a focus-visible style declares it
+   * itself (see e.g. `lib/field-surface.ts`'s `border-fuji-border-strong`, or
+   * `focus-visible:outline-fuji-focus-ring` on Button/Link/Navbar/etc.) so it
+   * works identically with or without a `FujiProvider` ancestor - components
+   * are usable standalone (see SPEC.md, "Global appearance"), so a rule that
+   * only fired inside `.fuji-theme-scope` would silently lose those styles.
+   */
+
+  .fuji-theme-scope ::selection {
+    background: var(--fuji-foreground);
+    color: var(--fuji-background);
+  }
+}
+
+@layer fuji.components {
+  .fuji-chart-entrance {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity var(--fuji-duration-slow) var(--fuji-ease),
+      transform var(--fuji-duration-slow) var(--fuji-ease);
+  }
+
+  .fuji-chart-entrance-ready {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .fuji-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--fuji-border-strong) transparent;
+  }
+
+  .fuji-portal-root {
+    position: relative;
+    z-index: 50;
+  }
+
+  .fuji-overlay-backdrop {
+    background-color: var(--fuji-overlay-backdrop);
+  }
+
+  /*
+   * Base "card" tier - subtle/strong/overlay variants add graduated
+   * translucency + blur under the glass theme only (see tokens.css);
+   * outside glass theme these are just their matching flat surface color.
+   */
+  .fuji-glass-surface {
+    background-color: var(--fuji-surface);
+  }
+
+  .fuji-glass-surface-subtle {
+    background-color: var(--fuji-surface-subtle);
+  }
+
+  .fuji-glass-surface-strong {
+    background-color: var(--fuji-surface-strong);
+  }
+
+  .fuji-glass-surface-overlay {
+    background-color: var(--fuji-surface-overlay);
+  }
+
+  /* Same neutral chip everywhere by default; glass overrides it to a darker,
+     more opaque tint in tokens.css so its muted white text keeps enough
+     contrast regardless of what's behind the glass canvas. */
+  .fuji-kbd-surface {
+    background-color: var(--fuji-surface-strong);
+  }
+
+  /*
+   * Toast sits on `.fuji-glass-surface-overlay`, which - only under glass -
+   * composites to a medium-brightness tint rather than the near-page-color
+   * panel it is in light/dark. The plain `text-fuji-foreground` (white, tuned
+   * for the dark atmosphere) and the plain `text-fuji-{tone}` accents (bright
+   * pastels, same reasoning) both fall under WCAG's contrast floor against
+   * that panel - confirmed by computing contrast against the atmosphere's
+   * brightest sampled region, since Toast is pinned to the bottom-right
+   * corner where the gradient is lightest. `-foreground` tokens are normally
+   * for a same-tone *solid* fill (e.g. a "contained" button), not this
+   * neutral panel, but they're dark enough to read here too, and reusing them
+   * avoids inventing a new color. Scoped to glass only - light/dark already
+   * have correct contrast with the plain classes.
+   */
+  [data-fuji-theme="glass"] .fuji-toast-title,
+  [data-fuji-theme="glass"] .fuji-toast-description,
+  [data-fuji-theme="glass"] .fuji-toast-dismiss {
+    color: var(--fuji-earth-foreground);
+  }
+
+  [data-fuji-theme="glass"] .fuji-toast-icon-success {
+    color: var(--fuji-forest-foreground);
+  }
+
+  [data-fuji-theme="glass"] .fuji-toast-icon-warning {
+    color: var(--fuji-sun-foreground);
+  }
+
+  [data-fuji-theme="glass"] .fuji-toast-icon-danger {
+    color: var(--fuji-fire-foreground);
+  }
+
+  [data-fuji-theme="glass"] .fuji-toast-icon-info {
+    color: var(--fuji-water-foreground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fuji-chart-entrance {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

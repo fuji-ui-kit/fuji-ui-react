@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Code Review"
+  short_description: "Review @fuji-ui/react changes"
+  default_prompt: "Review the current @fuji-ui/react changes with $fuji-react-code-review and report severity-sorted findings."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Accessibility Review"
+  short_description: "Audit component accessibility"
+  default_prompt: "Run $fuji-react-accessibility-review on the affected components and report actionable findings."

@@ -1,0 +1,56 @@
+import * as React from "react";
+import { cn } from "../../../lib/cn";
+import type { ComponentSize, ComponentTone } from "../../../types";
+
+export interface SpinnerProps extends React.HTMLAttributes<HTMLSpanElement> {
+  size?: ComponentSize;
+  /** Accessible label - spinners are otherwise decorative to assistive tech. */
+  label?: string;
+  /** Color of the spinner. Default "default" (neutral muted foreground). */
+  tone?: ComponentTone;
+}
+
+const SIZE_CLASSES: Record<ComponentSize, string> = { sm: "fj:size-4", md: "fj:size-5", lg: "fj:size-6" };
+
+const TONE_CLASSES: Record<ComponentTone, string> = {
+  default: "fj:text-fuji-foreground-muted",
+  earth: "fj:text-fuji-earth",
+  forest: "fj:text-fuji-forest",
+  sun: "fj:text-fuji-sun",
+  fire: "fj:text-fuji-fire",
+  water: "fj:text-fuji-water",
+};
+
+export const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(function Spinner(
+  { size = "md", label = "Loading", tone = "default", className, ...props },
+  ref,
+) {
+  return (
+    <span
+      ref={ref}
+      role="status"
+      aria-label={label}
+      className={cn("fj:inline-flex", TONE_CLASSES[tone], className)}
+      {...props}
+    >
+      {/* Three dots orbiting the center, fading and shrinking from a bright
+          "lead" dot to a faint trailing one - reads as a distinct orbit
+          rather than a conventional arc-spinner, while staying just as
+          light to paint (one <g> rotation, no per-dot animation). Reuses
+          `animate-spin` so it inherits the global `prefers-reduced-motion`
+          override (see tokens.css) for free - under reduced motion the three
+          dots simply stop spinning and sit still, which still reads as an
+          intentional static orbit rather than a broken shape. */}
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+        className={cn("fj:animate-spin", SIZE_CLASSES[size])}
+      >
+        <circle cx="12" cy="4" r="2.75" fill="currentColor" />
+        <circle cx="18.93" cy="16" r="2.25" fill="currentColor" className="fj:opacity-60" />
+        <circle cx="5.07" cy="16" r="1.75" fill="currentColor" className="fj:opacity-30" />
+      </svg>
+    </span>
+  );
+});

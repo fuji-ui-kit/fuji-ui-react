@@ -1,0 +1,62 @@
+/*
+ * Build-time only: maps Fuji's --fuji-* custom properties into Tailwind's
+ * theme namespace so utilities like `bg-fuji-contained-default` or
+ * `rounded-fuji-control` are generated. Consumed by scripts/build-css.mjs,
+ * not shipped as its own file - the generated utilities land directly in
+ * dist/styles.css so consumers never need their own Tailwind config.
+ */
+@theme inline {
+  --color-fuji-background: var(--fuji-background);
+  --color-fuji-background-subtle: var(--fuji-background-subtle);
+  --color-fuji-surface-subtle: var(--fuji-surface-subtle);
+  --color-fuji-surface: var(--fuji-surface);
+  --color-fuji-surface-strong: var(--fuji-surface-strong);
+  --color-fuji-surface-overlay: var(--fuji-surface-overlay);
+  --color-fuji-foreground: var(--fuji-foreground);
+  --color-fuji-foreground-muted: var(--fuji-foreground-muted);
+  --color-fuji-foreground-subtle: var(--fuji-foreground-subtle);
+  --color-fuji-border: var(--fuji-border);
+  --color-fuji-border-strong: var(--fuji-border-strong);
+  --color-fuji-default: var(--fuji-default);
+  --color-fuji-default-foreground: var(--fuji-default-foreground);
+  --color-fuji-earth: var(--fuji-earth);
+  --color-fuji-earth-foreground: var(--fuji-earth-foreground);
+  --color-fuji-forest: var(--fuji-forest);
+  --color-fuji-forest-foreground: var(--fuji-forest-foreground);
+  --color-fuji-sun: var(--fuji-sun);
+  --color-fuji-sun-foreground: var(--fuji-sun-foreground);
+  --color-fuji-fire: var(--fuji-fire);
+  --color-fuji-fire-foreground: var(--fuji-fire-foreground);
+  --color-fuji-water: var(--fuji-water);
+  --color-fuji-water-foreground: var(--fuji-water-foreground);
+  --color-fuji-forest-soft: var(--fuji-forest-soft);
+  --color-fuji-forest-border: var(--fuji-forest-border);
+  --color-fuji-sun-soft: var(--fuji-sun-soft);
+  --color-fuji-sun-border: var(--fuji-sun-border);
+  --color-fuji-fire-soft: var(--fuji-fire-soft);
+  --color-fuji-fire-border: var(--fuji-fire-border);
+  --color-fuji-water-soft: var(--fuji-water-soft);
+  --color-fuji-water-border: var(--fuji-water-border);
+
+  --color-fuji-contained-default: var(--fuji-contained-default);
+  --color-fuji-contained-earth: var(--fuji-contained-earth);
+  --color-fuji-contained-forest: var(--fuji-contained-forest);
+  --color-fuji-contained-sun: var(--fuji-contained-sun);
+  --color-fuji-contained-fire: var(--fuji-contained-fire);
+  --color-fuji-contained-water: var(--fuji-contained-water);
+  --color-fuji-header-surface: var(--fuji-header-surface);
+
+  --radius-fuji-control: var(--fuji-radius-control);
+  --radius-fuji-panel: var(--fuji-radius-panel);
+  --radius-fuji-overlay: var(--fuji-radius-overlay);
+
+  --font-fuji-sans: var(--fuji-font-sans);
+  --font-fuji-primary: var(--fuji-font-primary);
+  --font-fuji-mono: var(--fuji-font-mono);
+  --font-fuji-display: var(--fuji-font-display);
+
+  --shadow-fuji-control: var(--fuji-shadow-control);
+  --shadow-fuji-card: var(--fuji-shadow-card);
+  --shadow-fuji-panel: var(--fuji-shadow-panel);
+  --shadow-fuji-overlay: var(--fuji-shadow-overlay);
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Performance Audit"
+  short_description: "Audit render and bundle cost"
+  default_prompt: "Use $fuji-react-performance-audit to review the affected code for evidenced performance issues."

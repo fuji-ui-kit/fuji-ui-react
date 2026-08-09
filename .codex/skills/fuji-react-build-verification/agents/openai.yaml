@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Build Verification"
+  short_description: "Verify built package artifacts"
+  default_prompt: "Use $fuji-react-build-verification to check dist output, directives, declarations, CSS, and the packed tarball."

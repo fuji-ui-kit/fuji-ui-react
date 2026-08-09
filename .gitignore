@@ -1,0 +1,34 @@
+# dependencies
+/node_modules
+/fixtures/*/node_modules
+
+# build output
+/dist
+*.tsbuildinfo
+
+# testing
+/coverage
+
+# storybook
+/storybook-static
+/.storybook/generated
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env
+.env*
+
+# editor
+.vscode/*
+!.vscode/extensions.json
+
+# package artifacts
+*.tgz

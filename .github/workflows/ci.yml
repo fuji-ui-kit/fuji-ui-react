@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.18.x, 20.x]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run format:check
+
+      - run: npm run skills:check
+
+      - run: npm run lint
+
+      - run: npm run typecheck
+
+      - run: npm run test -- --coverage
+
+      - run: npm run build
+
+      - name: Inspect packed tarball
+        run: |
+          npm pack --dry-run
+          npm pack
+          tar -tzf *.tgz
+
+      - name: Upload build artifacts
+        if: matrix.node-version == '20.x'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist

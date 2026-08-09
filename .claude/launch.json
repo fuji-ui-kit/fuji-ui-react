@@ -1,0 +1,9 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "fuji-website",
+      "url": "http://localhost:3000"
+    }
+  ]
+}

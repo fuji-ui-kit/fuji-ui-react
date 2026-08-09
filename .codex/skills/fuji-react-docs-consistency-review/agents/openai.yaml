@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Docs Consistency Review"
+  short_description: "Check docs against source"
+  default_prompt: "Use $fuji-react-docs-consistency-review to compare README and docs against the actual exports and build."

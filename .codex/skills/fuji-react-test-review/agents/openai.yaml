@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Test Review"
+  short_description: "Review test coverage quality"
+  default_prompt: "Use $fuji-react-test-review to assess whether the current change is adequately covered by tests."

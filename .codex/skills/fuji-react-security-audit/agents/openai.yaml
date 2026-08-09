@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React Security Audit"
+  short_description: "Audit package security risks"
+  default_prompt: "Audit this change with $fuji-react-security-audit and separate confirmed risks from hardening ideas."

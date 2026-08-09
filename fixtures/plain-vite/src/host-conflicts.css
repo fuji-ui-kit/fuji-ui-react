@@ -1,0 +1,31 @@
+/*
+ * Deliberately-conflicting host styles: a consumer with no Tailwind at all
+ * might still happen to use generic class names like these for their own
+ * unrelated markup. If Fuji's compiled CSS leaked unprefixed `.flex`/`.p-4`/
+ * `.text-sm`/`.rounded-lg` classes, these rules would collide with (and
+ * possibly be overridden by, or override) Fuji's own component internals.
+ * Loaded *after* @fuji-ui/react/styles.css in main.tsx, so if there were any
+ * unprefixed collision, this host CSS would win and visibly corrupt Fuji's
+ * components.
+ */
+.flex {
+  display: block !important;
+  background: red !important;
+}
+.p-4 {
+  padding: 0 !important;
+  border: 4px dashed red !important;
+}
+.text-sm {
+  font-size: 40px !important;
+  color: red !important;
+}
+.rounded-lg {
+  border-radius: 0 !important;
+}
+
+.host-conflict-demo {
+  border: 2px solid #333;
+  padding: 12px;
+  margin: 12px 0;
+}

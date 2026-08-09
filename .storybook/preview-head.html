@@ -1,0 +1,16 @@
+<!--
+  Storybook-only typography baseline. The website loads Inter, Zen Kaku
+  Gothic New, and Mochiy Pop One via `next/font` (see fuji-ui-website's
+  layout.tsx and SiteFooter.tsx) and hands them to Fuji through the
+  `--fuji-font-inter` / `--fuji-font-zen` / `--fuji-font-mochiy` variables
+  that src/styles/tokens.css already falls back from. Storybook has no
+  consumer app to inherit that from, so it loads the same three families
+  itself, purely for accurate preview - see fonts.css for the variable
+  wiring. This file is never bundled into dist/ and ships to no consumer.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Mochiy+Pop+One&display=swap"
+/>

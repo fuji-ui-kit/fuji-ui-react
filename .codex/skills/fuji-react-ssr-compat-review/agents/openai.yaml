@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fuji React SSR / Compat Review"
+  short_description: "Audit SSR and React 18/19"
+  default_prompt: "Use $fuji-react-ssr-compat-review to verify SSR safety, React 18/19 support, and Server/Client boundaries."

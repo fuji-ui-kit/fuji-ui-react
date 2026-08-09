@@ -1,0 +1,25 @@
+/*
+ * Storybook preview-only Tailwind entry, built by
+ * scripts/build-storybook-css.mjs into .storybook/generated/storybook.css.
+ *
+ * scripts/css-entry.css (which produces the published dist/styles.css) is
+ * deliberately restricted to package source so Storybook-only classes never
+ * leak into the shipped stylesheet - see that file's comment. That means a
+ * layout utility used only in a story (e.g. `max-w-3xl`) is never generated
+ * there. This is a second, independent scan - of `stories/` and
+ * `.storybook/` only - so those classes render in the Storybook preview.
+ * `.storybook/generated/` is gitignored and never published.
+ *
+ * Only the theme->utility mapping is imported, not the tokens/base
+ * stylesheets: preview.tsx loads the real dist/styles.css first, which
+ * already defines the `--fuji-*` custom properties every generated utility
+ * here references via `var(...)` - duplicating them would just repeat the
+ * same values for no benefit.
+ */
+@import "tailwindcss/theme.css" layer(theme) source(none);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source "../stories";
+@source "../.storybook";
+
+@import "../src/styles/fuji-theme.css";
