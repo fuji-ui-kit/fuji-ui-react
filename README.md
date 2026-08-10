@@ -1,5 +1,15 @@
 # @fujiui/react
 
+**[fuji-ui.vercel.app](https://fuji-ui.vercel.app/)** is the live
+documentation and preview site for this package - the primary place to browse
+components, copy examples, and see every theme/radius/elevation combination
+rendered.
+
+- [Live documentation](https://fuji-ui.vercel.app/docs)
+- [Components](https://fuji-ui.vercel.app/components)
+- [Installation](https://fuji-ui.vercel.app/installation)
+- [Examples](https://fuji-ui.vercel.app/examples)
+
 Fuji is a themeable, accessible React component system: light, dark, and glass
 themes; cornered or soft radius; regular or floating elevation - all driven by
 a single provider. It ships ~90 components (Button through DataTable, Dialog,
