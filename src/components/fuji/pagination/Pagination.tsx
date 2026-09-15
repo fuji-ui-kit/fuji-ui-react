@@ -5,10 +5,19 @@ import { IconButton } from "../button/IconButton";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface PaginationProps {
+  /** The current page, 1-based. */
   page: number;
+  /** Total number of pages. */
   pageCount: number;
+  /** Called with the requested 1-based page number. */
   onPageChange: (page: number) => void;
+  /**
+   * How many pages to show either side of the current one before the range
+   * collapses to an ellipsis. The first and last page are always shown, so
+   * this controls the middle run only.
+   */
   siblingCount?: number;
+  /** Extra classes merged onto the `<nav>`. */
   className?: string;
 }
 
@@ -34,7 +43,18 @@ export const Pagination = React.forwardRef<HTMLElement, PaginationProps>(functio
   const pages = getPageList(page, pageCount, siblingCount);
 
   return (
-    <nav ref={ref} aria-label="Pagination" className={cn("fj:flex fj:items-center fj:gap-1", className)}>
+    // A white pill container with the page numbers as tiles inside it: the
+    // inactive ones soft grey wells, the current one a raised black tile -
+    // the reference pagination, and the same selected/unselected language as
+    // SegmentedControl and Checkbox.
+    <nav
+      ref={ref}
+      aria-label="Pagination"
+      className={cn(
+        "fuji-glass-surface fj:box-border fj:inline-flex fj:items-center fj:gap-1 fj:rounded-full fj:bg-fuji-surface fj:p-1.5 fj:shadow-fuji-card",
+        className,
+      )}
+    >
       <IconButton
         aria-label="Previous page"
         appearance="ghost"
@@ -67,8 +87,8 @@ export const Pagination = React.forwardRef<HTMLElement, PaginationProps>(functio
               // how compact (siblingCount=0) always looks.
               "fj:transition-[box-shadow,transform] fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease)] fj:active:scale-[var(--fuji-press-scale)]",
               entry === page
-                ? "fj:bg-fuji-default fj:text-fuji-default-foreground fj:shadow-fuji-control"
-                : "fj:text-fuji-foreground-muted fj:hover:scale-105 fj:hover:bg-fuji-surface-strong fj:hover:text-fuji-foreground",
+                ? "fuji-raised fj:bg-fuji-contained-default fj:text-fuji-default-foreground"
+                : "fj:bg-fuji-surface-raised fj:text-fuji-foreground-muted fj:hover:scale-105 fj:hover:text-fuji-foreground",
             )}
           >
             {entry}

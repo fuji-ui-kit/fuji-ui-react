@@ -1,6 +1,10 @@
 ---
 name: fuji-react-build-verification
-description: Verify the built @fuji-ui/react artifacts - ESM/CJS output, "use client" preservation, ESM import extensions, TypeScript declarations, compiled CSS, the exports map, and the packed tarball contents. Use after changing tsup.config.ts, the CSS pipeline, package.json exports/files, or before a release.
+description: Verify the built @fujiui/react artifacts - ESM/CJS output, "use client" preservation, ESM import extensions, TypeScript declarations, compiled CSS, the exports map, and the packed tarball contents. Use after changing tsup.config.ts, the CSS pipeline, package.json exports/files, or before a release.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React build verification
@@ -140,14 +144,17 @@ tarball size for an unexplained jump.
 
 ### Consumer smoke test
 
-The real proof is a consumer install:
+The real proof is a consumer install. The repo's own fixtures do this without
+touching the website:
 
 ```bash
-npm run build && npm pack
-# in ../fuji-ui-website
-npm install ../fuji-ui-react/fuji-ui-react-<version>.tgz
-npm run build
+npm run fixtures:pack          # builds + packs to fixtures/fuji-pack.tgz
+(cd fixtures/nextjs && npm install && npm run build)
+(cd fixtures/vite && npm install && npm run build)
 ```
+
+The sibling `fuji-ui-website` is a second consumer when a release is being
+cut (`npm install ../fuji-ui-react/fuji-ui-react-<version>.tgz` there).
 
 A Server/Client boundary regression usually surfaces here as a build error
 naming the component. A missing CSS utility surfaces as unstyled markup, which

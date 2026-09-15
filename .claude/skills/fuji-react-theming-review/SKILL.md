@@ -1,6 +1,10 @@
 ---
 name: fuji-react-theming-review
-description: Review @fuji-ui/react theming integrity - token definitions and coverage across light/dark/glass, radius and elevation behavior, portal theme propagation, glass fallbacks, contrast, and visual verification through the sibling website. Use for review-only audits unless fixes are explicitly requested.
+description: Review @fujiui/react theming integrity - token definitions and coverage across light/dark/glass, radius and elevation behavior, portal theme propagation, glass fallbacks, contrast, and visual verification through the sibling website. Use for review-only audits unless fixes are explicitly requested.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React theming review
@@ -11,33 +15,36 @@ Fuji's whole premise is that appearance is global and token-driven, so one
 missing token or one hard-coded color quietly breaks a theme for every consumer.
 This audit covers the token system itself and its visual result.
 
-The package has no dev server. Visual verification runs through the sibling
-`fuji-ui-website` against a packed build. Default to review-only.
+Visual verification runs in the package's own Storybook (`npm run storybook`)
+and, for token changes, `node scripts/render-gallery.mjs`, which renders all
+twelve appearance combinations to real pages. Default to review-only.
 
 ## Procedure
 
 1. Read `SPEC.md` §2 and §8, `docs/theming.md`, `src/styles/tokens.css`,
    `fuji-theme.css`, and `base.css`.
 2. Audit the token layer statically (below).
-3. For anything visual, build and verify in a real browser:
-
-   ```bash
-   # in fuji-ui-react
-   npm run build && npm pack
-   # in ../fuji-ui-website
-   npm install ../fuji-ui-react/fuji-ui-react-<version>.tgz
-   npm run dev
-   ```
-
-   Do not create permanent screenshots or test files in either repo.
+3. For anything visual, verify in Storybook: the toolbar exposes Theme,
+   Radius, Elevation, and - for glass - `Backdrop` (atmosphere / light / dark /
+   mixed / photo) and `Glass tint` (dark / light). Check the surfaces the
+   change touches across that matrix. A rendered page catches what a unit
+   test cannot: the dark theme once painted a light page for a whole release
+   with every test green. Do not create permanent screenshots in the repo.
 
 ## Static checks
 
 ### Token coverage
 
-- Every token defined for one theme is defined for **all three**. A token
-  present in `light` but missing from `glass` falls back to the `:root` value
-  and looks subtly wrong rather than obviously broken.
+- Every token defined for one theme is defined for **all three** (and, where
+  glass overrides it, for the glass **light tint** block
+  `[data-fuji-theme="glass"][data-fuji-glass="light"]` too). A token present
+  in `light` but missing from `glass` falls back to the `:root` value and
+  looks subtly wrong rather than obviously broken.
+- A `:root` token defined as `var(--other)` resolves **where it is declared**,
+  not where it is used. If a theme overrides `--other` it must restate the
+  dependent token as well (`--fuji-page-background: var(--fuji-background)`
+  once painted the dark theme light). `src/styles/tokens.test.ts` enforces
+  this - keep it passing rather than special-casing.
 
   ```bash
   grep -o '\--fuji-[a-z0-9-]*:' src/styles/tokens.css | sort | uniq -c | sort -n | head -30
@@ -89,8 +96,14 @@ non-class value into an unrelated attribute is fine.
   that static sizing difference is intentional (see `SPEC.md` §2), but any
   scale, translate, or hover motion introduced under either mode is a
   contract violation.
-- Components use `--fuji-radius-control` / `-panel` / `-overlay` rather than
-  fixed radii, so both modes work.
+- Components use `--fuji-radius-item` / `-control` / `-panel` / `-overlay`
+  rather than fixed radii, so both modes work. Audit with
+  `grep -rnoE 'rounded-(\[[^]]*\]|sm|md|lg|xl)' src/components` - anything
+  other than `rounded-full` and `rounded-fuji-*` ignores `soft`.
+- Shadows are `--fuji-shadow-control/-card/-panel/-overlay/-raised`, and
+  `--fuji-shadow-drop` for SVG `filter: drop-shadow()` (one shadow only).
+  There is deliberately **no inset edge highlight** on raised objects - at 1px
+  it reads as a border on every theme (see `DESIGN.md`).
 
 ### Glass
 
@@ -100,12 +113,22 @@ non-class value into an unrelated attribute is fine.
 - New glass surfaces use the shipped `.fuji-glass-surface*` classes rather than
   hand-rolling blur - hand-rolled ones lack the fallbacks.
 - Glass is layered and graduated, not a single translucent background.
+- Glass is a **dark material by default** and a **light material** under
+  `glassTint="light"`. Any glass-only rule (`[data-fuji-theme="glass"] .x`)
+  that assumes white text or a dark panel needs a light-tint counterpart, or
+  it paints dark-on-dark / white-on-white there (Toast once did). The
+  `@supports not` and `prefers-reduced-transparency` fallbacks must cover
+  both tints.
+- The "default" tone under glass is near-black (the raised accent). That is
+  right for a button with a cast shadow and wrong for a thin fill or a chart
+  stroke - those use `--fuji-foreground` ("ink": black / cream / white).
 
 ### Portal propagation
 
 Base UI's overlay primitives portal to `document.body`, outside the provider's
-subtree. `usePortalThemeAttrs` must be spread onto the outermost styled node of
-**every** such primitive (Popup / Positioner / Content). A new overlay component
+subtree. `usePortalThemeAttrs` (theme, radius, elevation **and** glass tint)
+must be spread onto the outermost styled node of **every** such primitive
+(Popup / Positioner / Content). A new overlay component
 that omits it renders with the wrong theme whenever the page theme is not the
 default - a bug that is invisible in the default theme.
 
@@ -114,7 +137,7 @@ default - a bug that is invisible in the default theme.
 Fuji durations come from `--fuji-duration-*`, which collapse to `0ms` under
 `prefers-reduced-motion: reduce`. Hard-coded durations do not participate.
 
-## Visual checks (in the website)
+## Visual checks (in Storybook)
 
 Exercise the full matrix on the surfaces the change touches:
 `light`/`dark`/`glass` × `cornered`/`soft` × `regular`/`floating`.

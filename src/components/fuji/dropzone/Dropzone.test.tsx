@@ -16,7 +16,7 @@ describe("Dropzone", () => {
   it("accepts a dropped file", () => {
     const onChange = vi.fn();
     render(<Dropzone onChange={onChange} />);
-    const zone = screen.getByRole("button", { name: /drag and drop/i });
+    const zone = screen.getByRole("button", { name: /upload files/i });
     const file = makeFile("a.txt");
 
     fireEvent.drop(zone, { dataTransfer: dataTransferWith([file]) });
@@ -32,7 +32,7 @@ describe("Dropzone", () => {
     // call count, to avoid coupling to that tooling behavior.
     const user = userEvent.setup();
     render(<Dropzone />);
-    const zone = screen.getByRole("button", { name: /drag and drop/i });
+    const zone = screen.getByRole("button", { name: /upload files/i });
     const input = document.querySelector('input[type="file"]') as HTMLInputElement;
     const clickSpy = vi.spyOn(input, "click");
 
@@ -49,7 +49,7 @@ describe("Dropzone", () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     render(<Dropzone disabled onChange={onChange} />);
-    const zone = screen.getByRole("button", { name: /drag and drop/i });
+    const zone = screen.getByRole("button", { name: /upload files/i });
     expect(zone).toHaveAttribute("aria-disabled", "true");
     expect(zone).toHaveAttribute("tabindex", "-1");
 
@@ -81,5 +81,56 @@ describe("Dropzone", () => {
     render(<Dropzone defaultValue={[makeFile("a.txt")]} />);
     await user.click(screen.getByRole("button", { name: "Remove a.txt" }));
     expect(screen.queryByText("a.txt")).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The drag-over fill was dead code for its entire life and nothing noticed,
+ * because nothing tested the state that drives it. The element also carries
+ * `.fuji-glass-surface-subtle` (for its backdrop blur), which lives in the
+ * `fuji.components` layer - ordered AFTER `fuji.utilities` - so the old
+ * `fj:bg-*` utility never won and the fill never painted, in any theme. The
+ * state now drives `.fuji-dropzone[data-drag-active]` in base.css instead.
+ * jsdom cannot evaluate cascade layers, so this pins the part it CAN see: that
+ * the attribute the rule keys on is actually set, and cleared, at the right
+ * moments. Verified by removing the `data-drag-active` prop and watching this
+ * go red.
+ */
+describe("Dropzone drag state", () => {
+  const zone = () => screen.getByRole("button", { name: /upload files/i });
+
+  it("marks itself drag-active while a file is dragged over it", () => {
+    render(<Dropzone />);
+    expect(zone()).not.toHaveAttribute("data-drag-active");
+    fireEvent.dragEnter(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    fireEvent.dragOver(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    expect(zone()).toHaveAttribute("data-drag-active");
+  });
+
+  it("clears drag-active when the drag leaves", () => {
+    render(<Dropzone />);
+    fireEvent.dragOver(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    fireEvent.dragLeave(zone());
+    expect(zone()).not.toHaveAttribute("data-drag-active");
+  });
+
+  it("clears drag-active on drop", () => {
+    render(<Dropzone />);
+    fireEvent.dragOver(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    fireEvent.drop(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    expect(zone()).not.toHaveAttribute("data-drag-active");
+  });
+
+  it("never enters drag-active while disabled", () => {
+    render(<Dropzone disabled />);
+    fireEvent.dragOver(zone(), { dataTransfer: dataTransferWith([makeFile("a.txt")]) });
+    expect(zone()).not.toHaveAttribute("data-drag-active");
+  });
+
+  it("carries the class the drag-active rule targets", () => {
+    // The rule is `.fuji-dropzone[data-drag-active]`; the attribute alone
+    // styles nothing if this class is ever renamed away.
+    render(<Dropzone />);
+    expect(zone()).toHaveClass("fuji-dropzone");
   });
 });

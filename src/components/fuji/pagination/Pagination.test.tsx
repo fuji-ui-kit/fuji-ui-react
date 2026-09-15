@@ -37,7 +37,10 @@ describe("Pagination", () => {
     render(<Pagination page={1} pageCount={3} onPageChange={vi.fn()} />);
     const pageButton = screen.getByRole("button", { name: "2" });
     expect(pageButton.className).toEqual(expect.stringContaining("border-0"));
-    expect(pageButton.className).toEqual(expect.stringContaining("bg-transparent"));
+    // Inactive tiles set their own `bg-fuji-surface-strong`, which replaces the
+    // reset's `bg-transparent` via tailwind-merge - the point is that SOME
+    // Fuji background is declared, never the UA button face.
+    expect(pageButton.className).toEqual(expect.stringMatching(/fj:bg-fuji-/));
     expect(pageButton.className).toEqual(expect.stringContaining("appearance-none"));
   });
 });

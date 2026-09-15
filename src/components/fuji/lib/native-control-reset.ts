@@ -20,3 +20,14 @@
  */
 export const NATIVE_CONTROL_RESET =
   "fj:box-border fj:m-0 fj:border-0 fj:bg-transparent fj:p-0 fj:appearance-none fj:[font-family:inherit]";
+
+/**
+ * The anchor equivalent. Without preflight a bare `<a href>` keeps the UA
+ * stylesheet's underline and its `-webkit-link` blue - and because the
+ * underline is painted by the anchor itself, a colored `<span>` inside it
+ * does NOT hide it: Navbar rendered grey labels sitting on bright blue
+ * underlines. Apply to every anchor whose appearance is defined by Fuji
+ * rather than by the consumer (`Link` manages its own underline and is the
+ * one deliberate exception).
+ */
+export const NATIVE_LINK_RESET = "fj:text-inherit fj:no-underline";

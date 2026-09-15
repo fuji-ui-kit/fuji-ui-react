@@ -1,0 +1,55 @@
+{
+  "name": "@fujiui/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for @fujiui/react - gives a coding agent an accurate, version-matched view of the component library.",
+  "mcpName": "io.github.fuji-ui-kit/fuji-ui",
+  "license": "MIT",
+  "author": "Fuji UI",
+  "homepage": "https://github.com/fuji-ui-kit/fuji-ui-react/tree/main/mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fuji-ui-kit/fuji-ui-react.git",
+    "directory": "mcp"
+  },
+  "bugs": {
+    "url": "https://github.com/fuji-ui-kit/fuji-ui-react/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "fujiui",
+    "react",
+    "components",
+    "claude-code",
+    "codex",
+    "ai"
+  ],
+  "type": "module",
+  "bin": {
+    "fuji-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/*.js",
+    "!dist/*.test.js"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "npm run build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.6.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

@@ -5,11 +5,15 @@ import { Loader2 } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import type { ComponentAppearance, ComponentSize, ComponentTone } from "../../../types";
 import { appearanceClasses } from "../lib/appearance";
+import { useRipple } from "../lib/use-ripple";
 import { buttonBase } from "./button.styles";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Control height and padding. */
   size?: ComponentSize;
+  /** Decorative color. */
   tone?: ComponentTone;
+  /** Visual treatment - filled, outlined, dashed, or bare. */
   appearance?: ComponentAppearance;
   /** Stretches to the width of its container. */
   fullWidth?: boolean;
@@ -30,6 +34,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
    * HTML `disabled` attribute.
    */
   asChild?: boolean;
+  /**
+   * Plays a pointer-origin ripple on press. On by default - the ripple is part
+   * of how a button is meant to feel, so it applies to every button rather
+   * than being opted into per control. Pass `false` to suppress it. Does
+   * nothing under `prefers-reduced-motion: reduce`.
+   */
+  ripple?: boolean;
 }
 
 /** Calls every ref in `refs` with the same node - lets Button forward its own ref without discarding a ref the `asChild` child already carries. */
@@ -57,18 +68,26 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
     children,
     type = "button",
     asChild = false,
+    // On by default: the press ripple is part of how every button is meant to
+    // feel, not an opt-in extra. Pass `ripple={false}` to suppress it.
+    ripple = true,
     onClick,
+    onPointerDown,
     onKeyDown,
     ...props
   },
   ref,
 ) {
   const isDisabled = disabled || loading;
+  const playRipple = useRipple(ripple && !isDisabled);
   const classes = cn(
     buttonBase({ size, fullWidth }),
+    ripple && "fuji-ripple",
     appearanceClasses(tone, appearance),
     "fj:hover:brightness-[1.04] fj:active:brightness-[0.97]",
-    "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+    // Focus-visible outline now lives in `buttonBase` (button.styles.ts) so
+    // IconButton, which shares that recipe module, can't drift out of sync
+    // with it again.
     isDisabled && "fj:pointer-events-none fj:cursor-not-allowed fj:opacity-45",
     className,
   );
@@ -79,6 +98,7 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
       className?: string;
       children?: React.ReactNode;
       onClick?: React.MouseEventHandler;
+      onPointerDown?: React.PointerEventHandler;
       onKeyDown?: React.KeyboardEventHandler;
       ref?: React.Ref<HTMLElement>;
     }>;
@@ -111,7 +131,12 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
       "aria-disabled": isDisabled || undefined,
       "aria-busy": loading || undefined,
       className: cn(classes, child.props.className),
-      onClick: (event: React.MouseEvent) => {
+      onPointerDown: (event: React.PointerEvent<HTMLElement>) => {
+        if (!isDisabled) playRipple(event);
+        child.props.onPointerDown?.(event);
+        onPointerDown?.(event as React.PointerEvent<HTMLButtonElement>);
+      },
+      onClick: (event: React.MouseEvent<HTMLElement>) => {
         if (guardActivation(event)) return;
         child.props.onClick?.(event);
         onClick?.(event as React.MouseEvent<HTMLButtonElement>);
@@ -138,11 +163,17 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
       disabled={isDisabled}
       aria-busy={loading || undefined}
       className={classes}
-      onClick={onClick}
+      onPointerDown={(event) => {
+        playRipple(event);
+        onPointerDown?.(event);
+      }}
+      onClick={(event) => {
+        onClick?.(event);
+      }}
       onKeyDown={onKeyDown}
       {...props}
     >
-      {loading ? <Loader2 className="fj:size-4 fj:animate-spin" aria-hidden="true" /> : startIcon}
+      {loading ? <Loader2 className="fj:size-4 fj:animate-fuji-spin" aria-hidden="true" /> : startIcon}
       {children}
       {!loading && endIcon}
     </button>

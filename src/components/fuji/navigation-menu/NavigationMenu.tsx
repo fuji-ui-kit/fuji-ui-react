@@ -42,8 +42,8 @@ export const NavigationMenuLink = React.forwardRef<
     <Base.Link
       ref={ref}
       className={cn(
-        "fj:box-border fj:block fj:rounded-[6px] fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:no-underline fj:outline-none",
-        "fj:hover:bg-fuji-surface-strong fj:data-[active]:bg-fuji-surface-strong fj:data-[active]:font-medium",
+        "fj:box-border fj:block fj:rounded-fuji-item fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:no-underline fj:outline-none",
+        "fuji-hover-raised fj:data-[active]:font-medium",
         className,
       )}
       {...props}
@@ -52,7 +52,7 @@ export const NavigationMenuLink = React.forwardRef<
 });
 
 const triggerClasses =
-  "fj:flex fj:h-9 fj:cursor-pointer fj:items-center fj:gap-1 fj:rounded-fuji-control fj:px-3 fj:text-[length:var(--fuji-text-base)] fj:font-medium fj:text-fuji-foreground fj:outline-none fj:select-none fj:hover:bg-fuji-surface-strong fj:data-[popup-open]:bg-fuji-surface-strong";
+  "fj:flex fj:h-9 fj:cursor-pointer fj:items-center fj:gap-1 fj:rounded-fuji-control fj:px-3 fj:text-[length:var(--fuji-text-base)] fj:font-medium fj:text-fuji-foreground fj:outline-none fj:select-none fuji-hover-raised";
 
 export const NavigationMenuTrigger = React.forwardRef<
   HTMLButtonElement,
@@ -76,6 +76,7 @@ export const NavigationMenuContent = React.forwardRef<
 });
 
 export interface NavigationMenuPortalProps {
+  /** The positioned menu surface to portal out of the layout. */
   children?: React.ReactNode;
 }
 
@@ -91,11 +92,8 @@ export function NavigationMenuPortal({ children }: NavigationMenuPortalProps) {
         <Base.Popup
           {...portalAttrs}
           className={cn(
-            "fuji-glass-surface-overlay fj:relative fj:h-[var(--popup-height)] fj:w-[var(--popup-width)] fj:origin-[var(--transform-origin)] fj:overflow-hidden",
+            "fuji-glass-surface-overlay fuji-motion-popup-morph fj:relative fj:h-[var(--popup-height)] fj:w-[var(--popup-width)] fj:overflow-hidden",
             "fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:shadow-fuji-overlay fj:outline-none",
-            "fj:transition-[width,height,opacity,transform] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
-            "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-            "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
           )}
         >
           <Base.Viewport className="fj:relative fj:h-full fj:w-full fj:overflow-hidden">

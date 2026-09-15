@@ -7,6 +7,7 @@ import { cn } from "../../../lib/cn";
 export interface ScrollAreaProps extends React.ComponentPropsWithoutRef<typeof BaseScrollArea.Root> {
   /** Max height/width of the visible viewport before scrolling kicks in. */
   className?: string;
+  /** Extra classes for the scrolling viewport inside, rather than the outer frame. */
   viewportClassName?: string;
 }
 
@@ -22,7 +23,7 @@ export const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(func
       </BaseScrollArea.Viewport>
       <BaseScrollArea.Scrollbar
         orientation="vertical"
-        className="fj:flex fj:w-2.5 fj:touch-none fj:select-none fj:p-0.5 fj:opacity-0 fj:transition-opacity fj:duration-150 fj:data-[hovering]:opacity-100 fj:data-[scrolling]:opacity-100"
+        className="fj:box-border fj:flex fj:w-2.5 fj:touch-none fj:select-none fj:p-0.5 fj:opacity-0 fj:transition-opacity fj:duration-150 fj:data-[hovering]:opacity-100 fj:data-[scrolling]:opacity-100"
       >
         <BaseScrollArea.Thumb className="fj:flex-1 fj:rounded-full fj:bg-fuji-border-strong" />
       </BaseScrollArea.Scrollbar>

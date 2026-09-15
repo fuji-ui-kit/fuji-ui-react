@@ -8,13 +8,18 @@ import { buttonBase } from "./button.styles";
 import type { ComponentSize, ComponentTone } from "../../../types";
 
 export interface ButtonGroupItem {
+  /** The value reported through `onValueChange`. */
   value: string;
+  /** What the button reads as. */
   label: React.ReactNode;
+  /** Renders the button unselectable while keeping it visible. */
   disabled?: boolean;
+  /** Accessible name, for a button whose `label` is an icon or a glyph. */
   "aria-label"?: string;
 }
 
 export interface ButtonGroupProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
+  /** Lays the buttons out in a row or a column, joining the adjacent corners. */
   orientation?: "horizontal" | "vertical";
   /**
    * Enables single-selection mode. Omit to use ButtonGroup purely as a visual
@@ -23,10 +28,13 @@ export interface ButtonGroupProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   items?: ButtonGroupItem[];
   /** Controlled selected value (single-selection mode). */
   value?: string;
+  /** Initially selected value (single-selection mode, uncontrolled). */
   defaultValue?: string;
+  /** Called with the newly selected value (single-selection mode). */
   onValueChange?: (value: string) => void;
   /** Contained color used by the selected item. Default "default". */
   tone?: ComponentTone;
+  /** Height of every button in the group. */
   size?: ComponentSize;
 }
 
@@ -126,7 +134,7 @@ export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(fu
       role="radiogroup"
       onKeyDown={onKeyDown}
       className={cn(
-        "fj:inline-flex fj:overflow-hidden fj:rounded-fuji-control fj:border fj:border-fuji-border-strong",
+        "fj:inline-flex fj:overflow-hidden fj:rounded-fuji-control fj:border fj:border-fuji-border-strong fj:shadow-fuji-control",
         MANAGED_ORIENTATION_CLASSES[orientation],
         className,
       )}
@@ -150,10 +158,15 @@ export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(fu
             onClick={() => setSelected(item.value)}
             className={cn(
               buttonBase({ size }),
-              "fj:rounded-none fj:focus-visible:z-10",
+              // The group carries the one shadow. Each segment inheriting
+              // `buttonBase`'s own shadow (and the selected one `.fuji-raised`)
+              // inside an `overflow-hidden` container piled shadow against
+              // every divider and read as a much heavier outline than the
+              // bordered Button next to it.
+              "fj:rounded-none fj:shadow-none fj:focus-visible:z-10",
               isSelected
                 ? appearanceClasses(tone, "contained")
-                : "fj:bg-fuji-surface fj:text-fuji-foreground-muted fj:hover:bg-fuji-surface-strong fj:hover:text-fuji-foreground",
+                : "fj:bg-fuji-surface fj:text-fuji-foreground-muted fuji-hover-raised fj:hover:text-fuji-foreground",
               // Applied last so it always wins the border-color merge, even
               // for a selected button (whose "contained" appearance above
               // sets its own `border-transparent`) - otherwise the divider

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Button, Popover } from "@fujiui/react";
 
 const meta = {
@@ -27,7 +27,7 @@ export const WithoutArrow: Story = {
     <Popover>
       <Popover.Trigger render={<Button appearance="bordered">Options</Button>} />
       <Popover.Content showArrow={false}>
-        <p className="text-[length:var(--fuji-text-sm)]">No arrow, just the panel.</p>
+        <Popover.Description>No arrow, just the panel.</Popover.Description>
       </Popover.Content>
     </Popover>
   ),

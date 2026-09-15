@@ -1,9 +1,15 @@
 # dependencies
 /node_modules
 /fixtures/*/node_modules
+# Unanchored, so a workspace's own install is covered too. Without this
+# `mcp/node_modules` is trackable, and staging it once buries the authored
+# change under tens of thousands of vendored lines.
+node_modules/
 
 # build output
 /dist
+/mcp/dist
+/fixtures/*/dist
 *.tsbuildinfo
 
 # testing
@@ -32,3 +38,6 @@ yarn-error.log*
 
 # package artifacts
 *.tgz
+
+# Local appearance gallery (scripts/render-gallery.mjs)
+.gallery/

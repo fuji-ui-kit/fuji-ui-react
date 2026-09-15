@@ -1,0 +1,73 @@
+name: Release MCP server
+
+# The library releases through changesets on every push to main (release.yml).
+# `@fujiui/mcp` cannot: changesets does not see `mcp/`, which is deliberately
+# not a workspace - see "The MCP server" in ARCHITECTURE.md. It is versioned by
+# hand in mcp/package.json and published when a matching tag is pushed:
+#
+#   git tag mcp-v0.1.0 && git push origin mcp-v0.1.0
+
+on:
+  push:
+    tags: ["mcp-v*"]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    name: Publish @fujiui/mcp
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - run: npm ci
+
+      # A tag that does not match would publish whatever version the file says
+      # under a tag claiming another one.
+      - name: Tag matches mcp/package.json
+        run: |
+          expected="mcp-v$(node -p "require('./mcp/package.json').version")"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match mcp/package.json (expected $expected)" >&2
+            exit 1
+          fi
+
+      # `build` before the tests for dist/registry.json, which both the review
+      # tests and the smoke test read - see the same note in ci.yml.
+      - run: npm run lint && npm run typecheck && npm run build && npx vitest run mcp
+
+      - name: Smoke-test the packed server
+        run: node scripts/smoke-mcp.mjs
+
+      - name: Publish
+        working-directory: mcp
+        run: npm publish --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # The MCP Registry hosts metadata only, and verifies it against the package
+      # just published: `mcpName` in the npm package.json must equal `name` in
+      # server.json (scripts/smoke-mcp.mjs fails the job before `npm publish` if
+      # they disagree). It authenticates with this workflow's OIDC token, which
+      # proves the repository belongs to `fuji-ui-kit` - so that token can
+      # publish, and overwrite, any `io.github.fuji-ui-kit/*` server. Pinned
+      # rather than `latest` because the binary runs holding it.
+      #
+      # If this step fails after `npm publish` succeeded, re-running the job
+      # fails at `npm publish` (that version already exists). Publish the listing
+      # by hand from mcp/: `mcp-publisher login github && mcp-publisher publish`.
+      - name: Publish to the MCP Registry
+        working-directory: mcp
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

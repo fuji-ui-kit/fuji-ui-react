@@ -9,6 +9,7 @@ import { fieldSurface } from "../lib/field-surface";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface InputProps extends Omit<React.ComponentPropsWithoutRef<typeof BaseInput>, "size"> {
+  /** Control height and padding, matching `Button` at the same value. */
   size?: ComponentSize;
   /** Manually flags the invalid visual/aria state for standalone use outside a FormField. */
   invalid?: boolean;
@@ -58,7 +59,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       }}
       className={cn(
         NATIVE_CONTROL_RESET,
-        "fj:flex fj:cursor-pointer fj:items-center fj:rounded-sm fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
+        "fj:flex fj:cursor-pointer fj:items-center fj:rounded-fuji-item fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
       )}
     >
       <X className="fj:size-4" />
@@ -76,7 +77,18 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
     return (
       <BaseInput
         ref={innerRef}
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`: Base
+        // UI's `Field.Control` (what `BaseInput` renders through) already
+        // mirrors an ancestor `<FormField invalid>`'s state onto this same
+        // element as `data-invalid` automatically. An explicit prop with an
+        // `undefined` value still occupies the key, and `useRenderElement`
+        // merges this component's own props over that computed value - so
+        // writing `undefined` here erased the FormField-driven attribute
+        // whenever this `invalid` prop itself was left unset, and the
+        // `data-[invalid]:border-fuji-fire` border never painted (see
+        // FormField.tsx). Omitting the key when `invalid` is falsy instead
+        // of asserting `undefined` lets that ambient value through.
+        {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         className={cn(fieldSurface({ size }), className)}
         value={value}
@@ -89,10 +101,33 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
 
   return (
     <div
-      data-invalid={invalid ? "" : undefined}
+      // Unlike the branch above, the visible bordered box here is a plain
+      // `<div>` (the real `<input>` inside it is deliberately borderless -
+      // see its className below) - not a Base UI element, so nothing ever
+      // mirrors an ancestor `<FormField invalid>` onto *it* the way
+      // `Field.Control` does onto `BaseInput`. Tried reading that ambient
+      // state directly: Base UI's only public accessor for it,
+      // `Field.Validity`, calls its own field-context hook as *required*
+      // (throws "FieldRootContext is missing" with no `<Field.Root>`
+      // ancestor - confirmed by rendering it standalone), which would break
+      // this component's documented standalone use outside a FormField (see
+      // `invalid`'s doc comment above); the only alternative that avoids
+      // that crash is Base UI's own internal field-context hook, which this
+      // package has deliberately never taken a dependency on. So instead of
+      // reading the ambient value into a prop here, react to it the same
+      // way this div already reacts to a real `:disabled` on a descendant
+      // it isn't itself (`has-disabled` right below): `<BaseInput>` inside
+      // *does* correctly mirror the ambient `data-invalid` onto itself
+      // (untouched fix below), so `has-[[data-invalid]]:border-fuji-fire`
+      // paints this box from that descendant's already-correct state,
+      // local `invalid` prop included - without this box ever needing to
+      // read Field context itself. Fails before the fix (this box has no
+      // `data-[invalid]:` rule that can react to anything outside itself,
+      // so `<Input startSlot={...}/>` inside a `<FormField invalid>` never
+      // painted the border a plain `<Input/>` there does); passes after.
       className={cn(
         fieldSurface({ size }),
-        "fj:flex fj:items-center fj:gap-2 fj:has-disabled:opacity-45",
+        "fj:flex fj:items-center fj:gap-2 fj:has-disabled:opacity-45 fj:has-[[data-invalid]]:border-fuji-fire",
         className,
       )}
     >
@@ -103,7 +138,8 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       )}
       <BaseInput
         ref={innerRef}
-        data-invalid={invalid ? "" : undefined}
+        // Same reasoning as the standalone branch above.
+        {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         className={cn(
           NATIVE_CONTROL_RESET,

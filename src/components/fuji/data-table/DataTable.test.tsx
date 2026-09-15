@@ -62,7 +62,7 @@ describe("DataTable", () => {
     const cellsBefore = screen.getAllByRole("cell").map((cell) => cell.textContent);
     expect(cellsBefore).toEqual(["Bravo", "Alpha"]);
 
-    await user.click(screen.getByRole("button", { name: "Name" }));
+    await user.click(screen.getByRole("button", { name: /^Name/ }));
     const cellsAfter = screen.getAllByRole("cell").map((cell) => cell.textContent);
     expect(cellsAfter).toEqual(["Alpha", "Bravo"]);
   });
@@ -72,7 +72,7 @@ describe("DataTable", () => {
   // button chrome unless native-control-reset is applied.
   it("resets native button chrome on the sort toggle", () => {
     render(<DataTable columns={columns} data={rows} rowKey={(row) => row.id} />);
-    const sortButton = screen.getByRole("button", { name: "Name" });
+    const sortButton = screen.getByRole("button", { name: /^Name/ });
     expect(sortButton.className).toEqual(expect.stringContaining("border-0"));
     expect(sortButton.className).toEqual(expect.stringContaining("bg-transparent"));
     expect(sortButton.className).toEqual(expect.stringContaining("appearance-none"));

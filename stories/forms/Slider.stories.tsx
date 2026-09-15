@@ -18,7 +18,7 @@ const meta = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
     },
   },
 } satisfies Meta<typeof Slider>;
@@ -44,7 +44,7 @@ export const Disabled: Story = {
 export const Tones: Story = {
   render: () => (
     <div className="flex w-full max-w-sm flex-col gap-4">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Slider key={tone} tone={tone} label={tone} showValue defaultValue={60} />
       ))}
     </div>

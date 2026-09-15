@@ -2,12 +2,13 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 
 export interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?: "text" | "block" | "circle";
+  /** What the placeholder stands in for: a line of text, a panel, or an avatar. */
+  shape?: "text" | "block" | "circle";
 }
 
 /** Loading placeholder - pulses in place of not-yet-loaded content. */
 export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(function Skeleton(
-  { variant = "block", className, ...props },
+  { shape = "block", className, ...props },
   ref,
 ) {
   return (
@@ -15,10 +16,10 @@ export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(function
       ref={ref}
       aria-hidden="true"
       className={cn(
-        "fj:animate-pulse fj:bg-fuji-surface-strong",
-        variant === "text" && "fj:h-3.5 fj:rounded-[4px]",
-        variant === "block" && "fj:rounded-fuji-control",
-        variant === "circle" && "fj:rounded-full",
+        "fj:animate-fuji-pulse fj:bg-fuji-surface-strong",
+        shape === "text" && "fj:h-3.5 fj:rounded-fuji-item",
+        shape === "block" && "fj:rounded-fuji-control",
+        shape === "circle" && "fj:rounded-full",
         className,
       )}
       {...props}

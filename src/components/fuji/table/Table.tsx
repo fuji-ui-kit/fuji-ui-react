@@ -6,7 +6,7 @@ export interface TableProps extends React.TableHTMLAttributes<HTMLTableElement> 
   bordered?: boolean;
 }
 
-const TableRoot = React.forwardRef<HTMLTableElement, TableProps>(function TableRoot(
+export const TableRoot = React.forwardRef<HTMLTableElement, TableProps>(function TableRoot(
   { className, bordered = true, ...props },
   ref,
 ) {
@@ -28,23 +28,25 @@ const TableRoot = React.forwardRef<HTMLTableElement, TableProps>(function TableR
   );
 });
 
-const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  function TableHeader({ className, ...props }, ref) {
-    return <thead ref={ref} className={cn("fj:bg-fuji-surface-subtle", className)} {...props} />;
-  },
-);
+export const TableHeader = React.forwardRef<
+  HTMLTableSectionElement,
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(function TableHeader({ className, ...props }, ref) {
+  return <thead ref={ref} className={cn("fj:bg-fuji-surface-subtle", className)} {...props} />;
+});
 
-const TableBody = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  function TableBody({ className, ...props }, ref) {
-    return (
-      <tbody
-        ref={ref}
-        className={cn("fj:divide-y fj:divide-fuji-border fj:bg-fuji-surface", className)}
-        {...props}
-      />
-    );
-  },
-);
+export const TableBody = React.forwardRef<
+  HTMLTableSectionElement,
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(function TableBody({ className, ...props }, ref) {
+  return (
+    <tbody
+      ref={ref}
+      className={cn("fj:divide-y fj:divide-fuji-border fj:bg-fuji-surface", className)}
+      {...props}
+    />
+  );
+});
 
 export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   /**
@@ -52,11 +54,20 @@ export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement>
    * to off - plain rows show no hover feedback and stay out of the tab order.
    * When combined with `onClick`, the row also becomes focusable and
    * activatable with Enter/Space so it isn't pointer-only.
+   *
+   * **This is a shortcut, not the accessible affordance.** A focusable `<tr>`
+   * still announces as a table row: it has no role that says "activatable" and
+   * no name for what activating it does, and `aria-label` on a `<tr>` is not
+   * reliably read. Put the real action in a cell - a link on the primary
+   * column, or a button in an actions column - and treat the whole-row click
+   * as the pointer convenience it is. Replacing the row's role to fix this
+   * would break the table's own structure, so the pattern stays as-is and the
+   * limitation is stated here rather than papered over.
    */
   interactive?: boolean;
 }
 
-const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(function TableRow(
+export const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(function TableRow(
   { className, interactive = false, tabIndex, onClick, onKeyDown, ...props },
   ref,
 ) {
@@ -89,7 +100,7 @@ const TableRow = React.forwardRef<HTMLTableRowElement, TableRowProps>(function T
   );
 });
 
-const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
+export const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(
   function TableHead({ className, ...props }, ref) {
     return (
       <th
@@ -104,26 +115,24 @@ const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<
   },
 );
 
-const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
+export const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(
   function TableCell({ className, ...props }, ref) {
     return <td ref={ref} className={cn("fj:px-4 fj:py-3 fj:text-fuji-foreground", className)} {...props} />;
   },
 );
 
-const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  function TableFooter({ className, ...props }, ref) {
-    return (
-      <tfoot
-        ref={ref}
-        className={cn(
-          "fj:border-t fj:border-fuji-border fj:bg-fuji-surface-subtle fj:font-medium",
-          className,
-        )}
-        {...props}
-      />
-    );
-  },
-);
+export const TableFooter = React.forwardRef<
+  HTMLTableSectionElement,
+  React.HTMLAttributes<HTMLTableSectionElement>
+>(function TableFooter({ className, ...props }, ref) {
+  return (
+    <tfoot
+      ref={ref}
+      className={cn("fj:border-t fj:border-fuji-border fj:bg-fuji-surface-subtle fj:font-medium", className)}
+      {...props}
+    />
+  );
+});
 
 /** `<Table><Table.Header><Table.Row><Table.Head/></Table.Row></Table.Header><Table.Body>...</Table.Body></Table>` */
 export const Table = Object.assign(TableRoot, {

@@ -226,7 +226,7 @@ stretch` stretching its trigger `Button` inside an unconstrained Storybook
   their worst-case contrast wasn't verified.
 
 - ce78068: Made the compiled `styles.css` fully isolated from a consumer's own Tailwind
-  build - no installation change (`import "@fuji-ui/react/styles.css"` is still
+  build - no installation change (`import "@fujiui/react/styles.css"` is still
   the only step), but the compiled output itself is now defensive against
   collisions that were previously possible.
 

@@ -5,6 +5,32 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { Switch } from "./Switch";
 
+/**
+ * Tailwind's `x:utility` variant compiles to the CSS pseudo-class `&:x`, and
+ * its `x-[y]:utility` form compiles to the attribute selector `&[y]` (e.g.
+ * `data-[disabled]:opacity-45` -> `[data-disabled] { opacity: .45 }`). Both
+ * are real CSS the browser (and jsdom) evaluates against the live element -
+ * not something this test invents. Pull every disabled-dimming utility class
+ * actually shipped on `el` and ask the DOM whether the selector it compiles
+ * to matches `el` as currently rendered. This fails whenever the shipped
+ * variant can never match the element's real state (e.g. `disabled:` on a
+ * `<span role="switch">`, which can never satisfy `:disabled`), instead of
+ * merely checking that some class string is present.
+ */
+function disabledStylingApplies(el: Element): boolean {
+  const relevant = el.className
+    .split(/\s+/)
+    .filter((c) => /^fj:.+:(opacity-\d+|cursor-not-allowed|pointer-events-none)$/.test(c));
+  if (relevant.length === 0) return false;
+  return relevant.every((c) => {
+    const withoutPrefix = c.slice(3); // strip the "fj:" scoping prefix
+    const variant = withoutPrefix.slice(0, withoutPrefix.lastIndexOf(":"));
+    const bracketed = /^data-\[(.+)\]$/.exec(variant);
+    const selector = bracketed ? `[data-${bracketed[1]}]` : `:${variant}`;
+    return el.matches(selector);
+  });
+}
+
 describe("Switch", () => {
   it("toggles on click, uncontrolled", async () => {
     const user = userEvent.setup();
@@ -58,6 +84,17 @@ describe("Switch", () => {
     // not a real <button>, so disabled state is ARIA-driven rather than the
     // native `disabled` DOM property.
     expect(control).toHaveAttribute("aria-disabled", "true");
+  });
+
+  // Regression: same root cause as Checkbox - the `disabled:` pseudo-class
+  // variant this track used to ship can never match a `<span role="switch">`,
+  // so a disabled Switch rendered pixel-identical to an active one. Fails
+  // before the `data-[disabled]:` fix; passes after.
+  it("actually applies the disabled-dimming styling to the track (not just the data attribute)", () => {
+    render(<Switch label="Notifications" disabled />);
+    const control = screen.getByRole("switch");
+    expect(control).toHaveAttribute("data-disabled", "");
+    expect(disabledStylingApplies(control)).toBe(true);
   });
 
   it("renders without a label as just the control", () => {

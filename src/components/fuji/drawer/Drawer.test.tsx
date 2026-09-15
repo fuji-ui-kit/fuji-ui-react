@@ -29,4 +29,42 @@ describe("Drawer", () => {
     });
     expect(trigger).toHaveFocus();
   });
+
+  it.each([
+    ["bottom", "fj:w-full"],
+    ["top", "fj:w-full"],
+  ] as const)("spans the edge on side=%s by default", async (side, expected) => {
+    const user = userEvent.setup();
+    render(
+      <Drawer>
+        <Drawer.Trigger>Open</Drawer.Trigger>
+        <Drawer.Content side={side}>
+          <Drawer.Title>Panel</Drawer.Title>
+        </Drawer.Content>
+      </Drawer>,
+    );
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    const panel = await screen.findByRole("dialog", { name: "Panel" });
+    expect(panel.className).toContain(expected);
+    expect(panel).toHaveAttribute("data-variant", "full");
+  });
+
+  it("insets and caps the panel under variant=sheet", async () => {
+    const user = userEvent.setup();
+    render(
+      <Drawer>
+        <Drawer.Trigger>Open</Drawer.Trigger>
+        <Drawer.Content side="bottom" variant="sheet">
+          <Drawer.Title>Share</Drawer.Title>
+        </Drawer.Content>
+      </Drawer>,
+    );
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    const panel = await screen.findByRole("dialog", { name: "Share" });
+    // The detached card: capped width, a margin off the edge, rounded all
+    // round rather than squared off against the viewport.
+    expect(panel.className).toContain("fj:max-w-lg");
+    expect(panel.className).toContain("fj:mb-3");
+    expect(panel).toHaveAttribute("data-variant", "sheet");
+  });
 });

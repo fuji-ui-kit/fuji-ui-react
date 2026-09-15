@@ -1,6 +1,10 @@
 ---
 name: fuji-react-performance-audit
-description: Audit @fuji-ui/react for render cost, effect/listener/timer cleanup, unnecessary client boundaries, tree-shaking and bundle size, icon imports, CSS weight, and expensive visual effects. Use for review-only audits unless fixes are explicitly requested.
+description: Audit @fujiui/react for render cost, effect/listener/timer cleanup, unnecessary client boundaries, tree-shaking and bundle size, icon imports, CSS weight, and expensive visual effects. Use for review-only audits unless fixes are explicitly requested.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React performance audit

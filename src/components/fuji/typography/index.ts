@@ -1,3 +1,3 @@
 export { Typography } from "./Typography";
 export type { TypographyProps } from "./Typography";
-export type { TypographyVariant } from "./typography.styles";
+export type { TypographyScale } from "./typography.styles";

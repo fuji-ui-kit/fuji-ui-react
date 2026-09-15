@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Button, Drawer } from "@fujiui/react";
 
 const meta = {
@@ -10,11 +10,17 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-function DrawerExample({ side }: { side: "left" | "right" | "top" | "bottom" }) {
+function DrawerExample({
+  side,
+  variant,
+}: {
+  side: "left" | "right" | "top" | "bottom";
+  variant?: "full" | "sheet";
+}) {
   return (
     <Drawer>
-      <Drawer.Trigger render={<Button>Open {side} drawer</Button>} />
-      <Drawer.Content side={side}>
+      <Drawer.Trigger render={<Button>Open {variant === "sheet" ? "sheet" : `${side} drawer`}</Button>} />
+      <Drawer.Content side={side} variant={variant}>
         <Drawer.Title>Filters</Drawer.Title>
         <Drawer.Description>Narrow results by category, price, and availability.</Drawer.Description>
       </Drawer.Content>
@@ -31,8 +37,26 @@ export const Left: Story = {
 };
 
 export const Bottom: Story = {
-  name: "Bottom (mobile sheet)",
   render: () => <DrawerExample side="bottom" />,
+};
+
+export const Top: Story = {
+  render: () => <DrawerExample side="top" />,
+};
+
+export const Sheet: Story = {
+  name: "Sheet variant",
+  render: () => <DrawerExample side="bottom" variant="sheet" />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`variant="sheet"` detaches the panel from the edge: inset all round, width-capped, ' +
+          "rounded on every corner, with the dimmed page still visible around it. For a short, " +
+          "self-contained task - a share menu, a confirmation - rather than navigation or a long form.",
+      },
+    },
+  },
 };
 
 export const OpensOnClick: Story = {

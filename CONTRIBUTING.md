@@ -1,4 +1,4 @@
-# Contributing to @fuji-ui/react
+# Contributing to @fujiui/react
 
 Read `AGENTS.md` for the working rules, `SPEC.md` for the locked public
 contracts, and `ARCHITECTURE.md` before touching the build.
@@ -17,7 +17,7 @@ Node `>= 18.18`. CI runs on 18.18.x and 20.x, so avoid APIs newer than Node 18.
 Run these before every handoff, in this order - it is exactly what CI runs:
 
 ```bash
-npm run format:check && npm run lint && npm run typecheck && npm test && npm run build
+npm run format:check && npm run skills:check && npm run lint && npm run typecheck && npm run build && npm test
 ```
 
 Never make a check pass by weakening it. No blanket `eslint-disable`, no
@@ -80,7 +80,7 @@ consumer rather than trusting a green build:
 npm run build && npm pack
 
 # in ../fuji-ui-website
-npm install ../fuji-ui-react/fuji-ui-react-<version>.tgz
+npm install ../fuji-ui-react/fujiui-react-<version>.tgz
 npm run build && npm run dev
 ```
 
@@ -110,7 +110,10 @@ manually.
 ## Skills
 
 `.claude/skills/` and `.codex/skills/` hold the review and authoring skills for
-this repo and are kept byte-identical. If you edit one, mirror it, then run:
+this repo and are kept byte-identical. Each is marked `metadata: internal: true`
+in its frontmatter, so `npx skills add` - which users run against this
+repository to install the consumer skill in `plugins/fuji-ui/` - leaves it out.
+If you edit or add one, mirror it, then run:
 
 ```bash
 npm run skills:check

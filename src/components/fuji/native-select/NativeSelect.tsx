@@ -6,7 +6,9 @@ import type { ComponentSize } from "../../../types";
 import { fieldSurface } from "../lib/field-surface";
 
 export interface NativeSelectProps extends Omit<React.SelectHTMLAttributes<HTMLSelectElement>, "size"> {
+  /** Control height, matching `Input` at the same value. */
   size?: ComponentSize;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
 }
 
@@ -25,7 +27,15 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
       <Field.Control
         render={<select />}
         ref={ref as React.Ref<HTMLElement>}
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
+        // `Field.Control` already mirrors an ancestor `<FormField invalid>`
+        // onto this same element as `data-invalid` automatically, and an
+        // explicit `undefined`-valued prop still occupies the key and wins
+        // the merge in `useRenderElement`, erasing that computed value
+        // whenever this `invalid` prop itself was left unset (see Input.tsx
+        // for the full mechanism, and FormField.tsx for the symptom).
+        // Omitting the key when falsy instead lets the ambient value through.
+        {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         className={cn(fieldSurface({ size }), "fj:appearance-none fj:pr-8", className)}
         {...(props as React.ComponentPropsWithRef<"input">)}

@@ -9,8 +9,11 @@ import { fieldSurface } from "../lib/field-surface";
 import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 
 export interface SelectItem {
+  /** What the option reads as, in the list and in the closed trigger. */
   label: React.ReactNode;
+  /** The value reported through `onValueChange`. */
   value: string;
+  /** Renders the option unselectable while keeping it visible. */
   disabled?: boolean;
 }
 
@@ -18,13 +21,19 @@ export interface SelectProps<Value extends string = string> extends Omit<
   React.ComponentPropsWithoutRef<typeof Base.Root<Value>>,
   "items" | "children"
 > {
+  /** Options to render. */
   items: SelectItem[];
+  /** Text shown while nothing is selected. */
   placeholder?: string;
+  /** Control height, matching `Input` and `Button` at the same size. */
   size?: ComponentSize;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
+  /** Extra classes merged onto the trigger. */
   className?: string;
   /** Accessible name for the trigger button. Required when there is no visible `<label>` for this select. */
   "aria-label"?: string;
+  /** Points at an existing visible label's id, as an alternative to `aria-label`. */
   "aria-labelledby"?: string;
 }
 
@@ -46,7 +55,15 @@ export function Select<Value extends string = string>({
       <Base.Trigger
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
+        // `Base.Trigger` already mirrors an ancestor `<FormField invalid>`
+        // onto this same element as `data-invalid` automatically, and an
+        // explicit `undefined`-valued prop still occupies the key and wins
+        // the merge in `useRenderElement`, erasing that computed value
+        // whenever this `invalid` prop itself was left unset (see Input.tsx
+        // for the full mechanism, and FormField.tsx for the symptom).
+        // Omitting the key when falsy instead lets the ambient value through.
+        {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid || undefined}
         className={cn(
           fieldSurface({ size }),
@@ -67,11 +84,8 @@ export function Select<Value extends string = string>({
           <Base.Popup
             {...portalAttrs}
             className={cn(
-              "fj:box-border fuji-glass-surface-overlay fj:min-w-[var(--anchor-width)] fj:origin-[var(--transform-origin)] fj:overflow-hidden",
+              "fj:box-border fuji-glass-surface-overlay fuji-motion-popup fj:min-w-[var(--anchor-width)] fj:overflow-hidden",
               "fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:shadow-fuji-overlay fj:outline-none",
-              "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-fast)]",
-              "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-              "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
             )}
           >
             <Base.ScrollUpArrow className="fj:flex fj:h-4 fj:w-full fj:items-center fj:justify-center fj:text-fuji-foreground-subtle">
@@ -84,8 +98,13 @@ export function Select<Value extends string = string>({
                   value={item.value}
                   disabled={item.disabled}
                   className={cn(
-                    "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-[6px] fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-                    "fj:data-[highlighted]:bg-fuji-surface-strong",
+                    "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
+                    // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
+                    // highlighted row tracked the backdrop and washed out over the
+                    // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
+                    // inversion every other selection indicator uses - and the one
+                    // CommandMenu already moved to for this exact reason.
+                    "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
                     "fj:data-[disabled]:pointer-events-none fj:data-[disabled]:opacity-45",
                   )}
                 >

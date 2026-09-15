@@ -11,6 +11,7 @@
   --color-fuji-surface-subtle: var(--fuji-surface-subtle);
   --color-fuji-surface: var(--fuji-surface);
   --color-fuji-surface-strong: var(--fuji-surface-strong);
+  --color-fuji-surface-raised: var(--fuji-surface-raised);
   --color-fuji-surface-overlay: var(--fuji-surface-overlay);
   --color-fuji-foreground: var(--fuji-foreground);
   --color-fuji-foreground-muted: var(--fuji-foreground-muted);
@@ -19,8 +20,6 @@
   --color-fuji-border-strong: var(--fuji-border-strong);
   --color-fuji-default: var(--fuji-default);
   --color-fuji-default-foreground: var(--fuji-default-foreground);
-  --color-fuji-earth: var(--fuji-earth);
-  --color-fuji-earth-foreground: var(--fuji-earth-foreground);
   --color-fuji-forest: var(--fuji-forest);
   --color-fuji-forest-foreground: var(--fuji-forest-foreground);
   --color-fuji-sun: var(--fuji-sun);
@@ -39,13 +38,13 @@
   --color-fuji-water-border: var(--fuji-water-border);
 
   --color-fuji-contained-default: var(--fuji-contained-default);
-  --color-fuji-contained-earth: var(--fuji-contained-earth);
   --color-fuji-contained-forest: var(--fuji-contained-forest);
   --color-fuji-contained-sun: var(--fuji-contained-sun);
   --color-fuji-contained-fire: var(--fuji-contained-fire);
   --color-fuji-contained-water: var(--fuji-contained-water);
   --color-fuji-header-surface: var(--fuji-header-surface);
 
+  --radius-fuji-item: var(--fuji-radius-item);
   --radius-fuji-control: var(--fuji-radius-control);
   --radius-fuji-panel: var(--fuji-radius-panel);
   --radius-fuji-overlay: var(--fuji-radius-overlay);
@@ -59,4 +58,33 @@
   --shadow-fuji-card: var(--fuji-shadow-card);
   --shadow-fuji-panel: var(--fuji-shadow-panel);
   --shadow-fuji-overlay: var(--fuji-shadow-overlay);
+
+  /* Fuji-prefixed copies of Tailwind's spin/ping/pulse. Tailwind emits its
+     built-in keyframes under the bare names `spin`, `ping` and `pulse`, which
+     are global to the document and silently collide with a consumer's own
+     `@keyframes spin`. The `fj:` class prefix does not rename keyframes, so
+     these are declared explicitly instead. */
+  --animate-fuji-spin: fuji-spin 1s linear infinite;
+  --animate-fuji-ping: fuji-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+  --animate-fuji-pulse: fuji-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fuji-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fuji-ping {
+  75%,
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes fuji-pulse {
+  50% {
+    opacity: 0.5;
+  }
 }

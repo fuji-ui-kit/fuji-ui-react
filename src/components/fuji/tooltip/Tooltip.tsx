@@ -10,6 +10,7 @@ export const TooltipRoot = Base.Root;
 export const TooltipTrigger = Base.Trigger;
 
 export interface TooltipContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
+  /** Gap in px between the trigger and the tooltip. */
   sideOffset?: number;
 }
 
@@ -25,10 +26,7 @@ export const TooltipContent = React.forwardRef<HTMLDivElement, TooltipContentPro
           ref={ref}
           {...portalAttrs}
           className={cn(
-            "fj:max-w-xs fj:rounded-[6px] fj:bg-fuji-foreground fj:px-2.5 fj:py-1.5 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-background fj:shadow-fuji-panel",
-            "fj:origin-[var(--transform-origin)] fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-fast)]",
-            "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-            "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
+            "fuji-motion-popup fj:max-w-xs fj:rounded-fuji-item fj:bg-fuji-foreground fj:px-2.5 fj:py-1.5 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-background fj:shadow-fuji-panel",
             className,
           )}
           {...props}

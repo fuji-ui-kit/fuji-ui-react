@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "fuji": {
+      "command": "npx",
+      "args": ["-y", "@fujiui/mcp"]
+    }
+  }
+}

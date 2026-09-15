@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 
 export interface DividerProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Which way the rule runs. A vertical divider needs a height from its container. */
   orientation?: "horizontal" | "vertical";
   /** Optional label rendered inline on a horizontal divider. */
   label?: React.ReactNode;

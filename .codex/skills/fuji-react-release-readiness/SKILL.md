@@ -1,6 +1,10 @@
 ---
 name: fuji-react-release-readiness
-description: Pre-publish gate for @fuji-ui/react - changesets, semver correctness, changelog, version metadata, CI/release workflow, provenance, tarball contents, docs accuracy, and license notices. Use before cutting a release or when asked whether the package is ready to publish.
+description: Pre-publish gate for @fujiui/react - changesets, semver correctness, changelog, version metadata, CI/release workflow, provenance, tarball contents, docs accuracy, and license notices. Use before cutting a release or when asked whether the package is ready to publish.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React release readiness
@@ -110,8 +114,9 @@ npm pack && tar -tzf *.tgz | sort
 
 ### Consumer verification
 
-Install the packed tarball into the sibling `fuji-ui-website`, run its
-production build, and check the app renders. This is the last chance to catch a
+Run `npm run fixtures:pack` and build `fixtures/nextjs` and `fixtures/vite`
+against the tarball; then install it into the sibling `fuji-ui-website`, run
+its production build, and check the app renders. This is the last chance to catch a
 Server/Client boundary or missing-CSS regression before it is permanent.
 
 ## Output

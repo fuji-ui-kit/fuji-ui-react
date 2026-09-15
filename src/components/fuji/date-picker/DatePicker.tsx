@@ -10,15 +10,25 @@ import { Popover } from "../popover/Popover";
 import { Calendar } from "../calendar/Calendar";
 
 export interface DatePickerProps {
+  /** Controlled selection. Pair with `onChange`; omit for uncontrolled. */
   value?: Date | null;
+  /** Starting selection when uncontrolled. */
   defaultValue?: Date | null;
+  /** Called with the picked date. */
   onChange?: (date: Date) => void;
+  /** Earliest selectable date; anything before it renders disabled. */
   minDate?: Date;
+  /** Latest selectable date; anything after it renders disabled. */
   maxDate?: Date;
+  /** Text on the trigger while nothing is selected. */
   placeholder?: string;
+  /** Trigger height, matching `Input` and `Button` at the same size. */
   size?: ComponentSize;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
+  /** Disables the trigger, so the calendar cannot be opened. */
   disabled?: boolean;
+  /** BCP 47 tag driving the formatted date and the calendar's names, via `Intl`. */
   locale?: string;
   /**
    * Makes the popover Calendar's month/year label an interactive chooser
@@ -26,9 +36,11 @@ export interface DatePickerProps {
    * keeps the simple non-clickable header with prev/next arrows only.
    */
   interactiveHeader?: boolean;
+  /** Extra classes merged onto the trigger. */
   className?: string;
   /** Accessible name for the trigger button. Required when there is no visible `<label>` for this field. */
   "aria-label"?: string;
+  /** Points at an existing visible label's id, as an alternative to `aria-label`. */
   "aria-labelledby"?: string;
 }
 

@@ -7,6 +7,7 @@ export interface DescriptionListItem {
 }
 
 export interface DescriptionListProps extends React.HTMLAttributes<HTMLDListElement> {
+  /** The term/description pairs, in display order. */
   items: DescriptionListItem[];
   /** `2` renders term/description side by side; `1` stacks them. */
   columns?: 1 | 2;

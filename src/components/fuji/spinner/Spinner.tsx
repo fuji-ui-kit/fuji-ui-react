@@ -3,6 +3,7 @@ import { cn } from "../../../lib/cn";
 import type { ComponentSize, ComponentTone } from "../../../types";
 
 export interface SpinnerProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Diameter, matching the control scale used elsewhere. */
   size?: ComponentSize;
   /** Accessible label - spinners are otherwise decorative to assistive tech. */
   label?: string;
@@ -14,7 +15,6 @@ const SIZE_CLASSES: Record<ComponentSize, string> = { sm: "fj:size-4", md: "fj:s
 
 const TONE_CLASSES: Record<ComponentTone, string> = {
   default: "fj:text-fuji-foreground-muted",
-  earth: "fj:text-fuji-earth",
   forest: "fj:text-fuji-forest",
   sun: "fj:text-fuji-sun",
   fire: "fj:text-fuji-fire",
@@ -45,7 +45,7 @@ export const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(function 
         viewBox="0 0 24 24"
         fill="none"
         aria-hidden="true"
-        className={cn("fj:animate-spin", SIZE_CLASSES[size])}
+        className={cn("fj:animate-fuji-spin", SIZE_CLASSES[size])}
       >
         <circle cx="12" cy="4" r="2.75" fill="currentColor" />
         <circle cx="18.93" cy="16" r="2.25" fill="currentColor" className="fj:opacity-60" />

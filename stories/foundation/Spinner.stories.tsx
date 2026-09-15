@@ -12,7 +12,7 @@ const meta = {
     size: { control: "select", options: ["sm", "md", "lg"] },
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
     },
   },
 } satisfies Meta<typeof Spinner>;
@@ -35,7 +35,7 @@ export const Sizes: Story = {
 export const Tones: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-4">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Spinner key={tone} tone={tone} />
       ))}
     </div>

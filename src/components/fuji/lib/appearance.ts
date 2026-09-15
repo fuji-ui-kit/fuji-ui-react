@@ -3,53 +3,67 @@ import type { ComponentAppearance, ComponentTone, StatusTone } from "../../../ty
 /**
  * Shared tone × appearance → Tailwind class recipe used by every
  * interactive/tone-colored component (Button, IconButton, Badge, ...).
- * Centralized so the same default/earth/fire/water/forest/sun identity
+ * Centralized so the same default/fire/water/forest/sun identity
  * holds everywhere instead of being re-derived per component.
  *
  * Class names are written out in full (not templated) so Tailwind's static
  * scanner can find them - `bg-fuji-${tone}` would never be generated.
  */
+// `ghost` carries `shadow-none` explicitly: Button/IconButton's shared base
+// applies `shadow-fuji-control` to every appearance, and a transparent
+// control that still casts a shadow renders as a faint box - the opposite of
+// what "ghost" means. tailwind-merge keeps the later `shadow-none`.
 const RECIPES: Record<ComponentTone, Record<ComponentAppearance, string>> = {
   default: {
-    contained: "fj:bg-fuji-contained-default fj:text-fuji-default-foreground fj:border fj:border-transparent",
+    contained:
+      "fuji-raised fj:bg-fuji-contained-default fj:text-fuji-default-foreground fj:border fj:border-transparent",
     bordered: "fj:bg-transparent fj:text-fuji-foreground fj:border fj:border-fuji-border-strong",
     dashed:
       "fj:bg-transparent fj:text-fuji-foreground fj:border fj:border-dashed fj:border-fuji-border-strong",
+    // Hover uses `-subtle`, not `-strong`, for the same reason Badge's default
+    // soft chip does: `--fuji-surface-strong` is a translucent WHITE fill under
+    // dark glass (white so bare, textless tracks stay visible against a
+    // near-black page), and white lightens toward whatever is behind it - so
+    // the hovered label measured 2.26:1 over the atmosphere's bright pixels,
+    // failing even the 3:1 non-text floor. The other four tones already hover
+    // on their OWN low-alpha tint (`-soft`); `default` had no such token and
+    // borrowed a bare-fill surface. `-subtle` tints dark here, giving 6.00:1
+    // bright / 13.86:1 dark / 17.04:1 on a flat page. Ghost rests transparent,
+    // so any fill still reads clearly as hover feedback.
     ghost:
-      "fj:bg-transparent fj:text-fuji-foreground fj:border fj:border-transparent fj:hover:bg-fuji-surface-strong",
-  },
-  earth: {
-    contained: "fj:bg-fuji-contained-earth fj:text-fuji-earth-foreground fj:border fj:border-transparent",
-    bordered: "fj:bg-transparent fj:text-fuji-foreground-muted fj:border fj:border-fuji-border-strong",
-    dashed:
-      "fj:bg-transparent fj:text-fuji-foreground-muted fj:border fj:border-dashed fj:border-fuji-border-strong",
-    ghost:
-      "fj:bg-transparent fj:text-fuji-foreground-muted fj:border fj:border-transparent fj:hover:bg-fuji-surface-subtle",
+      "fj:shadow-none fj:bg-transparent fj:text-fuji-foreground fj:border fj:border-transparent fj:hover:bg-fuji-surface-raised",
   },
   forest: {
-    contained: "fj:bg-fuji-contained-forest fj:text-fuji-forest-foreground fj:border fj:border-transparent",
+    contained:
+      "fuji-raised fj:bg-fuji-contained-forest fj:text-fuji-forest-foreground fj:border fj:border-transparent",
     bordered: "fj:bg-transparent fj:text-fuji-forest fj:border fj:border-fuji-forest-border",
     dashed: "fj:bg-transparent fj:text-fuji-forest fj:border fj:border-dashed fj:border-fuji-forest-border",
     ghost:
-      "fj:bg-transparent fj:text-fuji-forest fj:border fj:border-transparent fj:hover:bg-fuji-forest-soft",
+      "fj:shadow-none fj:bg-transparent fj:text-fuji-forest fj:border fj:border-transparent fj:hover:bg-fuji-forest-soft",
   },
   sun: {
-    contained: "fj:bg-fuji-contained-sun fj:text-fuji-sun-foreground fj:border fj:border-transparent",
+    contained:
+      "fuji-raised fj:bg-fuji-contained-sun fj:text-fuji-sun-foreground fj:border fj:border-transparent",
     bordered: "fj:bg-transparent fj:text-fuji-sun fj:border fj:border-fuji-sun-border",
     dashed: "fj:bg-transparent fj:text-fuji-sun fj:border fj:border-dashed fj:border-fuji-sun-border",
-    ghost: "fj:bg-transparent fj:text-fuji-sun fj:border fj:border-transparent fj:hover:bg-fuji-sun-soft",
+    ghost:
+      "fj:shadow-none fj:bg-transparent fj:text-fuji-sun fj:border fj:border-transparent fj:hover:bg-fuji-sun-soft",
   },
   fire: {
-    contained: "fj:bg-fuji-contained-fire fj:text-fuji-fire-foreground fj:border fj:border-transparent",
+    contained:
+      "fuji-raised fj:bg-fuji-contained-fire fj:text-fuji-fire-foreground fj:border fj:border-transparent",
     bordered: "fj:bg-transparent fj:text-fuji-fire fj:border fj:border-fuji-fire-border",
     dashed: "fj:bg-transparent fj:text-fuji-fire fj:border fj:border-dashed fj:border-fuji-fire-border",
-    ghost: "fj:bg-transparent fj:text-fuji-fire fj:border fj:border-transparent fj:hover:bg-fuji-fire-soft",
+    ghost:
+      "fj:shadow-none fj:bg-transparent fj:text-fuji-fire fj:border fj:border-transparent fj:hover:bg-fuji-fire-soft",
   },
   water: {
-    contained: "fj:bg-fuji-contained-water fj:text-fuji-water-foreground fj:border fj:border-transparent",
+    contained:
+      "fuji-raised fj:bg-fuji-contained-water fj:text-fuji-water-foreground fj:border fj:border-transparent",
     bordered: "fj:bg-transparent fj:text-fuji-water fj:border fj:border-fuji-water-border",
     dashed: "fj:bg-transparent fj:text-fuji-water fj:border fj:border-dashed fj:border-fuji-water-border",
-    ghost: "fj:bg-transparent fj:text-fuji-water fj:border fj:border-transparent fj:hover:bg-fuji-water-soft",
+    ghost:
+      "fj:shadow-none fj:bg-transparent fj:text-fuji-water fj:border fj:border-transparent fj:hover:bg-fuji-water-soft",
   },
 };
 
@@ -59,8 +73,18 @@ export function appearanceClasses(tone: ComponentTone, appearance: ComponentAppe
 
 /** Soft background used for badges/alerts that always render "on-tint". */
 const SOFT_RECIPES: Record<ComponentTone, string> = {
-  default: "fj:bg-fuji-surface-strong fj:text-fuji-foreground",
-  earth: "fj:bg-fuji-earth fj:text-fuji-earth-foreground",
+  // `-raised`, not `-strong`. Under dark glass `-strong` is a translucent WHITE
+  // fill - white on purpose, so bare textless tracks (Switch/Slider/Progress)
+  // stay visible against a near-black page. White lightens toward whatever is
+  // behind it, so this chip washed out over a bright backdrop and took its ink
+  // with it: 2.26:1 on Badge, 2.36 on Avatar's fallback, 2.92 on MultiSelect's
+  // value chips (they differ because MultiSelect sits on an extra
+  // `fieldSurface()` layer). `-raised` is the content-bearing twin: dark-tinted
+  // under dark glass, and byte-identical to `-strong` in every other block - so
+  // light glass keeps its 68% white and does NOT get more transparent. An
+  // interim version of this fix used `-subtle` and did exactly that, dropping
+  // light-glass chips to 34% white and 2.45:1 over an uncontrolled photo.
+  default: "fj:bg-fuji-surface-raised fj:text-fuji-foreground",
   forest: "fj:bg-fuji-forest-soft fj:text-fuji-forest",
   sun: "fj:bg-fuji-sun-soft fj:text-fuji-sun",
   fire: "fj:bg-fuji-fire-soft fj:text-fuji-fire",

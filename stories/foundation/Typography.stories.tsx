@@ -6,11 +6,11 @@ const meta = {
   component: Typography,
   tags: ["autodocs"],
   args: {
-    variant: "body",
+    scale: "body",
     children: "The quick brown fox jumps over the lazy dog.",
   },
   argTypes: {
-    variant: {
+    scale: {
       control: "select",
       options: ["display", "heading", "title", "subtitle", "body", "bodySm", "caption"],
     },
@@ -25,15 +25,13 @@ export const Default: Story = {};
 export const Variants: Story = {
   render: () => (
     <div className="flex w-full max-w-xl flex-col gap-3">
-      <Typography variant="display">Display heading</Typography>
-      <Typography variant="heading">Section heading</Typography>
-      <Typography variant="title">Card title</Typography>
-      <Typography variant="subtitle">Supporting subtitle text</Typography>
-      <Typography variant="body">
-        Body copy for regular paragraphs and longer-form reading content.
-      </Typography>
-      <Typography variant="bodySm">Smaller body copy, often used for secondary details.</Typography>
-      <Typography variant="caption">Caption text for footnotes and metadata.</Typography>
+      <Typography scale="display">Display heading</Typography>
+      <Typography scale="heading">Section heading</Typography>
+      <Typography scale="title">Card title</Typography>
+      <Typography scale="subtitle">Supporting subtitle text</Typography>
+      <Typography scale="body">Body copy for regular paragraphs and longer-form reading content.</Typography>
+      <Typography scale="bodySm">Smaller body copy, often used for secondary details.</Typography>
+      <Typography scale="caption">Caption text for footnotes and metadata.</Typography>
     </div>
   ),
 };
@@ -41,7 +39,7 @@ export const Variants: Story = {
 export const CustomTag: Story = {
   name: "as (override rendered tag)",
   args: {
-    variant: "title",
+    scale: "title",
     as: "div",
     children: "Renders as a <div> instead of an <h3>",
   },

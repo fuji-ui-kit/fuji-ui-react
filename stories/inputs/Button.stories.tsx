@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Mail, Trash2 } from "lucide-react";
 import { Button } from "@fujiui/react";
 
@@ -16,7 +16,7 @@ const meta = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
     },
     appearance: { control: "select", options: ["contained", "bordered", "dashed", "ghost"] },
     size: { control: "select", options: ["sm", "md", "lg"] },
@@ -47,7 +47,7 @@ export const Sizes: Story = {
 export const Tones: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-center gap-3">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Button key={tone} {...args} tone={tone}>
           {tone}
         </Button>
@@ -99,5 +99,18 @@ export const Clickable: Story = {
     const button = canvas.getByRole("button", { name: "Click me" });
     await userEvent.click(button);
     await expect(button).toBeEnabled();
+  },
+};
+
+export const Ripple: Story = {
+  name: "Ripple",
+  args: { ripple: true, children: "Press and hold" },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The press ripple is on by default on every Button and IconButton - it is part of how a press is meant to feel, not a per-control flourish. A circle grows from the pointer and stays while the button is held, fading out on release, so a long press reads as held rather than as a flash. Each press gets its own wave, so a fast double-tap shows two. Pass `ripple={false}` to suppress it; it is skipped entirely under `prefers-reduced-motion: reduce`.",
+      },
+    },
   },
 };

@@ -1,0 +1,24 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.fuji-ui-kit/fuji-ui",
+  "title": "Fuji UI",
+  "description": "Component APIs and convention checks for the @fujiui/react version your project has installed.",
+  "websiteUrl": "https://fujiui.com/",
+  "repository": {
+    "url": "https://github.com/fuji-ui-kit/fuji-ui-react",
+    "source": "github",
+    "subfolder": "mcp"
+  },
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@fujiui/mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

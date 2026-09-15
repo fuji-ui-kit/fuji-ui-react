@@ -1,0 +1,15 @@
+{
+  "name": "fuji-ui",
+  "owner": {
+    "name": "Fuji UI",
+    "url": "https://github.com/fuji-ui-kit"
+  },
+  "description": "Claude Code plugins for the Fuji UI React component library.",
+  "plugins": [
+    {
+      "name": "fuji-ui",
+      "source": "./plugins/fuji-ui",
+      "description": "Build React UI with Fuji UI: the component API of the @fujiui/react version your project has installed, a checker for its conventions, and a skill that tells Claude when to use them."
+    }
+  ]
+}

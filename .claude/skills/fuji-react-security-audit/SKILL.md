@@ -1,6 +1,10 @@
 ---
 name: fuji-react-security-audit
-description: Audit @fuji-ui/react for evidenced security issues - prop-driven injection, unsafe URL/DOM handling, storage misuse, supply-chain and dependency risk, published artifact contents, and license compliance. Use for review-only audits unless fixes are explicitly requested.
+description: Audit @fujiui/react for evidenced security issues - prop-driven injection, unsafe URL/DOM handling, storage misuse, supply-chain and dependency risk, published artifact contents, and license compliance. Use for review-only audits unless fixes are explicitly requested.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React security audit
@@ -90,9 +94,8 @@ High finding regardless of intent.
 ### Supply chain
 
 - Runtime dependencies ship in every consumer bundle. The allowed set is
-  `@base-ui/react`, `class-variance-authority`, `clsx`, `lucide-react`,
-  `tailwind-merge`. A new one is a security decision - flag it for explicit
-  approval.
+  `@base-ui/react`, `clsx`, `lucide-react`, `tailwind-merge`. A new one is a
+  security decision - flag it for explicit approval.
 - `npm audit --omit=dev` for production findings. Report dev-only findings
   separately and clearly labelled as non-blocking for consumers - a
   dev-toolchain advisory does not reach anyone installing this package.

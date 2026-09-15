@@ -6,15 +6,21 @@ import { hydrateRoot } from "react-dom/client";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FujiProvider, useFujiConfig } from "./FujiProvider";
+import { FujiPortal } from "../components/fuji/portal";
+import { usePortalThemeAttrs } from "../components/fuji/lib/use-portal-theme-attrs";
 
 function ConfigProbe() {
-  const { theme, radius, elevation, setTheme, setRadius, setElevation } = useFujiConfig();
+  const { theme, material, radius, elevation, setTheme, setMaterial, setRadius, setElevation } =
+    useFujiConfig();
   return (
     <div>
       <span data-testid="theme">{theme}</span>
+      <span data-testid="material">{material}</span>
       <span data-testid="radius">{radius}</span>
       <span data-testid="elevation">{elevation}</span>
       <button onClick={() => setTheme("dark")}>set-dark</button>
+      <button onClick={() => setMaterial("glass")}>set-glass</button>
+      <button onClick={() => setMaterial("solid")}>set-solid</button>
       <button onClick={() => setRadius("soft")}>set-soft</button>
       <button onClick={() => setElevation("floating")}>set-floating</button>
     </div>
@@ -26,9 +32,10 @@ beforeEach(() => {
 });
 
 describe("useFujiConfig", () => {
-  it("falls back to light/cornered/regular with no provider ancestor", () => {
+  it("falls back to light/solid/cornered/regular with no provider ancestor", () => {
     render(<ConfigProbe />);
     expect(screen.getByTestId("theme")).toHaveTextContent("light");
+    expect(screen.getByTestId("material")).toHaveTextContent("solid");
     expect(screen.getByTestId("radius")).toHaveTextContent("cornered");
     expect(screen.getByTestId("elevation")).toHaveTextContent("regular");
   });
@@ -37,13 +44,14 @@ describe("useFujiConfig", () => {
 describe("FujiProvider", () => {
   it("applies uncontrolled defaults and lets internal setters change them", async () => {
     render(
-      <FujiProvider defaultTheme="glass" defaultRadius="soft">
+      <FujiProvider defaultTheme="dark" defaultMaterial="glass" defaultRadius="soft">
         <ConfigProbe />
       </FujiProvider>,
     );
-    expect(screen.getByTestId("theme")).toHaveTextContent("glass");
-    await userEvent.click(screen.getByText("set-dark"));
     expect(screen.getByTestId("theme")).toHaveTextContent("dark");
+    expect(screen.getByTestId("material")).toHaveTextContent("glass");
+    await userEvent.click(screen.getByText("set-solid"));
+    expect(screen.getByTestId("material")).toHaveTextContent("solid");
   });
 
   it("stays pinned to a controlled value and reports changes via onThemeChange instead of switching itself", async () => {
@@ -59,16 +67,65 @@ describe("FujiProvider", () => {
     expect(screen.getByTestId("theme")).toHaveTextContent("light");
   });
 
-  it("mirrors theme/radius/elevation as data attributes on its scope wrapper", () => {
+  it("mirrors theme/material/radius/elevation as data attributes on its scope wrapper", () => {
     const { container } = render(
-      <FujiProvider defaultTheme="dark" defaultRadius="soft" defaultElevation="floating">
+      <FujiProvider
+        defaultTheme="dark"
+        defaultMaterial="glass"
+        defaultRadius="soft"
+        defaultElevation="floating"
+      >
         <span>content</span>
       </FujiProvider>,
     );
     const scope = container.querySelector(".fuji-theme-scope");
     expect(scope).toHaveAttribute("data-fuji-theme", "dark");
+    expect(scope).toHaveAttribute("data-fuji-material", "glass");
     expect(scope).toHaveAttribute("data-fuji-radius", "soft");
     expect(scope).toHaveAttribute("data-fuji-elevation", "floating");
+  });
+
+  it.each([
+    ["light", "solid"],
+    ["dark", "solid"],
+    ["light", "glass"],
+    ["dark", "glass"],
+  ] as const)(
+    "stamps theme=%s material=%s on the scope wrapper, with no data-fuji-glass attribute",
+    (theme, material) => {
+      const { container } = render(
+        <FujiProvider defaultTheme={theme} defaultMaterial={material}>
+          <span />
+        </FujiProvider>,
+      );
+      const scope = container.querySelector(".fuji-theme-scope");
+      expect(scope).toHaveAttribute("data-fuji-theme", theme);
+      expect(scope).toHaveAttribute("data-fuji-material", material);
+      // `glass` no longer carries its own tint axis - it inherits `theme`
+      // directly, so no `data-fuji-glass` attribute is ever emitted.
+      expect(scope).not.toHaveAttribute("data-fuji-glass");
+    },
+  );
+
+  // Landmine: tokens.css's glass `:not()` exclusion - the rule that keeps a
+  // nested opaque provider (e.g. the docs site's theme-comparison grid)
+  // opaque inside an otherwise-glass page - is keyed on
+  // `[data-fuji-material="solid"]`. It only works because a nested "solid"
+  // provider stamps that attribute explicitly, even though "solid" is also
+  // its own default; if the wrapper omitted default-valued attributes, that
+  // CSS exclusion would never match and the nested provider would go
+  // transparent along with the rest of the glass page.
+  it('stamps data-fuji-material="solid" on a nested solid provider inside a glass provider', () => {
+    const { container } = render(
+      <FujiProvider defaultMaterial="glass">
+        <FujiProvider defaultMaterial="solid">
+          <span />
+        </FujiProvider>
+      </FujiProvider>,
+    );
+    const scopes = container.querySelectorAll(".fuji-theme-scope");
+    expect(scopes[0]).toHaveAttribute("data-fuji-material", "glass");
+    expect(scopes[1]).toHaveAttribute("data-fuji-material", "solid");
   });
 
   it("persists appearance to localStorage only when persist is set, and hydrates from it", async () => {
@@ -154,5 +211,51 @@ describe("FujiProvider", () => {
     expect(screen.getByTestId("theme")).toHaveTextContent("dark");
     // ...and must not write its own changes back to the shared storage key either.
     expect(JSON.parse(window.localStorage.getItem("fuji-appearance")!).theme).toBe("glass");
+  });
+});
+
+/**
+ * Landmine: content that lives outside the provider's own DOM subtree - Base
+ * UI's own portals (Select, Dialog, Popover, ...) and consumer-authored
+ * `FujiPortal` usage - has no themed ancestor to inherit CSS variables from,
+ * so each mechanism re-stamps every `data-fuji-*` axis on its own portaled
+ * root. Both must include `data-fuji-material`, or a portal opened inside a
+ * glass app silently renders solid.
+ */
+describe("portal theme attributes", () => {
+  function PortalAttrsProbe() {
+    const attrs = usePortalThemeAttrs();
+    return <div data-testid="portal-attrs" {...attrs} />;
+  }
+
+  it("usePortalThemeAttrs mirrors the active material onto Base UI's own portaled primitives", () => {
+    render(
+      <FujiProvider defaultTheme="dark" defaultMaterial="glass">
+        <PortalAttrsProbe />
+      </FujiProvider>,
+    );
+    const node = screen.getByTestId("portal-attrs");
+    expect(node).toHaveAttribute("data-fuji-theme", "dark");
+    expect(node).toHaveAttribute("data-fuji-material", "glass");
+    expect(node).toHaveAttribute("data-fuji-radius", "cornered");
+    expect(node).toHaveAttribute("data-fuji-elevation", "regular");
+    expect(node).not.toHaveAttribute("data-fuji-glass");
+  });
+
+  it("FujiPortal stamps the active material onto its own portaled root", () => {
+    render(
+      <FujiProvider defaultTheme="dark" defaultMaterial="glass">
+        <FujiPortal>
+          <span data-testid="portaled-child" />
+        </FujiPortal>
+      </FujiProvider>,
+    );
+    expect(screen.getByTestId("portaled-child")).toBeInTheDocument();
+    const portalRoot = document.querySelector(".fuji-portal-root");
+    expect(portalRoot).toHaveAttribute("data-fuji-theme", "dark");
+    expect(portalRoot).toHaveAttribute("data-fuji-material", "glass");
+    expect(portalRoot).toHaveAttribute("data-fuji-radius", "cornered");
+    expect(portalRoot).toHaveAttribute("data-fuji-elevation", "regular");
+    expect(portalRoot).not.toHaveAttribute("data-fuji-glass");
   });
 });

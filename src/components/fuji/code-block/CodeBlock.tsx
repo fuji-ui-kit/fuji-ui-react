@@ -8,12 +8,15 @@ import { IconButton } from "../button/IconButton";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface CodeBlockProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** The source to display, verbatim. */
   code: string;
+  /** Language name shown on the header tab. Labels only - nothing is highlighted from it. */
   language?: string;
   /** Shows the copy-to-clipboard control. Defaults to true. */
   copyable?: boolean;
   /** Renders as a collapsed-by-default accordion instead of always-expanded. */
   collapsible?: boolean;
+  /** Starts a `collapsible` block expanded. Ignored when `collapsible` is off. */
   defaultOpen?: boolean;
 }
 
@@ -52,7 +55,7 @@ export const CodeBlock = React.forwardRef<HTMLDivElement, CodeBlockProps>(functi
   );
 
   const codeBody = (
-    <pre className="fuji-scrollbar fj:overflow-x-auto fj:p-4 fj:text-[length:var(--fuji-text-sm)] fj:leading-relaxed">
+    <pre className="fuji-scrollbar fj:m-0 fj:overflow-x-auto fj:p-4 fj:text-[length:var(--fuji-text-sm)] fj:leading-relaxed">
       <code className="fj:font-[var(--fuji-font-mono)] fj:text-fuji-foreground">{code}</code>
     </pre>
   );

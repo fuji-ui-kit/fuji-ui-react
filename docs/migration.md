@@ -15,8 +15,8 @@ instead:
 
 ```bash
 npm run build   # in the fuji-ui-react repo
-npm pack        # produces fuji-ui-react-<version>.tgz
-npm install /path/to/fuji-ui-react/fuji-ui-react-<version>.tgz   # in your app
+npm pack        # produces fujiui-react-<version>.tgz
+npm install /path/to/fuji-ui-react/fujiui-react-<version>.tgz   # in your app
 ```
 
 ## 2. Consolidate imports
@@ -74,9 +74,9 @@ rather than deleting).
 
 - `tsc --noEmit` and your linter both clean.
 - Production build succeeds.
-- Every theme (`light`/`dark`/`glass`) × radius (`cornered`/`soft`) × elevation
-  (`regular`/`floating`) combination still renders correctly, including
-  portaled overlays.
+- Every theme (`light`/`dark`) × material (`solid`/`glass`) × radius
+  (`cornered`/`soft`) × elevation (`regular`/`floating`) combination still
+  renders correctly, including portaled overlays.
 - No new console warnings, especially around Server/Client Component
   boundaries if you're on Next.js App Router (see [nextjs.md](nextjs.md) -
   in particular, a component reference passed as a prop into a client

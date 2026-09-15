@@ -34,7 +34,7 @@ export const Sizes: Story = {
 export const Tones: Story = {
   render: (args) => (
     <div className="flex flex-col gap-2">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Rating key={tone} {...args} tone={tone} label={`Rate this product (${tone})`} />
       ))}
     </div>

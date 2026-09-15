@@ -20,8 +20,8 @@ paint:
 ## The one thing SSR doesn't solve by itself: a flash of the default theme
 
 If you turn on `FujiProvider`'s `persist` prop, the provider hydrates the
-user's saved theme/radius/elevation from `localStorage` - but only _after_
-mount (`localStorage` isn't available during SSR). Between the server-rendered
+user's saved theme/material/radius/elevation from `localStorage` - but only
+_after_ mount (`localStorage` isn't available during SSR). Between the server-rendered
 HTML (using your `default*` props) and that post-mount hydration, a returning
 visitor whose saved theme differs from the default will see one frame of the
 wrong theme before it corrects itself.
@@ -29,49 +29,44 @@ wrong theme before it corrects itself.
 This is the same class of problem every "remember the user's theme" feature
 has (dark-mode toggles included), and the standard fix is the same: a tiny,
 synchronous, pre-paint script that reads storage and stamps the right
-attributes onto `<html>` **before** your framework's own hydration runs. Fuji
-doesn't ship this script for you (it's app-shell wiring, not component
-behavior), but it's a few lines to add yourself:
+attributes onto `<html>` **before** your framework's own hydration runs. Fuji ships
+the script as a function so the storage key and validation can never drift
+from the provider's:
+
+`@fujiui/react` exports the script, already wired to the same storage key
+`FujiProvider persist` reads (`APPEARANCE_STORAGE_KEY`, `"fuji-appearance"`):
 
 ```ts
-// e.g. src/appearance-bootstrap.ts - keep this dependency-free
-const STORAGE_KEY = "my-app-appearance";
+import { buildAppearanceBootstrapScript } from "@fujiui/react";
 
-export function buildAppearanceBootstrapScript(defaults: {
-  theme: string;
-  radius: string;
-  elevation: string;
-}) {
-  return `(function(){
-    var d = document.documentElement;
-    var t = ${JSON.stringify(defaults.theme)};
-    var r = ${JSON.stringify(defaults.radius)};
-    var e = ${JSON.stringify(defaults.elevation)};
-    try {
-      var raw = window.localStorage.getItem(${JSON.stringify(STORAGE_KEY)});
-      if (raw) {
-        var p = JSON.parse(raw);
-        if (p && ["light","dark","glass"].indexOf(p.theme) > -1) t = p.theme;
-        if (p && ["cornered","soft"].indexOf(p.radius) > -1) r = p.radius;
-        if (p && ["regular","floating"].indexOf(p.elevation) > -1) e = p.elevation;
-      }
-    } catch (_) {}
-    d.setAttribute("data-fuji-theme", t);
-    d.setAttribute("data-fuji-radius", r);
-    d.setAttribute("data-fuji-elevation", e);
-  })();`;
-}
+// Pass the same defaults your root <FujiProvider> uses.
+const BOOTSTRAP = buildAppearanceBootstrapScript({
+  theme: "light",
+  material: "solid",
+  radius: "cornered",
+  elevation: "regular",
+});
 ```
+
+It reads storage inside `try/catch`, validates every value against the
+allowed lists, stamps `data-fuji-theme` / `-material` / `-radius` / `-elevation`
+onto `<html>`, and finally removes a `data-fuji-boot` attribute - render
+`<html data-fuji-boot>` from the server and Fuji's stylesheet suppresses
+colour transitions for that one swap, so the persisted appearance never
+animates in from the default. All four axes - `theme`, `material`, `radius`,
+and `elevation` - are real user preferences and persist the same way; glass
+has no separate tint axis to carve out an exception for (it follows `theme`).
 
 Then run it as early as possible - in Next.js, via `next/script` with
 `strategy="beforeInteractive"` in the root layout's `<head>`:
 
 ```tsx
 import Script from "next/script";
-import { buildAppearanceBootstrapScript } from "./appearance-bootstrap";
+import { buildAppearanceBootstrapScript } from "@fujiui/react";
 
 const BOOTSTRAP = buildAppearanceBootstrapScript({
   theme: "light",
+  material: "solid",
   radius: "cornered",
   elevation: "regular",
 });
@@ -94,10 +89,11 @@ Two details that make this safe rather than a hydration-mismatch trap:
    them. This is standard practice for any pre-paint theme script (identical
    to next-themes and similar libraries) and is scoped to exactly the `<html>`
    element carrying the bootstrapped attributes.
-2. `FujiProvider`'s own render output (its own `data-fuji-*` scope wrapper)
-   still starts from your `default*` props on both server and client - it
-   doesn't try to read the bootstrap script's result during the initial
-   render. It reconciles with the persisted value shortly after mount (see
+2. `FujiProvider`'s own render output is identical on server and client: with
+   `persist`, the root provider renders **no** `data-fuji-*` attributes on its
+   scope wrapper at all (the bootstrapped `<html>` attributes are the source),
+   and it doesn't try to read the bootstrap script's result during the
+   initial render. It reconciles with the persisted value shortly after mount (see
    `persist` in the main README), which is a state update, not a hydration
    mismatch.
 

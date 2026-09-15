@@ -7,7 +7,7 @@
     "dev": "vite --port 5302"
   },
   "dependencies": {
-    "@fuji-ui/react": "file:../../fuji-ui-react-0.1.0-alpha.0.tgz",
+    "@fujiui/react": "file:../fuji-pack.tgz",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },

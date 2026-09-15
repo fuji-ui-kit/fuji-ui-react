@@ -8,7 +8,24 @@ import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 export const DropdownMenuRoot = Base.Root;
 export const DropdownMenuTrigger = Base.Trigger;
 export const DropdownMenuGroup = Base.Group;
-export const DropdownMenuGroupLabel = Base.GroupLabel;
+export const DropdownMenuGroupLabel = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentPropsWithoutRef<typeof Base.GroupLabel>
+>(function DropdownMenuGroupLabel({ className, ...props }, ref) {
+  // Was a bare re-export of the Base UI primitive, so it rendered at body
+  // size, foreground color, flush against the popup edge - a heading that
+  // looked like a broken menu item. Same recipe as CommandMenu's group label.
+  return (
+    <Base.GroupLabel
+      ref={ref}
+      className={cn(
+        "fj:px-3 fj:pt-1.5 fj:pb-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-foreground-subtle",
+        className,
+      )}
+      {...props}
+    />
+  );
+});
 
 export const DropdownMenuSeparator = React.forwardRef<
   HTMLDivElement,
@@ -27,8 +44,13 @@ export const DropdownMenuItem = React.forwardRef<
     <Base.Item
       ref={ref}
       className={cn(
-        "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-[6px] fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-        "fj:data-[highlighted]:bg-fuji-surface-strong",
+        "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
+        // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
+        // highlighted row tracked the backdrop and washed out over the
+        // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
+        // inversion every other selection indicator uses - and the one
+        // CommandMenu already moved to for this exact reason.
+        "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
         "fj:data-[disabled]:pointer-events-none fj:data-[disabled]:opacity-45",
         className,
       )}
@@ -38,7 +60,9 @@ export const DropdownMenuItem = React.forwardRef<
 });
 
 export interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
+  /** Gap in px between the trigger and the menu. */
   sideOffset?: number;
+  /** How the menu lines up against the trigger along its cross axis. */
   align?: "start" | "center" | "end";
 }
 
@@ -57,10 +81,7 @@ export const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenu
             ref={ref}
             {...portalAttrs}
             className={cn(
-              "fuji-glass-surface-overlay fj:min-w-[10rem] fj:origin-[var(--transform-origin)] fj:overflow-hidden fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:p-1 fj:shadow-fuji-overlay fj:outline-none",
-              "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-fast)]",
-              "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-              "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
+              "fuji-glass-surface-overlay fuji-motion-popup fj:min-w-[10rem] fj:overflow-hidden fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:p-1 fj:shadow-fuji-overlay fj:outline-none",
               className,
             )}
             {...props}

@@ -19,12 +19,15 @@ export const GAP_CLASSES: Record<FujiGap, string> = {
 export interface StackProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Flex axis. Default "vertical". */
   direction?: "vertical" | "horizontal";
+  /** Space between children, on the shared spacing scale. */
   gap?: FujiGap;
+  /** Cross-axis alignment of the children. */
   align?: "start" | "center" | "end" | "baseline" | "stretch";
   /** Only meaningful with `direction="horizontal"`. */
   justify?: "start" | "center" | "end" | "between";
   /** Only meaningful with `direction="horizontal"`. */
   wrap?: boolean;
+  /** The element to render. Use it to keep the layout while fixing the semantics. */
   as?: keyof React.JSX.IntrinsicElements;
 }
 

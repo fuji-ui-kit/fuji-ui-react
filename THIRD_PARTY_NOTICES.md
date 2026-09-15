@@ -1,6 +1,6 @@
 # Third-party notices
 
-`@fuji-ui/react` bundles or depends on the following open-source projects.
+`@fujiui/react` bundles or depends on the following open-source projects.
 
 ## lucide-react (ISC)
 
@@ -34,12 +34,6 @@ Unstyled, accessible interaction primitives (dialog, popover, menu, tabs,
 select, combobox, tooltip, toast, and more) that back Fuji's compound
 components. Copyright (c) the Base UI contributors. See
 https://github.com/mui/base-ui for full license text.
-
-## class-variance-authority (Apache-2.0)
-
-Variant class-name recipes used internally (e.g. Button, Dialog, Typography).
-Copyright (c) Joe Bell. See https://github.com/joe-bell/cva for full license
-text.
 
 ## clsx (MIT)
 

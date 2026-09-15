@@ -1,6 +1,10 @@
 ---
 name: fuji-react-api-surface-review
-description: Audit the @fuji-ui/react public export surface for completeness, consistency, accidental leakage of internals, type quality, and breaking changes against the previously published version. Use before a release or when exports, props, or types changed.
+description: Audit the @fujiui/react public export surface for completeness, consistency, accidental leakage of internals, type quality, and breaking changes against the previously published version. Use before a release or when exports, props, or types changed.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React API surface review

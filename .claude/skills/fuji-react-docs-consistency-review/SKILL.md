@@ -1,6 +1,10 @@
 ---
 name: fuji-react-docs-consistency-review
-description: Check @fuji-ui/react documentation - README, docs/, SPEC, ARCHITECTURE, CONTRIBUTING, CHANGELOG, and JSDoc - against the actual exports, props, defaults, tokens, build, and packaging. Use for review-only consistency audits unless fixes are explicitly requested.
+description: Check @fujiui/react documentation - README, docs/, SPEC, ARCHITECTURE, CONTRIBUTING, CHANGELOG, and JSDoc - against the actual exports, props, defaults, tokens, build, and packaging. Use for review-only consistency audits unless fixes are explicitly requested.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React documentation consistency review
@@ -21,9 +25,12 @@ Default to review-only.
    npm run build
    ```
 
-2. Read `README.md`, `docs/*.md`, `SPEC.md`, `ARCHITECTURE.md`,
-   `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`, and
-   `THIRD_PARTY_NOTICES.md`.
+2. Read `README.md`, `docs/*.md` (including `docs/upgrading.md`, the
+   migration guide consumers read first), `SPEC.md`, `ARCHITECTURE.md`,
+   `CONTRIBUTING.md`, `DESIGN.md`, `SECURITY.md`, `CHANGELOG.md`, and
+   `THIRD_PARTY_NOTICES.md`. Remember the split: `docs/` and `README.md` ship
+   in the tarball (consumer-facing); the root guides do not (contributor
+   facing) - consumer content in a root guide is invisible to consumers.
 3. For each factual claim, find the source that proves or disproves it. Read
    `dist/index.d.ts` for the authoritative consumer-facing API.
 
@@ -36,8 +43,8 @@ This is the check that matters most. For each snippet:
 - Every imported name exists in `dist/index.d.ts`.
 - Every prop used exists with that type.
 - The import path is the package root - no subpath imports, since none exist.
-- The CSS import path matches an `exports` entry (`@fuji-ui/react/styles.css`,
-  `@fuji-ui/react/tokens.css`).
+- The CSS import path matches an `exports` entry (`@fujiui/react/styles.css`,
+  `@fujiui/react/tokens.css`).
 - Framework snippets are valid for the framework (`docs/nextjs.md` App Router
   code must be legal App Router code).
 
@@ -56,7 +63,10 @@ Copy a snippet into a scratch file and typecheck it if there is any doubt.
 ### Appearance and token claims
 
 - `README.md` and `docs/theming.md` axes, values, and defaults match
-  `src/types/index.ts` and `src/styles/tokens.css`.
+  `src/types/index.ts` and `src/styles/tokens.css` - including the fourth
+  axis `glassTint` (`data-fuji-glass`), the four radius tiers
+  (`item/control/panel/overlay`), and the Storybook toolbars that exercise
+  them.
 - Every `--fuji-*` token named in docs exists in `tokens.css`. Every class name
   named (`.fuji-glass-surface*`, `.fuji-theme-scope`) exists in `base.css`.
 - Storage key (`fuji-appearance`), `data-fuji-*` attribute names, and provider
@@ -92,7 +102,7 @@ still accurate for a package consumer.
 ### Consumer-facing tone
 
 `docs/` and `README.md` are for consumers: present tense, package-facing, using
-`@fuji-ui/react` in every example. No internal source paths, no implementation
+`@fujiui/react` in every example. No internal source paths, no implementation
 history, no "we recently fixed", no placeholder publication language.
 Contributor-facing content belongs in `AGENTS.md`/`CONTRIBUTING.md`, which do
 **not** ship.

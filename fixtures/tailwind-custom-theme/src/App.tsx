@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { FujiProvider, Button, Input, Card } from "@fuji-ui/react";
-import type { FujiTheme } from "@fuji-ui/react";
+import { FujiProvider, Button, Input, Card } from "@fujiui/react";
+import type { FujiTheme } from "@fujiui/react";
 
 export default function App() {
   const [theme, setTheme] = useState<FujiTheme>("light");

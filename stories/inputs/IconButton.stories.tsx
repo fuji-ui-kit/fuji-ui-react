@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Heart, Trash2 } from "lucide-react";
 import { IconButton } from "@fujiui/react";
 
@@ -7,6 +7,16 @@ const meta = {
   title: "Inputs/IconButton",
   component: IconButton,
   tags: ["autodocs"],
+  // No decorator on purpose. Every story here used to be wrapped in a
+  // `fuji-glass-surface` panel with a card radius, border and shadow, on the
+  // stated grounds that a ghost IconButton was "nearly invisible" on the bare
+  // canvas. That premise was wrong - `appearance.ts` gives ghost
+  // `fj:text-fuji-foreground`, i.e. full foreground contrast in every theme;
+  // what ghost leaves invisible is the button's BOUNDARY, which is the whole
+  // point of the appearance. The wrapper used Fuji's exact card recipe, so it
+  // read as part of the component rather than as story scaffolding, and the
+  // docs page appeared to show an icon inside a card. `Appearances` below
+  // shows the boundary difference the wrapper was standing in for.
   args: {
     "aria-label": "Like",
     children: <Heart className="size-4" />,
@@ -17,7 +27,7 @@ const meta = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
     },
     appearance: { control: "select", options: ["contained", "bordered", "dashed", "ghost"] },
     size: { control: "select", options: ["sm", "md", "lg"] },

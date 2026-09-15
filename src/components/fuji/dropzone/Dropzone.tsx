@@ -6,13 +6,27 @@ import { cn } from "../../../lib/cn";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface DropzoneProps {
+  /** Controlled list of accepted files. Pair with `onChange`; omit for uncontrolled. */
   value?: File[];
+  /** Starting files when uncontrolled. */
   defaultValue?: File[];
+  /** Called with the whole list after a drop, a pick or a removal. */
   onChange?: (files: File[]) => void;
+  /** Forwarded to the native input: a comma-separated list of extensions or MIME types. */
   accept?: string;
+  /** Allows more than one file, and appends each drop to the list rather than replacing it. */
   multiple?: boolean;
+  /** Disables the drop target and its input. */
   disabled?: boolean;
+  /** Prose inside the target ("PNG or JPG, up to 5 MB"). Not the accessible name - see `label`. */
   description?: string;
+  /**
+   * Accessible name for the drop target and its file list. Defaults to
+   * "Upload files"; set it when a page has more than one Dropzone so the two
+   * are distinguishable ("Upload avatar" / "Upload attachments").
+   */
+  label?: string;
+  /** Extra classes merged onto the drop target. */
   className?: string;
 }
 
@@ -26,10 +40,12 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
     multiple = false,
     disabled,
     description = "Drag and drop files here, or click to browse",
+    label = "Upload files",
     className,
   },
   ref,
 ) {
+  const descriptionId = React.useId();
   const [internalFiles, setInternalFiles] = React.useState<File[]>(defaultValue);
   const files = value ?? internalFiles;
   const [isDragActive, setDragActive] = React.useState(false);
@@ -53,6 +69,13 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-disabled={disabled}
+        // `role="button"` computes its name from its contents, which made the
+        // name whatever prose `description` happened to hold - "Drag and drop
+        // files here, or click to browse" as an announced *name*, and two
+        // Dropzones on a page were indistinguishable. The name is now the
+        // purpose; the prose is the description.
+        aria-label={label}
+        aria-describedby={descriptionId}
         onClick={() => !disabled && inputRef.current?.click()}
         onKeyDown={(event) => {
           if (!disabled && (event.key === "Enter" || event.key === " ")) {
@@ -70,10 +93,13 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
           setDragActive(false);
           if (!disabled) addFiles(event.dataTransfer.files);
         }}
+        data-drag-active={isDragActive || undefined}
         className={cn(
-          "fuji-glass-surface-subtle fj:flex fj:flex-col fj:items-center fj:gap-2 fj:rounded-fuji-panel fj:border-2 fj:border-dashed fj:border-fuji-border-strong fj:bg-fuji-surface-subtle fj:px-6 fj:py-10 fj:text-center",
+          "fuji-dropzone fuji-glass-surface-subtle fj:flex fj:flex-col fj:items-center fj:gap-2 fj:rounded-fuji-panel fj:border-2 fj:border-dashed fj:border-fuji-border-strong fj:bg-fuji-surface-subtle fj:px-6 fj:py-10 fj:text-center",
           "fj:transition-colors fj:duration-[var(--fuji-duration-fast)] fj:cursor-pointer",
-          isDragActive && "fj:border-fuji-foreground fj:bg-fuji-surface-strong",
+          // The fill comes from `.fuji-dropzone[data-drag-active]` in base.css,
+          // not a utility - see the comment there for why a utility cannot win.
+          isDragActive && "fj:border-fuji-foreground",
           disabled && "fj:pointer-events-none fj:cursor-not-allowed fj:opacity-45",
         )}
       >
@@ -96,16 +122,26 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
           }}
         />
         <UploadCloud className="fj:size-6 fj:text-fuji-foreground-muted" aria-hidden="true" />
-        <p className="fj:m-0 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted">
+        <p
+          id={descriptionId}
+          className="fj:m-0 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted"
+        >
           {description}
         </p>
       </div>
       {files.length > 0 && (
-        <ul className="fj:m-0 fj:flex fj:list-none fj:flex-col fj:gap-1 fj:p-0">
+        // Named and announced: a file appearing here after a drop was
+        // previously a silent DOM change, so a screen-reader user got no
+        // confirmation that the drop had landed.
+        <ul
+          aria-label={`${label}: selected files`}
+          aria-live="polite"
+          className="fj:m-0 fj:flex fj:list-none fj:flex-col fj:gap-1 fj:p-0"
+        >
           {files.map((file, index) => (
             <li
               key={`${file.name}-${index}`}
-              className="fj:flex fj:items-center fj:justify-between fj:gap-2 fj:rounded-fuji-control fj:border fj:border-fuji-border fj:bg-fuji-surface-strong fj:px-3 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground"
+              className="fj:flex fj:items-center fj:justify-between fj:gap-2 fj:rounded-fuji-control fj:border fj:border-fuji-border fj:bg-fuji-surface-raised fj:px-3 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground"
             >
               <span className="fj:truncate">{file.name}</span>
               <button

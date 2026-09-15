@@ -3,9 +3,13 @@ import { Inbox } from "lucide-react";
 import { cn } from "../../../lib/cn";
 
 export interface EmptyStateProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
+  /** Glyph shown in the circle above the title. Falls back to an inbox icon. */
   icon?: React.ReactNode;
+  /** The headline - what is missing, in a few words. */
   title: React.ReactNode;
+  /** A supporting line under the title, width-capped so it stays readable. */
   description?: React.ReactNode;
+  /** Controls under the text - typically the one Button that fills the emptiness. */
   action?: React.ReactNode;
 }
 
@@ -23,7 +27,7 @@ export const EmptyState = React.forwardRef<HTMLDivElement, EmptyStateProps>(func
       )}
       {...props}
     >
-      <div className="fj:mb-1 fj:flex fj:size-11 fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-surface-strong fj:text-fuji-foreground-muted">
+      <div className="fj:mb-1 fj:flex fj:size-11 fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-surface-raised fj:text-fuji-foreground-muted">
         {icon ?? <Inbox className="fj:size-5" />}
       </div>
       <p className="fj:m-0 fj:text-[length:var(--fuji-text-md)] fj:font-semibold fj:text-fuji-foreground">

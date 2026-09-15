@@ -4,9 +4,13 @@ import { cn } from "../../../lib/cn";
 import type { StatusTone } from "../../../types";
 
 export interface ResultProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
+  /** Status the outcome reports; sets the icon and its tint. */
   variant?: StatusTone;
+  /** The outcome, stated in a few words ("Payment received", "Page not found"). */
   title: React.ReactNode;
+  /** What happened and what to do about it. */
   description?: React.ReactNode;
+  /** Controls under the text, laid out in a row. */
   actions?: React.ReactNode;
 }
 
@@ -39,7 +43,7 @@ export const Result = React.forwardRef<HTMLDivElement, ResultProps>(function Res
       <div
         className={cn(
           "fj:flex fj:size-14 fj:items-center fj:justify-center fj:rounded-full",
-          ICON_CLASSES[variant] ?? "fj:bg-fuji-surface-strong fj:text-fuji-foreground-muted",
+          ICON_CLASSES[variant] ?? "fj:bg-fuji-surface-raised fj:text-fuji-foreground-muted",
         )}
       >
         <Icon className="fj:size-6" />

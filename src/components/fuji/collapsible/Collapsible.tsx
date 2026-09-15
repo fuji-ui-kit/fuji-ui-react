@@ -25,6 +25,7 @@ export const CollapsibleRoot = React.forwardRef<
 });
 
 export interface CollapsibleTriggerProps extends React.ComponentPropsWithoutRef<typeof Base.Trigger> {
+  /** Drops the rotating chevron, for a trigger that carries its own affordance. */
   hideIcon?: boolean;
 }
 

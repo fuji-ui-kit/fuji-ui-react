@@ -4,6 +4,27 @@
     {
       "name": "fuji-website",
       "url": "http://localhost:3000"
+    },
+    {
+      "name": "fuji-website-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../fuji-ui-website", "run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "storybook",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "storybook", "--", "--no-open"],
+      "port": 6006
+    },
+    {
+      "name": "storybook-verify",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "npm run build:css && node scripts/build-storybook-css.mjs && npx storybook dev -p 6007 --no-open"
+      ],
+      "port": 6007
     }
   ]
 }

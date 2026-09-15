@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-`@fuji-ui/react` is pre-1.0. Security fixes land on the latest published
+`@fujiui/react` is pre-1.0. Security fixes land on the latest published
 `0.x` release only. There is no backport window for older `0.x` versions yet;
 that changes at 1.0.
 
@@ -27,19 +27,21 @@ in scope:
 
 - **Injection through component props.** Any path where a prop value reaches
   `dangerouslySetInnerHTML`, `innerHTML`, `document.write`, or an `href`/`src`
-  without scheme validation. The one known use is `Carousel`, which renders a
-  scoped `<style>` element built from its own numeric layout props
-  (`slidesPerView`, `transitionDuration`) and a generated `useId` selector. It
-  is type-safe for TypeScript consumers; treat any change that widens those
-  props to accept strings, or that interpolates untyped values into that
-  template, as a CSS-injection regression.
+  without scheme validation. There is no `dangerouslySetInnerHTML` or
+  `innerHTML` anywhere in the package. `Carousel` forwards its numeric layout
+  props (`slidesPerView`, `transitionDuration`) as inline CSS custom
+  properties through React's `style` object - a value, never markup - and
+  they are type-gated; treat any change that widens those props to accept
+  strings as a CSS-injection regression.
 - **URL handling.** A `javascript:` or `data:` URL reaching an anchor or image
   through a documented prop.
 - **Storage.** `FujiProvider`'s `persist` writes to `localStorage` under the key
-  `fuji-appearance`. It must store only theme/radius/elevation, must validate
+  `fuji-appearance`. It must store only theme/radius/elevation (`glassTint`
+  is deliberately not persisted - it describes the page, not a preference),
+  must validate
   what it reads back, and must never throw on malformed or blocked storage.
 - **Supply chain.** The runtime dependency set (`@base-ui/react`,
-  `class-variance-authority`, `clsx`, `lucide-react`, `tailwind-merge`) ships in
+  `clsx`, `lucide-react`, `tailwind-merge`) ships in
   every consumer's bundle. Adding one is a security decision, not just a
   convenience decision.
 - **Published artifact contents.** The tarball must contain no source, no tests,

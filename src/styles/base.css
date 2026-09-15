@@ -10,8 +10,16 @@
  * `<html>` before swapping in the persisted theme/radius/elevation, this
  * suppresses the transition below during that one swap so it doesn't
  * animate from the default appearance to the persisted one. No-op otherwise.
+ *
+ * Scoped to Fuji's own subtrees rather than a bare `html[data-fuji-boot] *`:
+ * this stylesheet is imported globally, and the universal form killed every
+ * transition on the page - including the consumer's own unrelated markup -
+ * for the duration of the boot swap.
  */
-html[data-fuji-boot] * {
+html[data-fuji-boot] .fuji-theme-scope,
+html[data-fuji-boot] .fuji-theme-scope *,
+html[data-fuji-boot] [data-fuji-theme],
+html[data-fuji-boot] [data-fuji-theme] * {
   transition: none !important;
 }
 
@@ -71,17 +79,406 @@ html[data-fuji-boot] * {
 }
 
 @layer fuji.components {
+  /*
+   * The chart body lifts in on mount. This used to be a transition toggled by
+   * a `requestAnimationFrame` in the component, which meant the chart was
+   * `opacity: 0` until that frame ran - and a tab whose rAF is throttled
+   * (backgrounded, some automated browsers) never ran it, leaving a
+   * permanently blank chart. As a keyframe with `forwards` the finished state
+   * is reached by the animation itself, so the worst case is that it appears
+   * instantly rather than never. It also removes a `useState`/`useEffect`
+   * pair from every chart on the page.
+   */
   .fuji-chart-entrance {
-    opacity: 0;
-    transform: translateY(6px);
-    transition:
-      opacity var(--fuji-duration-slow) var(--fuji-ease),
-      transform var(--fuji-duration-slow) var(--fuji-ease);
+    animation: fuji-chart-entrance var(--fuji-duration-slow) var(--fuji-ease) forwards;
   }
 
-  .fuji-chart-entrance-ready {
-    opacity: 1;
-    transform: translateY(0);
+  @keyframes fuji-chart-entrance {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /*
+   * Chart draw-in.
+   *
+   * The line is drawn rather than revealed, using `pathLength="1"` on the
+   * `<path>` itself (set in Chart.tsx): that tells SVG to normalise the
+   * geometric length to 1, so a dash pattern of `1` with an offset animating
+   * 1 -> 0 sweeps the stroke from start to end for ANY path. The usual
+   * approach - measuring with `getTotalLength()` and writing the result into
+   * a style - needs a DOM read per series on every data change and is wrong
+   * on the server; this needs neither.
+   */
+  .fuji-chart-line {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    animation: fuji-chart-draw var(--fuji-duration-draw) var(--fuji-ease) forwards;
+  }
+
+  @keyframes fuji-chart-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  /*
+   * The area fill wipes in behind the stroke that has just been drawn over
+   * it, so it reads as the line laying down its own shadow rather than two
+   * separate things animating. Same duration, same curve, no delay - the
+   * stroke is on top and stays ahead of the fill's edge on its own.
+   */
+  .fuji-chart-area {
+    clip-path: inset(0 100% 0 0);
+    animation: fuji-chart-wipe var(--fuji-duration-draw) var(--fuji-ease) forwards;
+  }
+
+  @keyframes fuji-chart-wipe {
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /*
+   * Points land after the stroke reaches them. `--fuji-chart-index` is set
+   * per point by the component (a custom property, not a generated class -
+   * Tailwind's scanner is static and could never emit one class per index).
+   */
+  .fuji-chart-point {
+    scale: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: fuji-chart-point-in var(--fuji-duration-base) var(--fuji-ease-spring) forwards;
+    animation-delay: calc(var(--fuji-duration-draw) * 0.6 + var(--fuji-chart-index, 0) * var(--fuji-stagger));
+  }
+
+  @keyframes fuji-chart-point-in {
+    to {
+      scale: 1;
+    }
+  }
+
+  /*
+   * Progress fill: a full-width bar scaled from its left edge on the spring
+   * (motion.dev's loading progress bar drives `scaleX` through a spring the
+   * same way). `--fuji-progress` is 0-1, set by the component. Transform,
+   * not width, so it never lays out and the overshoot stays on the
+   * compositor.
+   */
+  .fuji-progress-fill:not([data-indeterminate]) {
+    transform: scaleX(var(--fuji-progress, 0));
+    transform-origin: 0 50%;
+    transition: transform var(--fuji-duration-draw) var(--fuji-ease-spring);
+    /* Grows in from empty on mount. A keyframe, not a JS-toggled class: a
+       tab whose rAF is throttled would otherwise never start it (see the
+       chart entrance above). The `to` state is the element's own value.
+       No `will-change`: a page of fifty upload rows would hold fifty
+       compositor layers for their lifetime; the transition promotes the
+       bar while it moves. */
+    animation: fuji-fill-in var(--fuji-duration-draw) var(--fuji-ease-spring);
+  }
+
+  @keyframes fuji-fill-in {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  /* Stepper connector: same scaled fill, growing from the previous step. */
+  .fuji-stepper-fill {
+    transform: scaleX(var(--fuji-progress, 0));
+    transform-origin: 0 50%;
+    transition: transform var(--fuji-duration-slow) var(--fuji-ease-spring);
+  }
+
+  /* The check (or any newly-revealed glyph) pops in on the spring. */
+  .fuji-pop-in {
+    animation: fuji-pop-in var(--fuji-duration-base) var(--fuji-ease-spring) both;
+  }
+
+  @keyframes fuji-pop-in {
+    from {
+      scale: 0;
+    }
+    to {
+      scale: 1;
+    }
+  }
+
+  /* Ring fill: the arc draws from empty on mount and eases to every new
+     value (`--fuji-progress` 0-1, `--fuji-ring-c` is the circumference). */
+  .fuji-ring-fill {
+    stroke-dasharray: var(--fuji-ring-c);
+    stroke-dashoffset: calc(var(--fuji-ring-c) * (1 - var(--fuji-progress, 0)));
+    transition: stroke-dashoffset var(--fuji-duration-draw) var(--fuji-ease-spring);
+    animation: fuji-ring-in var(--fuji-duration-draw) var(--fuji-ease-spring);
+  }
+
+  @keyframes fuji-ring-in {
+    from {
+      stroke-dashoffset: var(--fuji-ring-c);
+    }
+  }
+
+  /* Bars grow up from the baseline on mount, staggered left to right. */
+  .fuji-chart-bar {
+    transform: scaleY(0);
+    animation: fuji-chart-bar-in var(--fuji-duration-slow) var(--fuji-ease-spring) forwards;
+    animation-delay: calc(var(--fuji-chart-index, 0) * var(--fuji-stagger));
+    transition: fill var(--fuji-duration-fast) var(--fuji-ease);
+  }
+
+  @keyframes fuji-chart-bar-in {
+    to {
+      transform: scaleY(1);
+    }
+  }
+
+  .fuji-chart-segment {
+    transition: stroke-width var(--fuji-duration-fast) var(--fuji-ease);
+  }
+
+  /* The donut ring stands off its card: one drop shadow on the whole
+     (masked) ring, deeper under the floating elevation via the token. */
+  .fuji-donut-ring {
+    filter: drop-shadow(var(--fuji-shadow-drop));
+  }
+
+  .fuji-chart-segment[data-active] {
+    stroke-width: 26;
+  }
+
+  /*
+   * A "raised" accent object: the primary action, the active tab, the checked
+   * box. Fuji's surfaces are defined by shadow rather than by a visible
+   * border, and this is the top of that scale - a solid tone object that
+   * reads as sitting ON the surface, not painted into it.
+   *
+   * Shadow only - no inset edge highlight. An earlier version added
+   * `inset 0 1px 0 rgb(255 255 255 / 14%)` as a "top light", and at 1px with
+   * no blur that is a hairline, and a hairline reads as a border on every
+   * theme. The reference designs get their lift from the cast shadow alone.
+   *
+   * Applied by `lib/appearance.ts` to every `contained` tone, so Button,
+   * IconButton, Badge and everything else built on that recipe pick it up
+   * together.
+   */
+  .fuji-raised {
+    box-shadow: var(--fuji-shadow-raised);
+  }
+
+  /*
+   * Material ripple. Button appends one `.fuji-ripple-wave` per press and
+   * drives its growth and fade with the Web Animations API (see `useRipple`);
+   * this is only the static shape. `overflow: hidden` on the host clips the
+   * circle to the control's own radius.
+   */
+  .fuji-ripple {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fuji-ripple-wave {
+    position: absolute;
+    border-radius: 50%;
+    background: currentcolor;
+    /* Starts invisible - `useRipple` ramps opacity in with the expansion and
+       back out on release, so any value here would show as a pop on the
+       first frame. */
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0);
+    will-change: transform, opacity;
+  }
+
+  /*
+   * Rolling digits (Statistic). A digit is a 1em-tall cell clipping a strip of
+   * 0-9; `--fuji-digit` picks the row and the strip rolls there on the spring.
+   * Every cell - digit or separator - is the same fixed-height inline-block
+   * so the whole figure shares one baseline. `--fuji-digit-index` staggers
+   * the columns so a multi-digit change reads as a roll, not a flicker.
+   */
+  .fuji-number {
+    display: inline-flex;
+    line-height: 1;
+    transition: color var(--fuji-duration-slow) var(--fuji-ease);
+  }
+
+  .fuji-number[data-trend="up"] {
+    color: var(--fuji-forest);
+  }
+
+  .fuji-number[data-trend="down"] {
+    color: var(--fuji-fire);
+  }
+
+  .fuji-digit {
+    position: relative;
+    display: inline-block;
+    height: 1em;
+    overflow: hidden;
+    line-height: 1;
+    vertical-align: bottom;
+  }
+
+  .fuji-digit-strip {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(calc(var(--fuji-digit, 0) * -1em));
+    transition: transform var(--fuji-duration-draw) var(--fuji-ease-spring);
+    transition-delay: calc(var(--fuji-digit-index, 0) * var(--fuji-stagger));
+  }
+
+  .fuji-digit-strip > span {
+    display: block;
+    height: 1em;
+    line-height: 1;
+  }
+
+  /*
+   * Coverflow - a port of motion.dev's coverflow carousel. There, every
+   * slide maps its live pixel distance from the centre ("offset") through
+   * three ranges: rotateY -200..200px -> 20..-20deg, scale 0.7..1..0.7 over
+   * the same band, and an x pull of 0 until 200px then up to a full slide
+   * width by 800px, so slides further out tuck under their neighbours.
+   * The offset is CONTINUOUS (it follows the pointer while dragging), which
+   * is what makes it feel like a physical fan rather than a flip-book.
+   *
+   * Here `--fuji-cv-offset` is that same offset in slide widths (set per
+   * slide by Carousel, live during a drag), so the reference's pixel
+   * thresholds become 200/350 = 0.571 and 800/350 = 2.286 of a width.
+   * `max()`/`min()` stand in for `abs()`/`sign()`. The transition is on
+   * `transform` and only while NOT dragging - the snap after a release and a
+   * button press both animate the whole fan on the spring.
+   */
+  .fuji-coverflow-slide {
+    --fuji-cv-abs: max(var(--fuji-cv-offset), calc(-1 * var(--fuji-cv-offset)));
+    /* Signed distance past the 0.571 band, 0 inside it. */
+    --fuji-cv-beyond: calc(
+      max(0, calc(var(--fuji-cv-offset) - 0.571)) - max(0, calc(-1 * var(--fuji-cv-offset) - 0.571))
+    );
+    transform: perspective(500px) translateX(calc(clamp(-1, var(--fuji-cv-beyond) / 1.714, 1) * -100%))
+      rotateY(clamp(-20deg, calc(var(--fuji-cv-offset) * -35deg), 20deg))
+      scale(calc(1 - min(var(--fuji-cv-abs), 0.571) * 0.525));
+    transition: transform var(--fuji-cv-duration, var(--fuji-duration-slow)) var(--fuji-ease-spring);
+  }
+
+  .fuji-carousel[data-swiping] .fuji-coverflow-slide,
+  .fuji-carousel[data-resetting] .fuji-coverflow-slide {
+    transition: none;
+  }
+
+  /* The reference fades the fan out at both edges instead of clipping it,
+     and lets the rotated near edges overhang vertically. */
+  .fuji-coverflow {
+    overflow-x: clip;
+    overflow-y: visible;
+    padding-block: 1.25rem;
+    mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+  }
+
+  /*
+   * The track slides on the shared easing; while the pointer is down it
+   * follows the finger 1:1 instead (the `--fuji-cv-drag` offset is written
+   * straight to the DOM by Carousel, no transition), and the release snaps
+   * to the nearest slide on the same curve as a button press.
+   */
+  .fuji-carousel-track {
+    transition: transform var(--fuji-cv-duration, var(--fuji-duration-slow)) var(--fuji-ease-spring);
+  }
+
+  .fuji-carousel[data-swiping] {
+    user-select: none;
+  }
+
+  .fuji-carousel[data-swiping] .fuji-carousel-track {
+    transition: none;
+  }
+
+  /*
+   * Notched tab bar. The bar's own box is masked with a circle cut from its
+   * top edge, and the action button is positioned over the hole. A mask
+   * rather than a pseudo-element "bite" so the bar's background - including
+   * the glass material - really is absent inside the notch, and its top
+   * border follows the curve instead of running straight through it.
+   */
+  .fuji-bottom-nav-notched {
+    position: relative;
+    --fuji-notch-r: 2.25rem;
+    mask-image: radial-gradient(
+      circle at 50% 0,
+      transparent calc(var(--fuji-notch-r) - 1px),
+      #000 var(--fuji-notch-r)
+    );
+    -webkit-mask-image: radial-gradient(
+      circle at 50% 0,
+      transparent calc(var(--fuji-notch-r) - 1px),
+      #000 var(--fuji-notch-r)
+    );
+  }
+
+  /* The notch in a floating bar is cut from a rounded pill, so it sits a
+     little lower than the bar's top edge to keep the curve continuous. */
+  .fuji-bottom-nav-floating.fuji-bottom-nav-notched {
+    --fuji-notch-r: 2.4rem;
+  }
+
+  /* The empty slot that holds the items apart where the action sits. */
+  .fuji-bottom-nav-slot {
+    flex: 0 0 4.5rem;
+  }
+
+  /*
+   * The action is a sibling of the masked bar, NOT a child - a child would
+   * be clipped by the same mask. `sticky`/`fixed` on the nav give it a
+   * containing block, and the button is placed over the notch's centre.
+   */
+  .fuji-bottom-nav-action {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    translate: -50% -50%;
+    z-index: 1;
+  }
+
+  /*
+   * Carousel responsive slide count.
+   *
+   * `slidesPerView` can differ per breakpoint, which needs media queries, so
+   * each carousel used to inject its own `<style dangerouslySetInnerHTML>`
+   * keyed by a generated id - a page with six carousels shipped six
+   * stylesheets. The breakpoints are identical every time; only four numbers
+   * are per-instance, so the queries live here and the numbers ride in as
+   * inline custom properties. `resolvePerView` in Carousel.tsx always fills
+   * all four values, so no `var()` fallbacks are needed. Widths match
+   * Tailwind's sm/md/lg, which the rest of the package is built against.
+   */
+  .fuji-carousel {
+    --fuji-cv-per: var(--fuji-cv-per-base);
+  }
+
+  @media (min-width: 640px) {
+    .fuji-carousel {
+      --fuji-cv-per: var(--fuji-cv-per-sm);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .fuji-carousel {
+      --fuji-cv-per: var(--fuji-cv-per-md);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .fuji-carousel {
+      --fuji-cv-per: var(--fuji-cv-per-lg);
+    }
   }
 
   .fuji-scrollbar {
@@ -99,6 +496,246 @@ html[data-fuji-boot] * {
   }
 
   /*
+   * Lightbox backdrop (Image's fullscreen preview). Deliberately darker than
+   * the shared overlay scrim: a dialog sits on a filled panel that separates
+   * itself from the page, but a photo is shown edge-to-edge with nothing
+   * behind it, so the page stayed visible around it and competed with the
+   * image. Fixed rather than themed - the viewer is looking at a photograph,
+   * and the surround should be neutral in every theme.
+   */
+  .fuji-lightbox-backdrop {
+    background-color: rgb(0 0 0 / 86%);
+  }
+
+  /*
+   * Overlay motion.
+   *
+   * Base UI stamps `data-starting-style` for one frame on mount and
+   * `data-ending-style` for the length of the exit, so a whole enter/exit is
+   * expressible as one transition plus two attribute selectors - no animation
+   * runtime, no keyframes, and no React state to keep in sync.
+   *
+   * These are shared recipes rather than per-component utility strings
+   * because the timing IS part of the identity, and eleven overlays each
+   * carrying their own `transition-[transform,opacity] duration-... ease-...`
+   * had drifted into four durations and two different scales for what a user
+   * reads as a single gesture. Tuning now happens in one place.
+   *
+   * `scale` is used as its own CSS property, never through `transform`:
+   * Tailwind v4 compiles `-translate-x-1/2` (which centers every modal) to
+   * the separate `translate` property, and `translate`/`scale`/`transform`
+   * compose rather than overwrite. That is what lets the modal recipe below
+   * add a `transform: translateY(...)` rise without disturbing the centering.
+   */
+  .fuji-motion-backdrop {
+    transition: opacity var(--fuji-duration-overlay) var(--fuji-ease);
+  }
+
+  .fuji-motion-backdrop[data-starting-style],
+  .fuji-motion-backdrop[data-ending-style] {
+    opacity: 0;
+  }
+
+  .fuji-motion-modal {
+    transition:
+      opacity var(--fuji-duration-overlay) var(--fuji-ease),
+      scale var(--fuji-duration-overlay) var(--fuji-ease-spring),
+      transform var(--fuji-duration-overlay) var(--fuji-ease-spring);
+  }
+
+  .fuji-motion-modal[data-starting-style] {
+    opacity: 0;
+    scale: 0.96;
+    transform: translateY(0.75rem);
+  }
+
+  /*
+   * The exit deliberately drops the spring. An overshoot on the way out reads
+   * as the dialog bouncing back into the room rather than leaving it, so the
+   * close uses the plain ease over the shorter base duration - dismissal
+   * should feel immediate, not choreographed.
+   */
+  .fuji-motion-modal[data-ending-style] {
+    opacity: 0;
+    scale: 0.98;
+    transition-duration: var(--fuji-duration-base);
+    transition-timing-function: var(--fuji-ease);
+  }
+
+  .fuji-motion-popup,
+  .fuji-motion-popup-morph {
+    transform-origin: var(--transform-origin);
+  }
+
+  .fuji-motion-popup {
+    transition:
+      opacity var(--fuji-duration-fast) var(--fuji-ease),
+      scale var(--fuji-duration-fast) var(--fuji-ease-spring);
+  }
+
+  /*
+   * NavigationMenu's popup is a single box that also resizes as the pointer
+   * moves between top-level items, so it needs width/height in the same
+   * transition. Everything else about it matches `.fuji-motion-popup`.
+   */
+  .fuji-motion-popup-morph {
+    transition:
+      opacity var(--fuji-duration-fast) var(--fuji-ease),
+      scale var(--fuji-duration-fast) var(--fuji-ease-spring),
+      width var(--fuji-duration-base) var(--fuji-ease),
+      height var(--fuji-duration-base) var(--fuji-ease);
+  }
+
+  .fuji-motion-popup[data-starting-style],
+  .fuji-motion-popup[data-ending-style],
+  .fuji-motion-popup-morph[data-starting-style],
+  .fuji-motion-popup-morph[data-ending-style] {
+    opacity: 0;
+    scale: 0.96;
+  }
+
+  /*
+   * Edge-anchored sheets get no spring: the drawer travels to an edge, and an
+   * overshoot past that resting position pulls it off the edge it is supposed
+   * to be flush against, opening a visible gap for a frame. The per-side
+   * offsets stay on the component (they differ per `side`); only the timing
+   * lives here.
+   */
+  .fuji-motion-sheet {
+    /* Base UI's Drawer writes the live drag distance into these while the
+       pointer is down (`data-swiping`), then zeroes them on release. Reading
+       them through `transform` is what makes the sheet follow the finger;
+       the spring on `transform` is what snaps it back when the drag was not
+       far or fast enough to dismiss. */
+    transform: translate(var(--drawer-swipe-movement-x, 0px), var(--drawer-swipe-movement-y, 0px));
+    transition:
+      opacity var(--fuji-duration-overlay) var(--fuji-ease),
+      translate var(--fuji-duration-overlay) var(--fuji-ease),
+      transform var(--fuji-duration-overlay) var(--fuji-ease-spring);
+  }
+
+  .fuji-motion-sheet[data-swiping] {
+    transition: none;
+  }
+
+  .fuji-motion-sheet[data-starting-style],
+  .fuji-motion-sheet[data-ending-style] {
+    opacity: 0;
+  }
+
+  /* The grab handle on a bottom sheet - the affordance that says "drag me". */
+  /* The grab handle. Sits above the sheet's content with its own breathing
+     room - flush against the first line it read as a stray divider rather
+     than something to drag. */
+  .fuji-sheet-handle {
+    width: 2.25rem;
+    height: 0.25rem;
+    margin: -0.5rem auto 0.5rem;
+    border-radius: 999px;
+    background: var(--fuji-border-strong);
+    flex-shrink: 0;
+  }
+
+  /*
+   * A toast has no edge to sit flush against, so unlike the sheet above it
+   * keeps the spring: the small overshoot is what makes it read as arriving
+   * rather than simply appearing.
+   */
+  /*
+   * Toast stack - a port of motion.dev's stacked notifications. Toasts sit
+   * on top of each other at the bottom of the viewport, newest in front;
+   * each one behind is pushed up 10px, scaled down 6% and faded 20% per
+   * step (`--toast-index` is 0 for the frontmost, from Base UI). A new toast
+   * springs in from 60px below at 85%; a dismissed one shrinks to 80% and
+   * drops 20px over 200ms. Hovering or focusing the viewport (`data-expanded`)
+   * fans the stack out into a readable list using the heights Base UI
+   * measures (`--toast-offset-y`), and toasts past the provider's `limit`
+   * (`data-limited`) fade out entirely. `--toast-swipe-movement-*` keeps
+   * swipe-to-dismiss attached to the front toast.
+   */
+  .fuji-toast-viewport {
+    perspective: 800px;
+  }
+
+  .fuji-motion-toast {
+    --fuji-toast-gap: 0.625rem;
+    --fuji-toast-scale: calc(1 - var(--toast-index, 0) * 0.06);
+    --fuji-toast-shift: calc(var(--toast-index, 0) * -10px);
+    z-index: calc(1000 - var(--toast-index, 0));
+    opacity: calc(1 - var(--toast-index, 0) * 0.2);
+    transform: translateX(var(--toast-swipe-movement-x, 0px))
+      translateY(calc(var(--toast-swipe-movement-y, 0px) + var(--fuji-toast-shift)))
+      scale(var(--fuji-toast-scale));
+    transform-origin: center bottom;
+    transition:
+      transform var(--fuji-duration-overlay) var(--fuji-ease-spring),
+      opacity var(--fuji-duration-overlay) var(--fuji-ease);
+    transition-delay: calc(var(--toast-index, 0) * 20ms);
+    will-change: transform, opacity;
+  }
+
+  .fuji-motion-toast[data-expanded] {
+    opacity: 1;
+    transform: translateX(var(--toast-swipe-movement-x, 0px))
+      translateY(
+        calc(
+          var(--toast-swipe-movement-y, 0px) - var(--toast-offset-y, 0px) - var(--toast-index, 0) *
+            var(--fuji-toast-gap)
+        )
+      )
+      scale(1);
+  }
+
+  .fuji-motion-toast[data-starting-style] {
+    opacity: 0;
+    transform: translateY(60px) scale(0.85);
+    transition-delay: 0ms;
+  }
+
+  .fuji-motion-toast[data-ending-style] {
+    opacity: 0;
+    transform: translateX(var(--toast-swipe-movement-x, 0px))
+      translateY(calc(var(--toast-swipe-movement-y, 0px) + 20px)) scale(0.8);
+    transition-duration: 200ms;
+    transition-timing-function: ease-in;
+    transition-delay: 0ms;
+  }
+
+  .fuji-motion-toast[data-limited] {
+    opacity: 0;
+    pointer-events: none;
+    /* Not just invisible: an invisible toast would still composite its
+       overlay-strength backdrop blur under the visible stack. */
+    visibility: hidden;
+  }
+
+  .fuji-motion-toast[data-swiping] {
+    transition: none;
+  }
+
+  /*
+   * The active-item indicator shared by Tabs and SegmentedControl. Base UI
+   * publishes the active item's box as `--active-tab-left/top/width/height`,
+   * so the slide is a plain transition on `translate` and the box size - and
+   * the spring is what makes it read as one object moving between slots
+   * rather than a highlight being repainted in a new place.
+   */
+  /*
+   * Deliberately NOT `--fuji-ease-spring`. That curve overshoots its target -
+   * measured travelling to 198px on a 194px destination - and on the pill
+   * variant the indicator is an opaque tile, so the overshoot carried it past
+   * its slot and briefly across the neighbouring tab's label before settling
+   * back. This curve is decelerating-but-monotonic: it keeps the quick,
+   * confident arrival without ever passing the slot it is moving into.
+   */
+  .fuji-motion-indicator {
+    transition:
+      translate var(--fuji-duration-base) cubic-bezier(0.2, 0, 0, 1),
+      width var(--fuji-duration-base) cubic-bezier(0.2, 0, 0, 1),
+      height var(--fuji-duration-base) cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  /*
    * Base "card" tier - subtle/strong/overlay variants add graduated
    * translucency + blur under the glass theme only (see tokens.css);
    * outside glass theme these are just their matching flat surface color.
@@ -111,12 +748,222 @@ html[data-fuji-boot] * {
     background-color: var(--fuji-surface-subtle);
   }
 
+  /*
+   * Points at `--fuji-surface-raised`, NOT `--fuji-surface-strong`, despite
+   * the name. `-strong` is the bare-fill tier - Switch/Slider/Progress tracks,
+   * Skeleton, Chart gridlines - so it tints AWAY from the page in both glass
+   * tints (white under dark glass, dark under light glass) and anything
+   * painting text on it loses contrast: 2.10:1 measured on AvatarGroup's "+N"
+   * before that split existed. This class is advertised to consumers for
+   * "inputs, text-heavy areas" (tokens.css) and docs/theming.md tells them to
+   * reach for it instead of hand-rolling a backdrop-filter, so it has to be
+   * the content-bearing tier. `-raised` is byte-identical to `-strong` in both
+   * solid themes and under light glass, so this changes dark glass only -
+   * from the white bare-fill tint to the dark content tint, which is the
+   * direction a text-bearing panel needs there.
+   */
   .fuji-glass-surface-strong {
-    background-color: var(--fuji-surface-strong);
+    background-color: var(--fuji-surface-raised);
+  }
+
+  /* Dropzone's drag-over fill. It cannot be a `fj:bg-*` utility: the element
+     also carries `.fuji-glass-surface-subtle` for its backdrop blur, and
+     `scripts/css-entry.css` orders `fuji.components` AFTER `fuji.utilities`,
+     so that class beat every background utility regardless of specificity and
+     the drag-over feedback simply never painted, in every theme. Same layer,
+     later in source, so it wins - and the blur stays. Matches the
+     data-attribute state pattern used by `.fuji-chart-segment[data-active]`
+     and `.fuji-carousel[data-swiping]` above. */
+  .fuji-dropzone[data-drag-active] {
+    background-color: var(--fuji-surface-raised);
+  }
+
+  /* Interactive rows/cells that raise on hover (and stay raised while active or
+     while their popup is open). The fill alone is not enough under dark glass:
+     on the darkest part of the atmosphere the panel behind these rows is
+     already near-black, so NO darker fill can separate from it - measured 1.11:1
+     for the fill on its own, and no value improves it, because there is no
+     luminance left to spend. A lighter fill would separate, but light fills need
+     dark ink, which is exactly what the SELECTED state uses, so a lighter hover
+     would read as a selection.
+     The hairline is what carries it: an edge is luminance-independent, so it
+     reads at any backdrop brightness, and it is the same device the glass
+     surfaces already use to read as glass rather than as a flat scrim. The fill
+     still does the work in solid themes, where it has plenty of headroom.
+
+     Measured against a resting row beside it, dark glass over the atmosphere:
+     fill alone 1.11:1, fill + this hairline 1.93:1.
+     The edge intensity is a deliberate dial, and `--fuji-border-strong` (40%
+     white here) is the chosen stop. Brighter edges measure better against a
+     resting row - 55% gives 2.79, 70% gives 3.87, clearing a 3:1 boundary floor
+     - but a 1px near-white ring in dark glass starts reading as the FOCUS ring,
+     and a hover that looks like keyboard focus is a worse defect than a quiet
+     hover. WCAG 2.5/1.4.11 require the focus indicator, not the hover one, and
+     focus here is a separate `outline`. If a louder hover is wanted, raise this
+     one token - the numbers above are the trade. */
+  .fuji-hover-raised {
+    transition-property: background-color, box-shadow;
+    transition-duration: var(--fuji-duration-fast);
+    transition-timing-function: var(--fuji-ease);
+  }
+
+  .fuji-hover-raised:hover,
+  .fuji-hover-raised[data-active],
+  .fuji-hover-raised[data-popup-open],
+  .fuji-hover-raised[data-raised] {
+    background-color: var(--fuji-surface-raised);
+    box-shadow: inset 0 0 0 1px var(--fuji-border-strong);
   }
 
   .fuji-glass-surface-overlay {
     background-color: var(--fuji-surface-overlay);
+  }
+
+  /*
+   * Overlay panel for a popup that renders *inside* another glass surface
+   * instead of portaling to the body (Calendar's month/year chooser).
+   * `backdrop-filter` cannot do the job there: an ancestor that has one
+   * becomes a backdrop root, so a nested panel's own backdrop-filter stops
+   * seeing the sibling content it is covering - the calendar grid read
+   * straight through the translucent tint, completely unblurred, with day
+   * numbers legible behind the month list. Such panels take a near-opaque
+   * fill instead, and skip the pointless extra compositing layer.
+   * Light/dark need no extra token: their `--fuji-surface-overlay` is
+   * already an opaque color, so the `var()` fallback resolves to it.
+   */
+  /*
+   * Track behind a progress arc. It has to stay perceptible across the whole
+   * glass atmosphere, whose gradient runs from a dark blue-grey to a much
+   * lighter warm grey. The theme's own `--fuji-border-strong` is an 18% *dark*
+   * tint there, which vanishes against the dark end - the ring read as a bare
+   * coloured arc with no track at all. A light tint reads across the entire
+   * gradient. Light/dark keep the border token, where it already works.
+   */
+  .fuji-progress-track {
+    stroke: var(--fuji-border-strong);
+  }
+
+  [data-fuji-material="glass"] .fuji-progress-track {
+    stroke: rgb(255 255 255 / 26%);
+  }
+
+  /* Light tint: a white stroke at low alpha is invisible over this tint's pale
+     atmosphere - measured 1.07:1 on `foundation-circularprogress--default`,
+     under WCAG's 3:1 floor for non-text UI, so the track effectively
+     disappeared. A dark, low-alpha stroke reads across the whole light
+     atmosphere gradient instead, the same light/dark split the
+     `.fuji-kbd-surface` and keycap surface tokens already use in tokens.css
+     for this same problem. 55% keeps ~3.5-3.9:1 across the gradient's
+     brightest corner down to its darkest, with margin over the 3:1 floor. */
+  [data-fuji-material="glass"][data-fuji-theme="light"] .fuji-progress-track {
+    stroke: rgb(22 24 27 / 55%);
+  }
+
+  /*
+   * Chat bubble fills, opaque on purpose. A bubble and its tail are two
+   * separate elements, and two *translucent* fills over the same canvas do not
+   * meet cleanly - the tail rendered as a visibly darker wedge glued to the
+   * bubble under glass. Verified by forcing both opaque, which removed the
+   * seam entirely while nothing else changed. Opaque is also how chat clients
+   * actually draw bubbles, and follows the HIG's rule that the content layer
+   * uses plain surfaces rather than the glass material.
+   *
+   * Light/dark need no token: their `--fuji-surface` / `--fuji-contained-default`
+   * are already opaque, so the `var()` fallback resolves to them unchanged.
+   */
+  /* Applied to the wrapper holding BOTH the bubble and its tail, so the cast
+     follows their combined silhouette. See the token for why this is a filter
+     rather than a box-shadow. */
+  /*
+   * Speed dial (FloatingActionBar).
+   *
+   * The stagger and the taper are what make the column read as unfurling from
+   * the trigger rather than a menu appearing. Each action carries its own
+   * `transition-delay` (set inline, since the value depends on its index) and
+   * `--fuji-fab-scale`, which shrinks each step further from the trigger.
+   *
+   * Animated with `scale`/`translate`/`opacity` - never `transform` - because
+   * Tailwind v4 emits those as individual properties, and a transition naming
+   * only `transform` would not cover them.
+   */
+  .fuji-fab-action {
+    scale: calc(var(--fuji-fab-scale, 1) * 0.4);
+    /* Starts collapsed toward the trigger, so the column grows out of it. The
+       sign follows the resolved side (see the [data-side] rules below). */
+    translate: 0 12px;
+    opacity: 0;
+    transform-origin: bottom right;
+    transition:
+      scale var(--fuji-duration-base) var(--fuji-ease-spring),
+      translate var(--fuji-duration-base) var(--fuji-ease-spring),
+      opacity var(--fuji-duration-fast) var(--fuji-ease);
+  }
+
+  [data-side="down"] .fuji-fab-action {
+    translate: 0 -12px;
+    transform-origin: top right;
+  }
+
+  [data-open] > * > .fuji-fab-action {
+    scale: var(--fuji-fab-scale, 1);
+    translate: 0 0;
+    opacity: 1;
+  }
+
+  /* The label trails its action button slightly, so the pair arrives as one
+     object with the icon leading rather than two things fading in together. */
+  .fuji-fab-label {
+    translate: 8px 0;
+    opacity: 0;
+    transition:
+      translate var(--fuji-duration-base) var(--fuji-ease-spring),
+      opacity var(--fuji-duration-fast) var(--fuji-ease);
+    transition-delay: inherit;
+  }
+
+  [data-open] .fuji-fab-label {
+    translate: 0 0;
+    opacity: 1;
+  }
+
+  /* A soft halo under the trigger, so it reads as sitting above the page
+     rather than pasted onto it. Drawn with a shadow rather than a filter so it
+     never creates a backdrop root over a glass surface. */
+  .fuji-fab-trigger {
+    box-shadow:
+      var(--fuji-shadow-panel),
+      0 0 0 0 rgb(from var(--fuji-default) r g b / 35%);
+    transition-property: rotate, scale, box-shadow;
+  }
+
+  .fuji-fab-trigger:hover {
+    box-shadow:
+      var(--fuji-shadow-panel),
+      0 0 0 8px rgb(from var(--fuji-default) r g b / 12%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fuji-fab-action,
+    .fuji-fab-label {
+      transition: none;
+      transition-delay: 0ms !important;
+    }
+  }
+
+  .fuji-chat-bubble-shadow {
+    filter: var(--fuji-chat-bubble-shadow);
+  }
+
+  .fuji-chat-bubble-incoming {
+    background-color: var(--fuji-chat-bubble-incoming, var(--fuji-surface));
+  }
+
+  .fuji-chat-bubble-outgoing {
+    background-color: var(--fuji-chat-bubble-outgoing, var(--fuji-contained-default));
+  }
+
+  .fuji-overlay-panel-nested {
+    background-color: var(--fuji-surface-overlay-nested, var(--fuji-surface-overlay));
   }
 
   /* Same neutral chip everywhere by default; glass overrides it to a darker,
@@ -127,46 +974,357 @@ html[data-fuji-boot] * {
   }
 
   /*
-   * Toast sits on `.fuji-glass-surface-overlay`, which - only under glass -
-   * composites to a medium-brightness tint rather than the near-page-color
-   * panel it is in light/dark. The plain `text-fuji-foreground` (white, tuned
-   * for the dark atmosphere) and the plain `text-fuji-{tone}` accents (bright
-   * pastels, same reasoning) both fall under WCAG's contrast floor against
-   * that panel - confirmed by computing contrast against the atmosphere's
-   * brightest sampled region, since Toast is pinned to the bottom-right
-   * corner where the gradient is lightest. `-foreground` tokens are normally
-   * for a same-tone *solid* fill (e.g. a "contained" button), not this
-   * neutral panel, but they're dark enough to read here too, and reusing them
-   * avoids inventing a new color. Scoped to glass only - light/dark already
-   * have correct contrast with the plain classes.
+   * On-screen keyboard (Keyboard) - the full-board sibling of the Kbd chip.
+   *
+   * The deck is a container so a 100% board can size its caps from the space
+   * it is actually given: `--fuji-key-unit` is the smaller of the size's own
+   * cap size and whatever divides the container evenly, which keeps a
+   * nineteen-unit board in proportion from a wide page down to a narrow
+   * column with no resize listener and no media queries. No fallback
+   * declaration precedes it, and none is needed: container query units are
+   * Baseline since 2023 (Chrome 105, Safari 16, Firefox 110). One would not
+   * work here anyway - a custom property accepts any token sequence at parse
+   * time, so a later declaration always wins over an earlier one; an
+   * unsupported unit is only discovered at computed-value time, where it
+   * invalidates the variable itself rather than reviving the earlier
+   * declaration.
    */
-  [data-fuji-theme="glass"] .fuji-toast-title,
-  [data-fuji-theme="glass"] .fuji-toast-description,
-  [data-fuji-theme="glass"] .fuji-toast-dismiss {
-    color: var(--fuji-earth-foreground);
+  .fuji-keyboard {
+    container-type: inline-size;
   }
 
-  [data-fuji-theme="glass"] .fuji-toast-icon-success {
-    color: var(--fuji-forest-foreground);
+  .fuji-keyboard-deck {
+    /* No width target unless one is asked for: at this size the `min()` below
+       always resolves to the ceiling, so the two sizing routes are one
+       expression instead of a second class toggling the first off. */
+    --fuji-key-target: 100000px;
+    --fuji-key-max: min(
+      var(--fuji-key-ceiling),
+      calc((var(--fuji-key-target) - var(--fuji-key-pad) * 2) / var(--fuji-key-columns))
+    );
+    --fuji-key-unit: min(
+      var(--fuji-key-max),
+      calc((100cqi - var(--fuji-key-pad) * 2) / var(--fuji-key-columns))
+    );
+    display: grid;
+    width: max-content;
+    max-width: 100%;
+    padding: var(--fuji-key-pad);
+    grid-auto-rows: var(--fuji-key-unit);
   }
 
-  [data-fuji-theme="glass"] .fuji-toast-icon-warning {
-    color: var(--fuji-sun-foreground);
+  .fuji-keyboard-sm {
+    --fuji-key-ceiling: 30px;
+    --fuji-key-gap: 3px;
+    --fuji-key-pad: 8px;
   }
 
-  [data-fuji-theme="glass"] .fuji-toast-icon-danger {
-    color: var(--fuji-fire-foreground);
+  .fuji-keyboard-md {
+    --fuji-key-ceiling: 38px;
+    --fuji-key-gap: 4px;
+    --fuji-key-pad: 10px;
   }
 
-  [data-fuji-theme="glass"] .fuji-toast-icon-info {
-    color: var(--fuji-water-foreground);
+  .fuji-keyboard-lg {
+    --fuji-key-ceiling: 46px;
+    --fuji-key-gap: 5px;
+    --fuji-key-pad: 12px;
+  }
+
+  /*
+   * A docked board is sized against the screen, not by the cap scale that
+   * suits a diagram sitting inside a card: bigger caps, and a target width
+   * per `size` - roughly 45vw / 60vw / 75vw, never past 96vw. `width` on the
+   * component overrides the target inline.
+   *
+   * The ceiling is what stops a target from producing absurd caps on a
+   * low-column board: 60vw spread over the numpad's four columns is a
+   * 187px key. Both are upper bounds, and `--fuji-key-unit` still takes the
+   * smaller of them and the container, so a board can never outgrow what it
+   * is given - see the `min()` against `100cqi` above.
+   */
+  .fuji-keyboard-floating .fuji-keyboard-sm {
+    --fuji-key-ceiling: 52px;
+    --fuji-key-target: min(96vw, max(45vw, 30rem));
+  }
+
+  .fuji-keyboard-floating .fuji-keyboard-md {
+    --fuji-key-ceiling: 72px;
+    --fuji-key-target: min(96vw, max(60vw, 40rem));
+  }
+
+  .fuji-keyboard-floating .fuji-keyboard-lg {
+    --fuji-key-ceiling: 92px;
+    --fuji-key-target: min(98vw, max(75vw, 50rem));
+  }
+
+  /*
+   * Anchored to a parent, the board is measured by that parent rather than by
+   * the screen - a keypad filling a card has nothing to do with the viewport,
+   * and a viewport-sized target there produced caps that swallowed the card
+   * whole. Dropping the target leaves the ceiling and the container `min()`,
+   * which is exactly "as large as the size allows, but never wider than the
+   * parent".
+   */
+  .fuji-keyboard-floating[data-fuji-keyboard-anchor="parent"] .fuji-keyboard-deck {
+    --fuji-key-target: 100000px;
+  }
+
+  /*
+   * The gap between caps is each cap's own margin rather than the grid's
+   * `gap`. Columns are quarter units so that 1.25u/1.75u/6.25u caps land on
+   * exact boundaries, and a real grid gap would then be counted three times
+   * inside every one-unit cap - each cap would render narrower than its
+   * declared width, by a different amount depending on how many quarter
+   * columns it spans.
+   *
+   * Legend sizes are derived from the resolved key unit for the same reason
+   * the unit is computed in CSS: when the board shrinks to fit its container,
+   * a fixed px legend would not shrink with it.
+   */
+  .fuji-keycap {
+    /* Positioning context for the Caps Lock lamp below. */
+    position: relative;
+    margin: calc(var(--fuji-key-gap) / 2);
+    padding-inline: calc(var(--fuji-key-unit) * 0.16);
+    font-family: var(--fuji-font-sans);
+    font-size: max(9px, calc(var(--fuji-key-unit) * 0.3));
+    line-height: 1.1;
+    /* The sculpt: a lit top edge and a shaded bottom one, both low-alpha so
+       the same pair reads as a moulded cap in light, dark and glass. */
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 20%),
+      inset 0 -1px 0 rgb(0 0 0 / 10%),
+      var(--fuji-shadow-keycap);
+    transition-property: translate, box-shadow;
+    transition-duration: var(--fuji-duration-fast);
+    transition-timing-function: var(--fuji-ease);
+  }
+
+  /* Two-tone grouping: letters and digits on the light caps, modifiers and the
+     function row on the darker ones. Declared here rather than as a utility
+     because glass overrides both in tokens.css. */
+  .fuji-keycap-alpha {
+    background-color: var(--fuji-keycap-surface, var(--fuji-surface));
+  }
+
+  .fuji-keycap-modifier {
+    background-color: var(--fuji-keycap-surface-strong, var(--fuji-surface-strong));
+  }
+
+  /*
+   * A legend that is a word rather than a character - `Backspace`, `PgDn`,
+   * `PrtSc` - is set smaller and tighter, and gives up most of its side
+   * padding. Keyed off the legend, not the cap's role: `Esc` needs this and
+   * the arrows, which are modifiers too, do not. Without it `PgDn` lost two
+   * letters to the cap's own `overflow: hidden` as soon as the board scaled
+   * down to fit a narrow column.
+   */
+  .fuji-keycap-word {
+    padding-inline: calc(var(--fuji-key-unit) * 0.06);
+    font-size: max(6px, calc(var(--fuji-key-unit) * 0.24));
+    letter-spacing: -0.01em;
+  }
+
+  .fuji-keycap-secondary {
+    font-size: max(8px, calc(var(--fuji-key-unit) * 0.24));
+    line-height: 1.1;
+    opacity: 0.7;
+  }
+
+  /* Wide caps print their legend against the left edge, the way Tab, Caps and
+     Shift are actually moulded. */
+  .fuji-keycap[data-wide] {
+    align-items: flex-start;
+    padding-inline-start: calc(var(--fuji-key-unit) * 0.16);
+  }
+
+  /*
+   * A focused cap without this rule still gets a ring - the UA's own
+   * `outline: auto` - but that is the browser's colour, not the design
+   * system's, and it disappears the moment a consumer resets `outline: none`
+   * on their own buttons (a very common reset) with nothing here to fall
+   * back to.
+   *
+   * `outline`, not a Tailwind `ring-*` utility: a ring compiles to
+   * `box-shadow`, and `.fuji-keycap` already spends that property on the
+   * moulded-cap sculpt above, which the strike keyframe also animates - a
+   * ring would either overwrite the sculpt at rest or get discarded mid
+   * strike. `outline` is a separate paint layer that touches neither.
+   *
+   * The offset is negative rather than the usual outward `+2px` (see Button,
+   * Link, Navbar) because the ring has to fit in `--fuji-key-gap`, the space
+   * between two caps - only 3-5px depending on `size` - and an outward ring
+   * at that scale draws a stroke straight across the next cap's own edge.
+   * Pulling it inward instead caps how far it can ever reach at one 2px in,
+   * one 1px out, regardless of `size`. `.fuji-keycap`'s own
+   * `overflow: hidden` does not clip this: that clips the cap's descendants
+   * (the legend), not a paint effect of the cap's own box.
+   */
+  .fuji-keycap:focus-visible {
+    outline: 2px solid var(--fuji-focus-ring);
+    outline-offset: -1px;
+  }
+
+  /* No hover state on a cap, deliberately. A key does nothing until it is
+     pressed, and a board that lifts a cap under the passing cursor reads as a
+     row of web buttons rather than as a keyboard. The press is the feedback. */
+
+  /* Held - by a pointer, or by the real keyboard under `captureKeys`. */
+  .fuji-keycap[data-pressed],
+  button.fuji-keycap:active:not(:disabled) {
+    translate: 0 1px;
+    box-shadow: inset 0 2px 4px rgb(0 0 0 / 18%);
+  }
+
+  /*
+   * The Caps Lock lamp. A real board tells you the lock is on with a light on
+   * the cap itself, not by redrawing its legend, and that is the only signal
+   * a latched modifier gets here too - the legends stay put.
+   *
+   * Top-right corner: every latched cap on this board (`Caps`, both `Shift`s)
+   * is a wide one, so its legend is set against the LEFT edge
+   * (`[data-wide]`) - the right is the only corner guaranteed to be clear of
+   * it at any board size. Sized from
+   * `--fuji-key-unit` like every other cap detail, with a floor so it stays
+   * visible once the board scales down, and lit in the board's own `tone` so
+   * it matches the colour a struck cap flashes.
+   */
+  .fuji-keycap[data-locked]::after {
+    content: "";
+    position: absolute;
+    inset-block-start: max(3px, calc(var(--fuji-key-unit) * 0.13));
+    inset-inline-end: max(3px, calc(var(--fuji-key-unit) * 0.14));
+    width: max(3px, calc(var(--fuji-key-unit) * 0.13));
+    aspect-ratio: 1;
+    border-radius: 50%;
+    background: var(--fuji-keycap-glow);
+    box-shadow: 0 0 max(4px, calc(var(--fuji-key-unit) * 0.18)) var(--fuji-keycap-bloom);
+  }
+
+  /*
+   * What a struck cap lights up in - set once on the deck and inherited by
+   * every cap. The bloom is the light bleeding out around the cap; the ring is
+   * the lit edge of the cap itself, and stays close to opaque so the effect is
+   * still visible on a light page where a soft glow washes out.
+   */
+  .fuji-keycap-glow-default {
+    --fuji-keycap-glow: rgb(from var(--fuji-default) r g b / 85%);
+    --fuji-keycap-bloom: rgb(from var(--fuji-default) r g b / 40%);
+  }
+
+  .fuji-keycap-glow-forest {
+    --fuji-keycap-glow: rgb(from var(--fuji-forest) r g b / 85%);
+    --fuji-keycap-bloom: rgb(from var(--fuji-forest) r g b / 40%);
+  }
+
+  .fuji-keycap-glow-sun {
+    --fuji-keycap-glow: rgb(from var(--fuji-sun) r g b / 85%);
+    --fuji-keycap-bloom: rgb(from var(--fuji-sun) r g b / 40%);
+  }
+
+  .fuji-keycap-glow-fire {
+    --fuji-keycap-glow: rgb(from var(--fuji-fire) r g b / 85%);
+    --fuji-keycap-bloom: rgb(from var(--fuji-fire) r g b / 40%);
+  }
+
+  .fuji-keycap-glow-water {
+    --fuji-keycap-glow: rgb(from var(--fuji-water) r g b / 85%);
+    --fuji-keycap-bloom: rgb(from var(--fuji-water) r g b / 40%);
+  }
+
+  /*
+   * The strike: a cap actually travels down and springs back when it is hit.
+   *
+   * `:active` alone cannot do this - it ends the instant the pointer is
+   * released, so the cap snaps back to rest with no rebound, and a tap shorter
+   * than the transition never renders the depressed state at all. As a
+   * keyframe the whole stroke plays out regardless of how briefly the button
+   * was held, and `Keyboard` restarts it by re-stamping `data-struck`, so
+   * hammering one cap reads as repeated strikes rather than one long press.
+   *
+   * The cap also lights up in `tone` at the bottom of its travel - a lit edge,
+   * a bloom around it, and the legend itself taking the colour - which is the
+   * backlit-mechanical read, and the only place colour appears on a board
+   * nobody has configured. It fades out with the rebound rather than latching.
+   *
+   * On `--fuji-duration-base`, which is 0ms under
+   * `prefers-reduced-motion: reduce` - the stroke disappears there for free.
+   * `--fuji-ease-spring` overshoots, and that is the point: it carries the cap
+   * a little past the bottom of its travel and a little past rest on the way
+   * back up, which is what makes it read as a key rather than a fading
+   * highlight.
+   */
+  .fuji-keycap[data-struck] {
+    animation: fuji-keycap-strike var(--fuji-duration-base) var(--fuji-ease-spring);
+  }
+
+  /*
+   * A docked board arrives rather than appearing. Animated on the deck, not on
+   * the wrapper: `placement="center"` centres the wrapper with a `translate`,
+   * and Tailwind v4 compiles that to the `translate` property - a keyframe
+   * touching the same property on the same element would fight the centring
+   * for the length of the entrance.
+   *
+   * On `--fuji-duration-overlay`, which is 0ms under
+   * `prefers-reduced-motion: reduce`, so the dock simply appears there.
+   *
+   * Entrance only: the board unmounts the moment it closes. An exit would have
+   * to keep a closed keyboard mounted and inert over the page it is covering,
+   * and a dock should get out of the way immediately - see DESIGN.md, "Exit is
+   * not entry reversed".
+   */
+  .fuji-keyboard-floating > .fuji-keyboard-deck {
+    animation: fuji-keyboard-dock var(--fuji-duration-overlay) var(--fuji-ease) both;
+  }
+
+  @keyframes fuji-keyboard-dock {
+    from {
+      opacity: 0;
+      translate: 0 12px;
+    }
+  }
+
+  @keyframes fuji-keycap-strike {
+    0% {
+      translate: 0 0;
+      color: inherit;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 20%),
+        inset 0 -1px 0 rgb(0 0 0 / 10%),
+        var(--fuji-shadow-keycap);
+    }
+    35% {
+      translate: 0 2px;
+      color: var(--fuji-keycap-glow);
+      box-shadow:
+        inset 0 2px 5px rgb(0 0 0 / 22%),
+        0 0 0 1px var(--fuji-keycap-glow),
+        0 0 16px 2px var(--fuji-keycap-bloom);
+    }
+    100% {
+      translate: 0 0;
+      color: inherit;
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 20%),
+        inset 0 -1px 0 rgb(0 0 0 / 10%),
+        var(--fuji-shadow-keycap);
+    }
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* The ripple is skipped in `useRipple` itself (it checks the media query
+     before creating a node), so nothing is needed for it here. */
   .fuji-chart-entrance {
     opacity: 1;
     transform: none;
     transition: none;
+  }
+
+  /* No static fallback on purpose: the ripple is pure decoration, so under
+     reduced motion it simply never becomes visible. */
+  .fuji-ripple {
+    animation: none;
   }
 }

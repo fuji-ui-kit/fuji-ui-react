@@ -1,6 +1,10 @@
 ---
 name: fuji-react-accessibility-review
-description: Audit @fuji-ui/react components for semantic HTML, accessible names, ARIA state, keyboard operation, focus management, composite-widget patterns, contrast across themes, motion and transparency preferences, and touch targets. Use for review-only audits unless fixes are explicitly requested.
+description: Audit @fujiui/react components for semantic HTML, accessible names, ARIA state, keyboard operation, focus management, composite-widget patterns, contrast across themes, motion and transparency preferences, and touch targets. Use for review-only audits unless fixes are explicitly requested.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React accessibility review
@@ -23,9 +27,14 @@ review-only.
 4. Where behavior is unclear from source, write a scratch test (outside the repo
    or clearly marked as temporary) using Testing Library + `user-event` rather
    than reasoning about it. Do not add permanent test files unless asked.
-5. For visual checks (contrast, focus visibility, touch targets), verify in the
-   sibling `fuji-ui-website` running against a packed build - the package has no
-   dev server of its own.
+5. For visual checks (contrast, focus visibility, touch targets), verify in
+   the package's Storybook (`npm run storybook`) across the toolbar's theme /
+   radius / elevation matrix, and for glass the `Backdrop` and `Glass tint`
+   toolbars. The cross-component contracts that came out of the last audit
+   (landmark names, `aria-current`, `aria-sort`, Calendar full-date names,
+   Timeline status text, one tab stop per chart plot, Dropzone naming) are
+   pinned in `src/a11y-contracts.test.tsx` - extend it rather than re-deriving
+   them.
 
 ## Checks
 
