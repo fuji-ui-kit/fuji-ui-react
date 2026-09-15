@@ -19,6 +19,7 @@ const SHAPE_CLASSES: Record<BadgeShape, string> = {
 };
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Decorative color. */
   tone?: ComponentTone;
   /** Fill style. Default "soft". */
   appearance?: BadgeAppearance;

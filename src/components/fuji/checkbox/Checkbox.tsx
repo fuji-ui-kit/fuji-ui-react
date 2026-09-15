@@ -18,8 +18,6 @@ export interface CheckboxProps extends React.ComponentPropsWithoutRef<typeof Bas
 const TONE_CLASSES: Record<ComponentTone, string> = {
   default:
     "fj:data-[checked]:border-fuji-default fj:data-[checked]:bg-fuji-default fj:data-[checked]:text-fuji-default-foreground fj:data-[indeterminate]:border-fuji-default fj:data-[indeterminate]:bg-fuji-default fj:data-[indeterminate]:text-fuji-default-foreground",
-  earth:
-    "fj:data-[checked]:border-fuji-earth fj:data-[checked]:bg-fuji-earth fj:data-[checked]:text-fuji-earth-foreground fj:data-[indeterminate]:border-fuji-earth fj:data-[indeterminate]:bg-fuji-earth fj:data-[indeterminate]:text-fuji-earth-foreground",
   forest:
     "fj:data-[checked]:border-fuji-forest fj:data-[checked]:bg-fuji-forest fj:data-[checked]:text-fuji-forest-foreground fj:data-[indeterminate]:border-fuji-forest fj:data-[indeterminate]:bg-fuji-forest fj:data-[indeterminate]:text-fuji-forest-foreground",
   sun: "fj:data-[checked]:border-fuji-sun fj:data-[checked]:bg-fuji-sun fj:data-[checked]:text-fuji-sun-foreground fj:data-[indeterminate]:border-fuji-sun fj:data-[indeterminate]:bg-fuji-sun fj:data-[indeterminate]:text-fuji-sun-foreground",
@@ -41,11 +39,27 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(funct
       ref={ref}
       id={inputId}
       className={cn(
-        "fj:flex fj:size-[18px] fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-[6px] fj:border fj:border-fuji-border-strong fj:bg-fuji-surface",
-        "fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
+        // Unchecked is a soft grey well (no border); checked becomes a raised
+        // tone tile - the reference's checkbox, and the same selected /
+        // unselected language as Pagination and SegmentedControl.
+        // The well carries a hairline inset (not a border) so it still reads
+        // on the page background, where surface-strong alone is near-invisible.
+        // `box-border` is load-bearing: no preflight ships with this package,
+        // so `size-5` alongside a 1px border rendered a 22px box instead of
+        // the declared 20px, throwing off alignment with the adjacent label.
+        "fj:box-border fj:flex fj:size-5 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-fuji-item fj:border fj:border-transparent fj:bg-fuji-surface-strong fj:[box-shadow:inset_0_0_0_1px_var(--fuji-border-strong)]",
+        "fj:transition-[background-color,color,box-shadow,transform] fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease-spring)]",
+        "fj:data-[checked]:[box-shadow:var(--fuji-shadow-raised)] fj:data-[indeterminate]:[box-shadow:var(--fuji-shadow-raised)] fj:data-[checked]:scale-105 fj:data-[indeterminate]:scale-105",
         TONE_CLASSES[tone],
         "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-        "fj:disabled:cursor-not-allowed fj:disabled:opacity-45",
+        // `Base.Root` renders a `<span role="checkbox">`, not a native form
+        // control - the real `disabled` attribute lives on Base UI's
+        // visually-hidden `<input>` beside it, so a `disabled:` pseudo-class
+        // here can never match and this box rendered pixel-identical whether
+        // enabled or disabled. Base UI does mirror the disabled state onto
+        // this element as `data-disabled`, so the attribute variant is the
+        // one that actually fires.
+        "fj:data-[disabled]:cursor-not-allowed fj:data-[disabled]:opacity-45",
         "fj:data-[invalid]:border-fuji-fire",
         className,
       )}

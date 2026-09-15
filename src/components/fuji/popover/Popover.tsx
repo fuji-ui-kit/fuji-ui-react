@@ -4,6 +4,7 @@ import * as React from "react";
 import { Popover as Base } from "@base-ui/react/popover";
 import { cn } from "../../../lib/cn";
 import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
+import { useUntransformedPositioner } from "../lib/use-untransformed-positioner";
 
 export const PopoverRoot = Base.Root;
 export const PopoverTrigger = Base.Trigger;
@@ -39,7 +40,9 @@ export const PopoverDescription = React.forwardRef<
 });
 
 export interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
+  /** Gap in px between the trigger and the panel. */
   sideOffset?: number;
+  /** Draws the triangle pointing back at the trigger. */
   showArrow?: boolean;
 }
 
@@ -48,25 +51,52 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentPro
   ref,
 ) {
   const portalAttrs = usePortalThemeAttrs();
+  // See use-untransformed-positioner: the popup's glass material cannot blur
+  // while the positioner carries a transform.
+  const positionerRef = useUntransformedPositioner<HTMLDivElement>();
   return (
     <Base.Portal>
-      <Base.Positioner {...portalAttrs} sideOffset={sideOffset} className="fj:z-50 fj:outline-none">
+      <Base.Positioner
+        ref={positionerRef}
+        {...portalAttrs}
+        sideOffset={sideOffset}
+        className="fj:z-50 fj:outline-none"
+      >
         <Base.Popup
           ref={ref}
           {...portalAttrs}
           className={cn(
-            "fuji-glass-surface-overlay fj:relative fj:flex fj:max-w-sm fj:flex-col fj:gap-1.5 fj:rounded-fuji-panel fj:bg-fuji-surface-overlay fj:p-4",
-            "fj:shadow-fuji-overlay fj:outline-none fj:origin-[var(--transform-origin)]",
-            "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease)]",
-            "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-            "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
+            "fuji-glass-surface-overlay fuji-motion-popup fj:relative fj:flex fj:max-w-sm fj:flex-col fj:gap-1.5 fj:rounded-fuji-panel fj:bg-fuji-surface-overlay fj:p-4",
+            "fj:shadow-fuji-overlay fj:outline-none",
             className,
           )}
           {...props}
         >
           {showArrow && (
-            <Base.Arrow className="fj:data-[side=bottom]:-top-[6px] fj:data-[side=top]:-bottom-[6px] fj:data-[side=left]:-right-[6px] fj:data-[side=right]:-left-[6px]">
-              <div className="fj:size-2.5 fj:rotate-45 fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay" />
+            <Base.Arrow className="fj:data-[side=bottom]:-top-[7px] fj:data-[side=top]:-bottom-[7px] fj:data-[side=left]:-right-[7px] fj:data-[side=right]:-left-[7px]">
+              {/* A clipped triangle, not a rotated square. The square carried a
+                  border on all four sides, and since only half of it is ever
+                  meant to be visible the far two edges showed above the panel -
+                  the caret read as an outlined diamond stuck to the popup
+                  rather than a tail growing out of it. Clipping to a triangle
+                  in the panel's own fill is what ChatBubble does, and it meets
+                  the panel edge with no seam.
+
+                  The arrow is a sibling of the popup, not a child, so it
+                  composites against the page on its own - without the same
+                  material class it read as a lighter, unblurred chip over
+                  anything but a flat backdrop. */}
+              <div
+                className={cn(
+                  // `data-side` lives on Base UI's Arrow, which is this div's
+                  // PARENT, so each variant has to reach up to it.
+                  "fuji-glass-surface-overlay fj:size-2.5 fj:bg-fuji-surface-overlay",
+                  "fj:[[data-side=bottom]_&]:[clip-path:polygon(50%_0,100%_100%,0_100%)]",
+                  "fj:[[data-side=top]_&]:[clip-path:polygon(0_0,100%_0,50%_100%)]",
+                  "fj:[[data-side=left]_&]:[clip-path:polygon(0_0,100%_50%,0_100%)]",
+                  "fj:[[data-side=right]_&]:[clip-path:polygon(100%_0,100%_100%,0_50%)]",
+                )}
+              />
             </Base.Arrow>
           )}
           {children}

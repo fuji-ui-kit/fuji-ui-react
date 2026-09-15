@@ -6,6 +6,7 @@ import { cn } from "../../../lib/cn";
 import type { ComponentSize, ComponentTone } from "../../../types";
 
 export interface SliderProps extends React.ComponentPropsWithoutRef<typeof Base.Root> {
+  /** Text above the track. Also the control's accessible name. */
   label?: React.ReactNode;
   /** Shows the current numeric value next to the label. */
   showValue?: boolean;
@@ -19,7 +20,6 @@ export interface SliderProps extends React.ComponentPropsWithoutRef<typeof Base.
 // Filled-track color per tone - written out in full for the Tailwind scanner.
 const TONE_CLASSES: Record<ComponentTone, string> = {
   default: "fj:bg-fuji-default",
-  earth: "fj:bg-fuji-earth",
   forest: "fj:bg-fuji-forest",
   sun: "fj:bg-fuji-sun",
   fire: "fj:bg-fuji-fire",
@@ -54,7 +54,7 @@ export const Slider = React.forwardRef<HTMLDivElement, SliderProps>(function Sli
           {showValue && <Base.Value className="fj:text-fuji-foreground-muted" />}
         </div>
       )}
-      <Base.Control className="fj:flex fj:w-full fj:touch-none fj:cursor-pointer fj:items-center fj:py-2 fj:select-none">
+      <Base.Control className="fj:box-border fj:flex fj:w-full fj:touch-none fj:cursor-pointer fj:items-center fj:py-2 fj:select-none">
         <Base.Track
           className={cn(
             "fj:relative fj:w-full fj:rounded-full fj:bg-fuji-surface-strong fj:shadow-fuji-control fj:select-none",
@@ -64,7 +64,10 @@ export const Slider = React.forwardRef<HTMLDivElement, SliderProps>(function Sli
           <Base.Indicator className={cn("fj:rounded-full fj:select-none", TONE_CLASSES[tone])} />
           <Base.Thumb
             className={cn(
-              "fj:block fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:shadow-fuji-control fj:select-none fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+              // `box-border`: same no-preflight reason as Checkbox - `size-*`
+              // plus a 1px border rendered the thumb 2px wider than declared,
+              // so it sat slightly proud of the track it rides in.
+              "fj:box-border fj:block fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:shadow-fuji-control fj:select-none fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
               THUMB_SIZE_CLASSES[size],
             )}
           />

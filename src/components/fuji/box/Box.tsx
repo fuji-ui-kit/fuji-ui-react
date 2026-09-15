@@ -2,6 +2,7 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 
 export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** The element to render. Use it to keep the layout while fixing the semantics. */
   as?: keyof React.JSX.IntrinsicElements;
 }
 

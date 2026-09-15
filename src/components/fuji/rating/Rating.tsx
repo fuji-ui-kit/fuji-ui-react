@@ -9,12 +9,23 @@ import type { IconComponent } from "../icon/Icon";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface RatingProps {
+  /** Controlled rating. Fractional values render a partially filled icon. */
   value?: number;
+  /** Starting rating when uncontrolled. */
   defaultValue?: number;
+  /** Called with the whole-number rating the user picked. */
   onChange?: (value: number) => void;
+  /** How many icons to render. */
   max?: number;
+  /** Icon size, matching the control scale used elsewhere. */
   size?: ComponentSize;
+  /** Greys the control out and blocks input, while keeping it in the tab order's logic. */
   disabled?: boolean;
+  /**
+   * Renders a static `role="img"` with the score as its accessible name -
+   * not a set of radios. Use it to display a rating rather than collect one:
+   * an average score is not something the reader can change.
+   */
   readOnly?: boolean;
   /** Icon used for each item - any Lucide (or compatible SVG) component. Pass an individually imported component (default Star). */
   icon?: IconComponent;
@@ -22,6 +33,7 @@ export interface RatingProps {
   tone?: ComponentTone;
   /** Accessible name for the group, e.g. "Rate this product". */
   label: string;
+  /** Extra classes merged onto the group. */
   className?: string;
 }
 
@@ -36,7 +48,6 @@ const SIZE_CLASSES: Record<ComponentSize, string> = {
 // Kept as full class strings for the Tailwind scanner.
 const TONE_CLASSES: Record<ComponentTone, { filled: string }> = {
   default: { filled: "fj:text-fuji-foreground" },
-  earth: { filled: "fj:text-fuji-earth" },
   forest: { filled: "fj:text-fuji-forest" },
   sun: { filled: "fj:text-fuji-sun" },
   fire: { filled: "fj:text-fuji-fire" },

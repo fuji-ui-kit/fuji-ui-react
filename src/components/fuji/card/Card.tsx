@@ -1,17 +1,42 @@
 import * as React from "react";
 import { cn } from "../../../lib/cn";
+import { CardTilt } from "./CardTilt";
+
+/** Hover treatments a Card can opt into. */
+export type CardEffect = "none" | "lift" | "tilt";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Opts into a clickable-card treatment with a small scale and tilt on hover. */
+  /**
+   * Hover treatment for a clickable card. Defaults to `"none"`.
+   *
+   * - `"lift"` - scales up slightly, tips a degree and deepens its shadow.
+   *   Pure CSS, works in a Server Component.
+   * - `"tilt"` - tracks the pointer and tilts in 3D towards it, springing
+   *   back on leave. Needs a client boundary (see `CardTilt`), and is skipped
+   *   for touch pointers and under `prefers-reduced-motion: reduce`.
+   */
+  effect?: CardEffect;
+  /**
+   * @deprecated Use `effect="lift"`. Kept working so 0.2.x code keeps
+   * behaving as it did; `effect` wins if both are given.
+   */
+  /**
+   * Legacy hover switch, equivalent to `effect="lift"`.
+   *
+   * @deprecated Use `effect`. This still works, but `effect` wins when both are
+   * set - so `effect="none"` opts a card back out.
+   */
   interactive?: boolean;
 }
 
-const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function CardRoot(
-  { interactive = false, className, ...props },
+export const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function CardRoot(
+  { effect, interactive = false, className, ...props },
   ref,
 ) {
+  const resolved: CardEffect = effect ?? (interactive ? "lift" : "none");
+  const Root = resolved === "tilt" ? CardTilt : "div";
   return (
-    <div
+    <Root
       ref={ref}
       className={cn(
         // A consumer-supplied fixed/percentage width (very common on Card -
@@ -19,12 +44,25 @@ const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function CardRoot(
         // preflight's universal box-sizing:border-box, that width would be
         // exceeded by the border+padding instead of including them.
         "fj:box-border fuji-glass-surface fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-5 fj:shadow-fuji-card",
-        "fj:transition-[background-color,border-color,box-shadow,transform] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
-        interactive && [
-          "fj:relative fj:z-0 fj:cursor-pointer fj:transform-gpu fj:duration-[300ms] fj:hover:z-10 fj:hover:scale-105 fj:hover:-rotate-1 fj:hover:border-fuji-border-strong fj:hover:shadow-fuji-panel",
-          "fj:active:z-0 fj:active:scale-[1.02] fj:active:rotate-0 fj:active:shadow-fuji-card",
-          "fj:motion-reduce:transform-none fj:motion-reduce:transition-none",
+        // `scale` and `rotate` are named explicitly: Tailwind v4 emits those
+        // as their own CSS properties, NOT as the `transform` shorthand, so
+        // listing `transform` alone left the hover tilt un-transitioned - the
+        // shadow eased while the card snapped.
+        "fj:transition-[background-color,border-color,box-shadow,transform,scale,rotate] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
+        resolved === "lift" && [
+          "fj:relative fj:z-0 fj:cursor-pointer fj:transform-gpu fj:duration-[300ms] fj:hover:z-10 fj:hover:border-fuji-border-strong fj:hover:shadow-fuji-panel",
+          // The moving half is gated behind `motion-safe` rather than undone
+          // afterwards by `motion-reduce`. A `motion-reduce:scale-100` loses
+          // on specificity every time - `.fj\:hover\:scale-105:hover` carries
+          // a pseudo-class and a media query adds none - so the card still
+          // scaled and tipped for a reduced-motion visitor. Gating means the
+          // rule is never emitted for them at all.
+          "fj:motion-safe:hover:scale-105 fj:motion-safe:hover:-rotate-1",
+          "fj:active:z-0 fj:active:shadow-fuji-card fj:motion-safe:active:scale-[1.02] fj:motion-safe:active:rotate-0",
+          "fj:motion-reduce:transition-none",
         ],
+        resolved === "tilt" &&
+          "fj:relative fj:z-0 fj:cursor-pointer fj:hover:z-10 fj:hover:shadow-fuji-panel",
         className,
       )}
       {...props}
@@ -32,12 +70,11 @@ const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function CardRoot(
   );
 });
 
-const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(function CardHeader(
-  { className, ...props },
-  ref,
-) {
-  return <div ref={ref} className={cn("fj:mb-4 fj:flex fj:flex-col fj:gap-1", className)} {...props} />;
-});
+export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  function CardHeader({ className, ...props }, ref) {
+    return <div ref={ref} className={cn("fj:mb-4 fj:flex fj:flex-col fj:gap-1", className)} {...props} />;
+  },
+);
 
 export interface CardMediaProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
@@ -58,7 +95,7 @@ export interface CardMediaProps extends React.HTMLAttributes<HTMLDivElement> {
  * any absolutely-positioned child - a badge, an avatar) can pin itself
  * against the media instead of the whole card.
  */
-const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(function CardMedia(
+export const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(function CardMedia(
   { position = "top", className, ...props },
   ref,
 ) {
@@ -83,7 +120,7 @@ const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(function Card
  * the image" pattern. Text is fixed white regardless of theme, since it
  * always sits on a photo, not a themed surface.
  */
-const CardOverlay = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export const CardOverlay = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   function CardOverlay({ className, ...props }, ref) {
     return (
       <div
@@ -103,7 +140,7 @@ export interface CardTitleProps extends React.HTMLAttributes<HTMLElement> {
   as?: keyof React.JSX.IntrinsicElements;
 }
 
-const CardTitle = React.forwardRef<HTMLElement, CardTitleProps>(function CardTitle(
+export const CardTitle = React.forwardRef<HTMLElement, CardTitleProps>(function CardTitle(
   { as, className, ...props },
   ref,
 ) {
@@ -120,39 +157,39 @@ const CardTitle = React.forwardRef<HTMLElement, CardTitleProps>(function CardTit
   );
 });
 
-const CardDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
-  function CardDescription({ className, ...props }, ref) {
-    return (
-      <p
-        ref={ref}
-        className={cn("fj:m-0 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted", className)}
-        {...props}
-      />
-    );
-  },
-);
+export const CardDescription = React.forwardRef<
+  HTMLParagraphElement,
+  React.HTMLAttributes<HTMLParagraphElement>
+>(function CardDescription({ className, ...props }, ref) {
+  return (
+    <p
+      ref={ref}
+      className={cn("fj:m-0 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted", className)}
+      {...props}
+    />
+  );
+});
 
-const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export const CardContent = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   function CardContent({ className, ...props }, ref) {
     return <div ref={ref} className={cn("fj:text-fuji-foreground", className)} {...props} />;
   },
 );
 
-const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(function CardFooter(
-  { className, ...props },
-  ref,
-) {
-  return (
-    <div
-      ref={ref}
-      className={cn(
-        "fj:mt-4 fj:flex fj:items-center fj:gap-2 fj:border-t fj:border-fuji-border fj:pt-4",
-        className,
-      )}
-      {...props}
-    />
-  );
-});
+export const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  function CardFooter({ className, ...props }, ref) {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "fj:mt-4 fj:flex fj:items-center fj:gap-2 fj:border-t fj:border-fuji-border fj:pt-4",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
 
 /** `<Card><Card.Media><Image/></Card.Media><Card.Header><Card.Title/><Card.Description/></Card.Header><Card.Content/><Card.Footer/></Card>` */
 export const Card = Object.assign(CardRoot, {

@@ -11,7 +11,11 @@ const meta = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
+    },
+    size: {
+      control: "inline-radio",
+      options: ["sm", "md", "lg"],
     },
   },
 } satisfies Meta<typeof Kbd>;
@@ -49,9 +53,21 @@ export const Combo: Story = {
 export const Tones: Story = {
   render: () => (
     <div className="flex flex-wrap items-center gap-2">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Kbd key={tone} tone={tone}>
           {tone}
+        </Kbd>
+      ))}
+    </div>
+  ),
+};
+
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex items-center gap-3">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <Kbd key={size} size={size}>
+          ⌘K
         </Kbd>
       ))}
     </div>

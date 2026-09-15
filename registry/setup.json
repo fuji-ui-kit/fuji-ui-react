@@ -1,0 +1,36 @@
+{
+  "frameworks": {
+    "next": {
+      "name": "Next.js (App Router)",
+      "install": "npm install @fujiui/react",
+      "peerDependencies": "react >= 18, react-dom >= 18",
+      "steps": [
+        "Import the stylesheet once, in the root layout.",
+        "Wrap children in FujiProvider there. The layout stays a Server Component - a Server Component may render a Client Component, so no \"use client\" is needed on layout.tsx.",
+        "Set the appearance on the provider. No component takes a theme, radius or elevation prop."
+      ],
+      "code": "// app/layout.tsx\nimport \"@fujiui/react/styles.css\";\nimport { FujiProvider } from \"@fujiui/react\";\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>\n        <FujiProvider defaultTheme=\"light\" defaultRadius=\"cornered\">\n          {children}\n        </FujiProvider>\n      </body>\n    </html>\n  );\n}",
+      "gotchas": [
+        "A Server Component may render a compound root, but must not read a sub-part off it (Dialog.Content) - import the named sub-export (DialogContent) instead.",
+        "Presentational components (Icon, Typography, Card, Timeline) are Server Components; check `clientComponent` on a component before passing it a handler."
+      ],
+      "guide": "docs/nextjs.md"
+    },
+    "vite": {
+      "name": "Vite, Create React App, or any bare React DOM tree",
+      "install": "npm install @fujiui/react",
+      "peerDependencies": "react >= 18, react-dom >= 18",
+      "steps": [
+        "Import the stylesheet once at the entry point.",
+        "Wrap the app in FujiProvider.",
+        "No Tailwind setup is required - the package ships pre-compiled CSS."
+      ],
+      "code": "// src/main.tsx\nimport \"@fujiui/react/styles.css\";\nimport { FujiProvider } from \"@fujiui/react\";\nimport { createRoot } from \"react-dom/client\";\nimport App from \"./App\";\n\ncreateRoot(document.getElementById(\"root\")!).render(\n  <FujiProvider defaultTheme=\"light\" defaultRadius=\"cornered\">\n    <App />\n  </FujiProvider>,\n);",
+      "gotchas": [
+        "The stylesheet ships no Tailwind preflight, so it will not reset the host app's styles - and the host app must not rely on Fuji to provide one.",
+        "A consuming app with its own Tailwind build does not need to scan Fuji's source; the utilities are already compiled."
+      ],
+      "guide": "docs/vite.md"
+    }
+  }
+}

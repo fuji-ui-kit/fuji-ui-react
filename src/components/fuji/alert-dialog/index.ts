@@ -1,1 +1,10 @@
-export { AlertDialog } from "./AlertDialog";
+export {
+  AlertDialog,
+  AlertDialogRoot,
+  AlertDialogTrigger,
+  AlertDialogClose,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogContent,
+  AlertDialogFooter,
+} from "./AlertDialog";

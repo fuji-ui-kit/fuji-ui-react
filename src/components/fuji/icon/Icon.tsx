@@ -16,7 +16,9 @@ export type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 export interface IconProps {
   /** An individually imported icon component, e.g. `icon={Check}` from lucide-react, or any compatible SVG component. */
   icon: IconComponent;
+  /** Glyph size, and the container size when `background` is set. */
   size?: ComponentSize;
+  /** Glyph color, resolved through Fuji tokens. */
   tone?: IconTone;
   /**
    * Accessible label. When provided the icon is exposed to assistive tech with
@@ -25,6 +27,7 @@ export interface IconProps {
   label?: string;
   /** Optional background container behind the glyph. */
   background?: "none" | "subtle" | "solid";
+  /** Extra classes merged onto the glyph, or onto its container when `background` is set. */
   className?: string;
 }
 
@@ -35,22 +38,17 @@ const TONE_TEXT: Record<IconTone, string> = {
   default: "fj:text-current",
   muted: "fj:text-fuji-foreground-muted",
   subtle: "fj:text-fuji-foreground-subtle",
-  earth: "fj:text-fuji-earth",
   forest: "fj:text-fuji-forest",
   sun: "fj:text-fuji-sun",
   fire: "fj:text-fuji-fire",
   water: "fj:text-fuji-water",
 };
 
-// Soft, on-tint container background for `background="subtle"`. "earth" has
-// no separate soft/tinted variant (unlike forest/sun/fire/water), so it uses
-// its own full fill + matching foreground here too - see the `earth`
-// special case where this is consumed below.
+// Soft, on-tint container background for `background="subtle"`.
 const TONE_SUBTLE_BG: Record<IconTone, string> = {
-  default: "fj:bg-fuji-surface-strong",
-  muted: "fj:bg-fuji-surface-strong",
-  subtle: "fj:bg-fuji-surface-strong",
-  earth: "fj:bg-fuji-earth fj:text-fuji-earth-foreground",
+  default: "fj:bg-fuji-surface-raised",
+  muted: "fj:bg-fuji-surface-raised",
+  subtle: "fj:bg-fuji-surface-raised",
   forest: "fj:bg-fuji-forest-soft",
   sun: "fj:bg-fuji-sun-soft",
   fire: "fj:bg-fuji-fire-soft",
@@ -62,7 +60,6 @@ const TONE_SOLID: Record<IconTone, string> = {
   default: "fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
   muted: "fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
   subtle: "fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
-  earth: "fj:bg-fuji-contained-earth fj:text-fuji-earth-foreground",
   forest: "fj:bg-fuji-contained-forest fj:text-fuji-forest-foreground",
   sun: "fj:bg-fuji-contained-sun fj:text-fuji-sun-foreground",
   fire: "fj:bg-fuji-contained-fire fj:text-fuji-fire-foreground",
@@ -96,13 +93,7 @@ export function Icon({
       className={cn(
         "fj:inline-flex fj:shrink-0 fj:items-center fj:justify-center fj:rounded-fuji-control fj:shadow-fuji-control",
         BOX_SIZE[size],
-        background === "solid"
-          ? TONE_SOLID[tone]
-          : // "earth"'s subtle background already carries its own paired text
-            // color (see TONE_SUBTLE_BG's comment) - applying TONE_TEXT.earth
-            // ("text-fuji-earth", the same color as this background) on top
-            // would make the icon disappear into it.
-            cn(TONE_SUBTLE_BG[tone], tone !== "earth" && TONE_TEXT[tone]),
+        background === "solid" ? TONE_SOLID[tone] : cn(TONE_SUBTLE_BG[tone], TONE_TEXT[tone]),
         className,
       )}
     >

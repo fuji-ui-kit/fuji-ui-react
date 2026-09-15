@@ -8,7 +8,9 @@ import type { ComponentSize } from "../../../types";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Padding and text scale, matching `Input` at the same value. */
   size?: ComponentSize;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
   /**
    * Shows an unboxed "X" button once there is a value, clearing it on click.
@@ -43,7 +45,15 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
       <Field.Control
         render={<textarea />}
         ref={innerRef as unknown as React.Ref<HTMLElement>}
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
+        // `Field.Control` already mirrors an ancestor `<FormField invalid>`
+        // onto this same element as `data-invalid` automatically, and an
+        // explicit `undefined`-valued prop still occupies the key and wins
+        // the merge in `useRenderElement`, erasing that computed value
+        // whenever this `invalid` prop itself was left unset (see Input.tsx
+        // for the full mechanism, and FormField.tsx for the symptom).
+        // Omitting the key when falsy instead lets the ambient value through.
+        {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         value={value}
         defaultValue={defaultValue}
@@ -53,7 +63,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
         }}
         className={cn(
           NATIVE_CONTROL_RESET,
-          "fuji-glass-surface-strong fj:w-full fj:min-w-0 fj:resize-y fj:rounded-fuji-control fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:text-fuji-foreground",
+          "fj:w-full fj:min-w-0 fj:resize-y fj:rounded-fuji-control fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:text-fuji-foreground",
           "fj:placeholder:text-fuji-foreground-subtle fj:outline-none",
           "fj:transition-[border-color,box-shadow] fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease)]",
           "fj:focus-visible:border-fuji-foreground fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
@@ -83,7 +93,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
           }}
           className={cn(
             NATIVE_CONTROL_RESET,
-            "fj:absolute fj:top-2 fj:right-2 fj:flex fj:cursor-pointer fj:items-center fj:rounded-sm fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
+            "fj:absolute fj:top-2 fj:right-2 fj:flex fj:cursor-pointer fj:items-center fj:rounded-fuji-item fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
           )}
         >
           <X className="fj:size-4" />

@@ -10,6 +10,9 @@ jobs:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     strategy:
+      # Each leg checks something the other cannot, so one failing must not cancel
+      # the other and hide whether it would have passed.
+      fail-fast: false
       matrix:
         node-version: [18.18.x, 20.x]
     steps:
@@ -30,15 +33,52 @@ jobs:
 
       - run: npm run typecheck
 
-      - run: npm run test -- --coverage
-
+      # Build BEFORE test. `dist/` is gitignored and `npm ci` runs no `prepare`,
+      # so on a clean checkout it does not exist - and the suites that assert on
+      # the generated artifacts (src/registry-artifacts.test.ts, the MCP
+      # server's review tests) are guarded by `describe.skipIf(dist missing)`.
+      # Testing first silently skipped both suites on every CI run while the job
+      # reported green, which is how three wrong-data defects reached the
+      # artifacts the tests were written to guard.
       - run: npm run build
+
+      # Vitest 4 needs Node 20+ (its v8 coverage provider imports
+      # `node:inspector/promises`, which Node 18 does not have). The published
+      # package still supports Node 18.18, so that leg keeps installing, linting,
+      # typechecking, building, packing and smoke-testing the MCP server there;
+      # the suite itself runs where its runner is supported.
+      - run: npm run test -- --coverage
+        if: matrix.node-version != '18.18.x'
 
       - name: Inspect packed tarball
         run: |
           npm pack --dry-run
           npm pack
           tar -tzf *.tgz
+          # The `exports` map points at these, so a tarball without them
+          # resolves to a missing file for every consumer that reads them.
+          tar -tzf *.tgz | grep -q '^package/dist/props.json$'
+          tar -tzf *.tgz | grep -q '^package/dist/registry.json$'
+          # `registry/` is the authored input, not shipped output. An explicit
+          # `if`, because `set -e` ignores a `!`-inverted status - this only
+          # worked while it happened to be the last line of the step.
+          if tar -tzf *.tgz | grep -q '^package/registry/'; then
+            echo "registry/ is authored input and must not ship" >&2
+            exit 1
+          fi
+
+      # `@fujiui/mcp` is published separately (release-mcp.yml), but checked on
+      # every push: nothing installs `mcp/package.json` during development, so a
+      # dependency declared only at the root, or a discovery path that only
+      # works from inside this repo, passes every other step here and breaks
+      # for users. This installs the packed tarball out of the repo's reach and
+      # drives it the way the clients in mcp/README.md start it.
+      - name: Smoke-test the packed MCP server
+        # The script drives real server processes; a leaked one once kept this step
+        # running after every check had passed. Fail fast instead of at the job's
+        # 6-hour default.
+        timeout-minutes: 5
+        run: node scripts/smoke-mcp.mjs
 
       - name: Upload build artifacts
         if: matrix.node-version == '20.x'
@@ -46,3 +86,73 @@ jobs:
         with:
           name: dist
           path: dist
+
+  # `peerDependencies` advertises React 18 || 19 and the source has real
+  # branches for the differences between them (refs-as-props, `inert`), but
+  # every run above resolves React 19 - so the 18 half of that claim was never
+  # executed. This job is the only thing that tests it.
+  react18:
+    name: Test against React 18
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - run: npm ci
+
+      # ONE install command, deliberately. `--no-save` keeps package.json and
+      # the lockfile untouched (so this job can never be why a change lands
+      # pinned to React 18) - but that also means a SECOND `npm install`
+      # re-resolves from package.json and silently throws the downgrade away,
+      # leaving the job to "pass" against React 19.
+      #
+      # `@testing-library/dom` is listed because it is RTL's peer dependency,
+      # normally satisfied by hoisting; re-resolving the tree drops it, and
+      # every test file then fails to find `screen`. `--legacy-peer-deps`
+      # because the dev tree is resolved for React 19.
+      - name: Downgrade to React 18
+        run: |
+          npm install --no-save --legacy-peer-deps \
+            react@^18.3 react-dom@^18.3 @types/react@^18.3 @types/react-dom@^18.3 \
+            @testing-library/dom@^10
+
+      # Fails loudly rather than testing React 19 twice and reporting green.
+      - name: Confirm React 18 actually resolved
+        run: node -e "const v=require('react/package.json').version; console.log('react', v); if (!v.startsWith('18.')) process.exit(1)"
+
+      - run: npm run typecheck
+
+      # Same reason as the verify job: without `dist/`, the artifact suites skip.
+      - run: npm run build
+
+      - run: npm run test
+
+  # Storybook is where a component is actually rendered in a browser engine,
+  # and a story that throws is invisible to the unit tests (which render
+  # components directly, not through the stories). Building it is the cheap
+  # half of that: it type-checks and bundles every story file.
+  storybook:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm run storybook:build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: storybook-static

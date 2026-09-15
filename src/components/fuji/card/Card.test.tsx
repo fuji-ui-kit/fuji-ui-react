@@ -48,9 +48,70 @@ describe("Card", () => {
     expect(card).toHaveClass("custom-class");
   });
 
+  it('applies the lift treatment for effect="lift" and not by default', () => {
+    const { rerender } = render(<Card data-testid="card">Content</Card>);
+    expect(screen.getByTestId("card").className).not.toContain("hover:scale-105");
+
+    rerender(
+      <Card data-testid="card" effect="lift">
+        Content
+      </Card>,
+    );
+    expect(screen.getByTestId("card").className).toContain("motion-safe:hover:scale-105");
+  });
+
+  it("still honours the deprecated `interactive` prop, with `effect` winning", () => {
+    const { rerender } = render(
+      <Card data-testid="card" interactive>
+        Content
+      </Card>,
+    );
+    expect(screen.getByTestId("card").className).toContain("hover:scale-105");
+
+    // An explicit `effect` must override the legacy boolean rather than being
+    // OR-ed with it, so `effect="none"` can opt back out.
+    rerender(
+      <Card data-testid="card" interactive effect="none">
+        Content
+      </Card>,
+    );
+    expect(screen.getByTestId("card").className).not.toContain("hover:scale-105");
+  });
+
+  it("transitions the properties the hover treatment actually changes", () => {
+    render(
+      <Card data-testid="card" effect="lift">
+        Content
+      </Card>,
+    );
+    // Tailwind v4 emits `scale`/`rotate` as their own CSS properties, so
+    // naming only `transform` left the hover tilt un-transitioned, and
+    // `transform-none` failed to undo it under reduced motion.
+    const classes = screen.getByTestId("card").className;
+    expect(classes).toContain("transition-[background-color,border-color,box-shadow,transform,scale,rotate]");
+    // The moving half must be gated behind `motion-safe`, not undone by a
+    // `motion-reduce` override - the latter loses on specificity against the
+    // `:hover` rule, so reduced-motion visitors still got the full animation.
+    expect(classes).toContain("motion-safe:hover:scale-105");
+    expect(classes).toContain("motion-safe:hover:-rotate-1");
+    expect(classes).not.toContain("motion-reduce:scale-100");
+  });
+
+  it("renders the tilt variant and forwards its ref", () => {
+    const ref = React.createRef<HTMLDivElement>();
+    render(
+      <Card data-testid="card" effect="tilt" ref={ref}>
+        Content
+      </Card>,
+    );
+    expect(ref.current).toBeInstanceOf(HTMLDivElement);
+    // The tilt is driven from JS, so it must not carry the CSS lift classes.
+    expect(screen.getByTestId("card").className).not.toContain("hover:scale-105");
+  });
+
   it("has no obvious accessibility violations", async () => {
     const { container } = render(
-      <Card interactive>
+      <Card effect="lift">
         <Card.Header>
           <Card.Title>Plan</Card.Title>
           <Card.Description>Monthly billing</Card.Description>

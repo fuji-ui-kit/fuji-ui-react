@@ -111,7 +111,7 @@ export default defineConfig([
     ...shared,
     // Declarations are generated as one consolidated, bundled entry
     // regardless of how the JS is split at runtime: consumers only ever
-    // `import ... from "@fuji-ui/react"` (no subpath component imports), so
+    // `import ... from "@fujiui/react"` (no subpath component imports), so
     // one rolled-up .d.ts is both sufficient and far lighter than emitting
     // (and rolling up types across) ~175 individual per-file declarations.
     entry: { index: "src/index.ts" },

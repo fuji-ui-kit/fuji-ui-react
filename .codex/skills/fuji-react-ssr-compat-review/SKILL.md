@@ -1,6 +1,10 @@
 ---
 name: fuji-react-ssr-compat-review
-description: Audit @fuji-ui/react for SSR/hydration safety, React 18 vs 19 compatibility, and Server/Client Component boundary correctness. Use when changing refs, effects, DOM attributes, the provider, or any component's "use client" directive.
+description: Audit @fujiui/react for SSR/hydration safety, React 18 vs 19 compatibility, and Server/Client Component boundary correctness. Use when changing refs, effects, DOM attributes, the provider, or any component's "use client" directive.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React SSR and cross-version compatibility review
@@ -51,6 +55,10 @@ Default to review-only.
   on first paint. `persist` reconciles **after** mount (a state update, not a
   hydration mismatch). Anything that reads storage during render is a defect.
 - Extend `src/ssr.test.tsx` coverage when a component gains browser-API usage.
+- A `requestAnimationFrame` or `IntersectionObserver` that gates **first
+  paint** (an entrance, a draw-in) is a defect even when SSR-safe: throttled
+  or background tabs never run it. Entrances are CSS keyframes with a `from`
+  state; `useEntered`-style hooks were removed for this reason.
 
 ### React 18 vs 19
 
@@ -73,13 +81,18 @@ and any use of a React 19-only API (`use`, the new `ref` cleanup return,
 turn and running the full suite:
 
 ```bash
-npm i --no-save react@18 react-dom@18 @types/react@18 @types/react-dom@18
-npm test
+# ONE install command - a second `npm install` silently re-resolves React to 19
+npm install --no-save --legacy-peer-deps react@^18.3 react-dom@^18.3 @types/react@^18 @types/react-dom@^18 @testing-library/react@^16 @testing-library/dom@^10
+node -e "if(!require('react/package.json').version.startsWith('18')) process.exit(1)"
+npm run typecheck && npm test
 # then restore
 npm ci
 ```
 
-Report the actual result. A change touching refs or DOM attributes with no
+CI runs exactly this as the `react18` job in `.github/workflows/ci.yml`; keep
+the two in step. `useRef<T>(null)` types `current` as read-only under 18's
+types - write `useRef<T | null>(null)` when the ref is assigned. Report the
+actual result. A change touching refs or DOM attributes with no
 cross-version evidence is unverified, not passing.
 
 ### Server/Client boundary

@@ -3,7 +3,9 @@ import { cn } from "../../../lib/cn";
 import type { StatusTone } from "../../../types";
 
 export interface StatusIndicatorProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** The state being reported; sets the dot's colour. */
   variant?: StatusTone;
+  /** Text beside the dot. Without it the dot needs its own accessible name. */
   label?: React.ReactNode;
   /** Adds a soft pulse ring - use sparingly, e.g. for "live" states. */
   pulse?: boolean;
@@ -33,7 +35,7 @@ export const StatusIndicator = React.forwardRef<HTMLSpanElement, StatusIndicator
           {pulse && (
             <span
               className={cn(
-                "fj:absolute fj:inline-flex fj:h-full fj:w-full fj:animate-ping fj:rounded-full fj:opacity-60",
+                "fj:absolute fj:inline-flex fj:h-full fj:w-full fj:animate-fuji-ping fj:rounded-full fj:opacity-60",
                 DOT_CLASSES[variant],
               )}
             />

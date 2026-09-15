@@ -110,3 +110,41 @@ export const Continuous: Story = {
     </div>
   ),
 };
+
+const COVERFLOW_PHOTOS: Photo[] = [
+  ...PHOTOS,
+  { id: 1043, caption: "Harbour at dusk" },
+  { id: 1050, caption: "Alpine meadow" },
+  { id: 1062, caption: "Desert road" },
+];
+
+function CoverflowSlide({ photo }: { photo: Photo }) {
+  return (
+    <div className="mx-auto aspect-square w-full overflow-hidden rounded-[12px] shadow-[0_10px_40px_rgba(0,0,0,0.3)]">
+      <img
+        src={`https://picsum.photos/id/${photo.id}/600/600`}
+        alt={photo.caption}
+        draggable={false}
+        className="block size-full object-cover"
+      />
+    </div>
+  );
+}
+
+export const Coverflow: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`effect="coverflow"` ports motion.dev\'s coverflow carousel: drag the fan and it follows the pointer continuously - neighbours rotate to 20°, shrink to 70% and tuck under each other by distance, and the edges fade out - then snaps to the nearest slide on release. Arrow keys, loop and controls work as in the default preset; `slidesPerView` is ignored.',
+      },
+    },
+  },
+  render: (args) => (
+    <Carousel {...args} effect="coverflow" controls className="mx-auto w-full max-w-xl">
+      {COVERFLOW_PHOTOS.map((photo) => (
+        <CoverflowSlide key={photo.id} photo={photo} />
+      ))}
+    </Carousel>
+  ),
+};

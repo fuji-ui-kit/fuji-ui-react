@@ -1,6 +1,10 @@
 ---
 name: fuji-react-test-review
-description: Review the @fuji-ui/react Vitest suite for coverage of behavior, keyboard and focus paths, controlled/uncontrolled state, accessibility assertions, SSR, and test quality - and identify meaningful gaps. Use when reviewing new tests or assessing whether a change is adequately covered.
+description: Review the @fujiui/react Vitest suite for coverage of behavior, keyboard and focus paths, controlled/uncontrolled state, accessibility assertions, SSR, and test quality - and identify meaningful gaps. Use when reviewing new tests or assessing whether a change is adequately covered.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React test review
@@ -90,8 +94,14 @@ State these rather than trusting a green suite:
 - `IntersectionObserver`/`ResizeObserver` need mocking; a mock that always
   reports "intersecting" tests a path that may never happen in a browser.
 
-Anything in these categories needs browser verification through the sibling
-website, not a jsdom test.
+Anything in these categories needs browser verification in Storybook (or a
+Storybook `play` function), not a jsdom test. Stylesheet-level contracts do
+have unit tests here and should be extended, not duplicated:
+`src/styles/tokens.test.ts` (var()-dependency restatement per theme),
+`recipes.test.ts` (every `fuji-*` class exists), `box-sizing.test.tsx`,
+`class-conflicts.test.tsx`, `src/a11y-contracts.test.tsx`, and
+`src/components/fuji/lib/reference-pass.test.tsx` (the reference-design
+contracts: stack position, stepper fill, timeline groups, progress vars).
 
 ## Gap analysis
 

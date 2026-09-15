@@ -85,6 +85,22 @@ export function formatMonthLabel(date: Date, locale = "en-US"): string {
   return new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }).format(date);
 }
 
+/**
+ * The full date, for a day cell's accessible name. The visible text is just
+ * the day number, which announces as a bare "14" - useless without the month
+ * a sighted user reads from the header. `weekday` is included because moving
+ * with arrow keys is how the grid is navigated, and "Saturday" is the fact
+ * that tells you the cursor wrapped to a new row.
+ */
+export function formatFullDate(date: Date, locale = "en-US"): string {
+  return new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
 export function getWeekdayLabels(locale = "en-US"): string[] {
   const formatter = new Intl.DateTimeFormat(locale, { weekday: "narrow" });
   // 2023-01-01 is a Sunday - a stable reference week.

@@ -1,7 +1,8 @@
 import * as React from "react";
 import { ChevronRight } from "lucide-react";
 import { cn } from "../../../lib/cn";
-import { isSafeHref } from "../lib/safe-href";
+import { safeHref } from "../lib/safe-href";
+import { NATIVE_LINK_RESET } from "../lib/native-control-reset";
 
 export interface BreadcrumbItem {
   label: React.ReactNode;
@@ -9,6 +10,7 @@ export interface BreadcrumbItem {
 }
 
 export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
+  /** The trail, root first. The last entry renders as the current page rather than a link. */
   items: BreadcrumbItem[];
   /** Renders the anchor element - pass Next's `Link` to get client-side navigation. */
   renderLink?: (item: BreadcrumbItem, children: React.ReactNode) => React.ReactNode;
@@ -45,8 +47,11 @@ export const Breadcrumb = React.forwardRef<HTMLElement, BreadcrumbProps>(functio
                 renderLink(item, content)
               ) : (
                 <a
-                  href={isSafeHref(item.href) ? item.href : undefined}
-                  className="fj:rounded-[2px] fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring"
+                  href={safeHref(item.href)}
+                  className={cn(
+                    NATIVE_LINK_RESET,
+                    "fj:rounded-[2px] fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+                  )}
                 >
                   {content}
                 </a>

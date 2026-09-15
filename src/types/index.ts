@@ -1,6 +1,17 @@
 /** Shared public types for the Fuji component system. */
 
-export type FujiTheme = "light" | "dark" | "glass";
+export type FujiTheme = "light" | "dark";
+/**
+ * The surface material for the active theme, orthogonal to `theme` itself -
+ * either theme can render in either material. `"solid"` is the default,
+ * opaque surface; `"glass"` overlays a translucent, blurred surface over
+ * whichever theme is active rather than painting its own palette - light
+ * theme + glass reads light, dark theme + glass reads dark. Split out from
+ * `FujiTheme` (which used to include a third `"glass"` value) because a
+ * single theme axis made light-mode-plus-glass and dark-mode-plus-glass
+ * mutually exclusive - see `docs/theming.md`.
+ */
+export type FujiMaterial = "solid" | "glass";
 export type FujiRadius = "cornered" | "soft";
 /**
  * Global shadow depth. `regular` keeps the restrained default shadows;
@@ -19,7 +30,7 @@ export type ComponentSize = "sm" | "md" | "lg";
  * semantic meaning - see `StatusTone` for components where the color itself
  * conveys meaning (success/error/etc.) rather than just a look.
  */
-export type ComponentTone = "default" | "earth" | "fire" | "water" | "forest" | "sun";
+export type ComponentTone = "default" | "fire" | "water" | "forest" | "sun";
 
 /**
  * Semantic status used by components where the value itself is meaningful

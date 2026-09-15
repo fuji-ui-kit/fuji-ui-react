@@ -34,10 +34,11 @@ export interface ChatBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
    * about a list of messages - the consumer decides which bubbles group.
    */
   grouped?: boolean;
+  /** Per-slot class overrides, for styling one part without wrapping the whole bubble. */
   classNames?: SlotClassNames<"avatar" | "sender" | "bubble" | "meta">;
 }
 
-const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(function ChatBubble(
+export const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(function ChatBubble(
   {
     align = "incoming",
     avatar,
@@ -61,7 +62,7 @@ const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(functio
       ref={ref}
       data-align={align}
       className={cn(
-        "fj:flex fj:w-full fj:items-end fj:gap-2",
+        "fj:flex fj:w-full fj:items-end fj:gap-2.5",
         outgoing && "fj:flex-row-reverse",
         grouped ? "fj:mt-0.5" : "fj:mt-3 fj:first:mt-0",
         className,
@@ -82,47 +83,73 @@ const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(functio
           outgoing ? "fj:items-end" : "fj:items-start",
         )}
       >
-        {sender && showMeta && (
-          <span
-            className={cn(
-              "fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-foreground-subtle",
-              classNames?.sender,
-            )}
-          >
-            {sender}
-          </span>
-        )}
-        <div className="fj:relative fj:min-w-0">
-          {/* Speech-bubble tail, shown only on the last message of a run
-              (same rule as the sender/timestamp/status metadata) - a real
-              chat thread reads as a single connected shape per run, not one
-              tail per message. A `clip-path` triangle sits flush against the
-              bubble's one squared-off corner (see `rounded-b*-none` below),
-              so it reads as part of the same shape instead of a separate
-              chip floating near it. Its outward reach (`w-1.5`) is
-              deliberately less than the row's `gap-2` to the avatar - at the
-              same size as the gap, the tail's tip touches the avatar circle
-              with zero clearance and reads as colliding with it whenever an
-              avatar is present (avatar is always shown alongside the tail,
-              since both are gated on the same last-message-of-a-run rule). */}
+        {sender &&
+          (showMeta ? (
+            <span
+              className={cn(
+                "fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-foreground-subtle",
+                classNames?.sender,
+              )}
+            >
+              {sender}
+            </span>
+          ) : (
+            // Grouped messages hide the sender because a sighted reader infers
+            // it from the run's shape and the shared avatar column. There is
+            // no equivalent inference in a linear screen-reader pass: a run of
+            // five grouped messages announced five unattributed bubbles, and
+            // in a two-party thread that is the difference between "they said
+            // it" and "you said it". Visually suppressed, still announced.
+            <span className="fj:sr-only">{sender}</span>
+          ))}
+        <div className="fuji-chat-bubble-shadow fj:relative fj:min-w-0">
+          {/* Speech-bubble tail, anchored at the bubble's bottom corner on the
+              side that faces the speaker - bottom-right when outgoing,
+              bottom-left when incoming - which is where a chat client puts it.
+              Shown only on the last message of a run (same rule as the
+              sender/timestamp/status metadata) so a thread reads as one
+              connected shape per run, not a tail per message.
+
+              The tail carries the bubble's exact fill and no border, and the
+              bubble squares off the corner it joins (`rounded-b*-none` below)
+              so the two read as one shape rather than a triangle stuck to a
+              rounded box.
+
+              Both use the opaque `fuji-chat-bubble-*` fills (see base.css)
+              rather than the glass material, and that took three attempts to
+              get right, so it is worth recording what actually mattered.
+              Removing the blur was not enough, and neither was removing the
+              shadow: bubble and tail are two separate elements, and two
+              *translucent* fills of the same declared colour still do not meet
+              cleanly at their seam - under glass the tail read as a visibly
+              darker wedge. Forcing both opaque removed the seam completely
+              with nothing else changed, which is what pinned the cause down.
+              Opaque is also how chat clients draw bubbles, and matches the
+              HIG's rule that the content layer uses plain surfaces. */}
           {showMeta && (
             <span
               aria-hidden="true"
               className={cn(
-                "fj:absolute fj:bottom-0 fj:h-3 fj:w-1.5",
+                "fj:pointer-events-none fj:absolute fj:bottom-0 fj:h-3 fj:w-2",
                 outgoing
-                  ? "fj:-right-1.5 fj:bg-fuji-contained-default fj:[clip-path:polygon(0_0,0_100%,100%_100%)]"
-                  : "fj:-left-1.5 fj:bg-fuji-surface-strong fj:[clip-path:polygon(100%_0,100%_100%,0_100%)]",
+                  ? "fuji-chat-bubble-outgoing fj:-right-2 fj:[clip-path:polygon(0_0,100%_100%,0_100%)]"
+                  : "fuji-chat-bubble-incoming fj:-left-2 fj:[clip-path:polygon(100%_0,100%_100%,0_100%)]",
               )}
             />
           )}
           <div
             className={cn(
-              "fj:box-border fj:min-w-0 fj:break-words fj:rounded-fuji-panel fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)]",
+              "fj:relative fj:box-border fj:min-w-0 fj:break-words fj:rounded-fuji-panel fj:px-3.5 fj:py-2.5 fj:text-[length:var(--fuji-text-base)] fj:leading-snug",
+              // Square off only the corner the tail joins, and only while it
+              // is shown - otherwise the rounded corner leaves a visible
+              // notch between bubble and tail.
               showMeta && (outgoing ? "fj:rounded-br-none" : "fj:rounded-bl-none"),
+              // No shadow on either bubble, deliberately: a box-shadow paints
+              // over the tail that sits outside the bubble's box, so the
+              // darkened area cut across the join. The fill carries the shape.
               outgoing
-                ? "fj:bg-fuji-contained-default fj:text-fuji-default-foreground"
-                : "fj:border fj:border-fuji-border fj:bg-fuji-surface-strong fj:text-fuji-foreground",
+                ? "fuji-chat-bubble-outgoing fj:text-fuji-default-foreground"
+                : "fuji-chat-bubble-incoming fj:text-fuji-foreground",
               classNames?.bubble,
             )}
           >
@@ -164,7 +191,7 @@ export interface ChatBubbleAttachmentProps extends Omit<React.HTMLAttributes<HTM
 }
 
 const ATTACHMENT_ROW_CLASSNAME =
-  "fj:flex fj:w-full fj:max-w-64 fj:items-center fj:gap-2 fj:rounded-fuji-control fj:border fj:border-current/15 fj:bg-current/5 fj:px-2.5 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)]";
+  "fj:box-border fj:flex fj:w-full fj:max-w-64 fj:items-center fj:gap-2 fj:rounded-fuji-control fj:border fj:border-current/15 fj:bg-current/5 fj:px-2.5 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)]";
 
 /** Small file/media chip for use inside `ChatBubble` children - an attachment, voice note, or similar rich-content row. */
 const ChatBubbleAttachment = React.forwardRef<HTMLDivElement, ChatBubbleAttachmentProps>(

@@ -50,10 +50,23 @@ describe("ChatBubble", () => {
         Be there in 5
       </ChatBubble>,
     );
-    expect(screen.queryByText("Priya Natarajan")).not.toBeInTheDocument();
     expect(screen.queryByText("2:14 PM")).not.toBeInTheDocument();
     expect(screen.queryByText("Read")).not.toBeInTheDocument();
     expect(screen.getByText("Be there in 5")).toBeInTheDocument();
+  });
+
+  // The sender is the one piece of grouped metadata that can't just be
+  // dropped: a sighted reader infers it from the run's shape, a linear
+  // screen-reader pass has nothing to infer from.
+  it("keeps the sender announced (visually hidden) when grouped", () => {
+    render(
+      <ChatBubble grouped sender="Priya Natarajan">
+        Be there in 5
+      </ChatBubble>,
+    );
+    const sender = screen.getByText("Priya Natarajan");
+    expect(sender).toBeInTheDocument();
+    expect(sender.className).toEqual(expect.stringContaining("sr-only"));
   });
 
   it("reserves the avatar's footprint (rather than collapsing it) when grouped", () => {

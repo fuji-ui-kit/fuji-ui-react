@@ -7,10 +7,13 @@ import type { ComponentSize, ComponentTone } from "../../../types";
 import { softClasses } from "../lib/appearance";
 
 export interface AvatarProps extends React.ComponentPropsWithoutRef<typeof Base.Root> {
+  /** Image URL. On a load error the `fallback` takes over. */
   src?: string;
+  /** Alternative text for the image. */
   alt?: string;
   /** Fallback content (initials or icon) shown while loading or on error. */
   fallback?: React.ReactNode;
+  /** Diameter, matching the control scale used elsewhere. */
   size?: ComponentSize;
   /** Background/text color behind the fallback content. Default "default". */
   tone?: ComponentTone;
@@ -31,7 +34,10 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(function Av
     <Base.Root
       ref={ref}
       className={cn(
-        "fj:flex fj:shrink-0 fj:items-center fj:justify-center fj:overflow-hidden fj:rounded-full fj:font-medium",
+        // `shadow-fuji-control` is what makes Avatar answer to the elevation
+        // axis: without a --fuji-shadow-* token it rendered identically in
+        // `regular` and `floating`, so the setting was a no-op for it.
+        "fj:box-border fj:flex fj:shrink-0 fj:items-center fj:justify-center fj:overflow-hidden fj:rounded-full fj:font-medium fj:shadow-fuji-control",
         softClasses(tone),
         SIZE_CLASSES[size],
         className,

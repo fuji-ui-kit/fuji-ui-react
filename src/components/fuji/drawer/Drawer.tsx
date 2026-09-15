@@ -6,6 +6,15 @@ import { cn } from "../../../lib/cn";
 import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 import { DismissButton } from "../lib/dismiss-button";
 
+/**
+ * Base UI's Drawer swipes to dismiss; `swipeDirection` defaults to `"down"`,
+ * which is right for `side="bottom"`. For a side drawer pass the matching
+ * direction (`<Drawer swipeDirection="right">` for `side="right"`) - the root
+ * cannot see which side its content chose.
+ *
+ * `Drawer.Content` takes `variant="sheet"` for the detached, inset card
+ * presentation; the default `"full"` spans its edge.
+ */
 export const DrawerRoot = Base.Root;
 export const DrawerTrigger = Base.Trigger;
 export const DrawerClose = Base.Close;
@@ -41,6 +50,21 @@ export const DrawerDescription = React.forwardRef<
 
 export type DrawerSide = "left" | "right" | "top" | "bottom";
 
+/**
+ * How the panel meets the edge it slides from.
+ *
+ * `"full"` (default) is the drawer proper: it spans the edge and is squared
+ * off against it, rounded only on the two corners that face into the page -
+ * the same shape on all four sides.
+ *
+ * `"sheet"` is the detached presentation: inset from every edge, rounded all
+ * round, width- or height-capped, with the dimmed page still visible around
+ * it so it reads as sitting above the content rather than replacing that side
+ * of the screen. This is the shape for a short, self-contained task - a share
+ * menu, a confirmation - not for navigation or a long form.
+ */
+export type DrawerVariant = "full" | "sheet";
+
 const VIEWPORT_JUSTIFY: Record<DrawerSide, string> = {
   left: "fj:justify-start fj:items-stretch",
   right: "fj:justify-end fj:items-stretch",
@@ -48,13 +72,36 @@ const VIEWPORT_JUSTIFY: Record<DrawerSide, string> = {
   bottom: "fj:items-end fj:justify-stretch",
 };
 
-const POPUP_SIZE: Record<DrawerSide, string> = {
-  left: "fj:h-full fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border-r fj:border-fuji-border fj:rounded-r-fuji-panel",
-  right:
-    "fj:h-full fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border-l fj:border-fuji-border fj:rounded-l-fuji-panel",
-  top: "fj:w-full fj:max-h-[85vh] fj:border-b fj:border-fuji-border fj:rounded-b-fuji-panel",
-  bottom:
-    "fj:w-full fj:max-h-[85vh] fj:border-t fj:border-fuji-border fj:rounded-t-fuji-panel fj:pb-[env(safe-area-inset-bottom)]",
+/*
+ * Full class strings per variant and side - never templated, since Tailwind's
+ * scanner is static.
+ *
+ * The safe-area inset on the top and bottom panels is ADDED to the popup's own
+ * padding, not substituted for it. Written as a bare `pb-[env(...)]` it
+ * overrode `p-6`, and since that env var is `0px` on any desktop browser the
+ * panel ended up with no bottom padding at all - its last control sat flush
+ * against the screen edge.
+ */
+const POPUP_SIZE: Record<DrawerVariant, Record<DrawerSide, string>> = {
+  full: {
+    left: "fj:h-full fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border-r fj:border-fuji-border fj:rounded-r-fuji-panel",
+    right:
+      "fj:h-full fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border-l fj:border-fuji-border fj:rounded-l-fuji-panel",
+    top: "fj:w-full fj:max-h-[85vh] fj:border-b fj:border-fuji-border fj:rounded-b-fuji-panel fj:pt-[calc(1.5rem+env(safe-area-inset-top))]",
+    bottom:
+      "fj:w-full fj:max-h-[85vh] fj:border-t fj:border-fuji-border fj:rounded-t-fuji-panel fj:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+  },
+  // The margins are what inset the card. On the left and right the viewport
+  // stretches its child, so a vertical margin sets the height as well - there
+  // is no need to compute one.
+  sheet: {
+    left: "fj:my-3 fj:ml-3 fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border fj:border-fuji-border fj:rounded-fuji-panel",
+    right:
+      "fj:my-3 fj:mr-3 fj:w-80 fj:max-w-[calc(100vw-3rem)] fj:border fj:border-fuji-border fj:rounded-fuji-panel",
+    top: "fj:mx-auto fj:mt-3 fj:w-[calc(100%-1.5rem)] fj:max-w-lg fj:max-h-[85vh] fj:border fj:border-fuji-border fj:rounded-fuji-panel fj:pt-[calc(1.5rem+env(safe-area-inset-top))]",
+    bottom:
+      "fj:mx-auto fj:mb-3 fj:w-[calc(100%-1.5rem)] fj:max-w-lg fj:max-h-[85vh] fj:border fj:border-fuji-border fj:rounded-fuji-panel fj:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
+  },
 };
 
 /** Full slide in from the entering edge + fade, per side. */
@@ -66,12 +113,16 @@ const POPUP_TRANSITION: Record<DrawerSide, string> = {
 };
 
 export interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
+  /** Which edge the panel slides in from. Match `Drawer`'s `swipeDirection` to it. */
   side?: DrawerSide;
+  /** `"full"` (default) spans the edge; `"sheet"` is a detached, inset card. */
+  variant?: DrawerVariant;
+  /** Drops the built-in close button. Leave a way out - Escape alone is not enough for a pointer user. */
   hideCloseButton?: boolean;
 }
 
 export const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps>(function DrawerContent(
-  { side = "right", hideCloseButton = false, className, children, ...props },
+  { side = "right", variant = "full", hideCloseButton = false, className, children, ...props },
   ref,
 ) {
   const portalAttrs = usePortalThemeAttrs();
@@ -79,7 +130,7 @@ export const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps
     <Base.Portal>
       <Base.Backdrop
         {...portalAttrs}
-        className="fuji-overlay-backdrop fj:fixed fj:inset-0 fj:z-50 fj:transition-opacity fj:duration-[var(--fuji-duration-base)] fj:data-[ending-style]:opacity-0 fj:data-[starting-style]:opacity-0"
+        className="fuji-overlay-backdrop fuji-motion-backdrop fj:fixed fj:inset-0 fj:z-50"
       />
       <Base.Viewport
         {...portalAttrs}
@@ -89,15 +140,17 @@ export const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps
           ref={ref}
           {...portalAttrs}
           className={cn(
-            "fuji-glass-surface-overlay fj:relative fj:flex fj:flex-col fj:gap-4 fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
-            "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-slow)] fj:ease-[var(--fuji-ease)]",
-            "fj:data-[starting-style]:opacity-0 fj:data-[ending-style]:opacity-0",
-            POPUP_SIZE[side],
+            "fuji-glass-surface-overlay fuji-motion-sheet fj:relative fj:flex fj:flex-col fj:gap-4 fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
+            POPUP_SIZE[variant][side],
             POPUP_TRANSITION[side],
             className,
           )}
+          data-variant={variant}
           {...props}
         >
+          {/* A bottom panel is drag-to-dismiss (Base UI handles the gesture;
+              `.fuji-motion-sheet` follows it); the handle is the cue. */}
+          {side === "bottom" && <span aria-hidden="true" className="fuji-sheet-handle" />}
           {!hideCloseButton && (
             <Base.Close
               render={<DismissButton aria-label="Close" className="fj:absolute fj:top-3 fj:right-3" />}

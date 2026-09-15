@@ -1,0 +1,28 @@
+# Fuji UI
+
+> `@fujiui/react` is a themeable, accessible React component system built on Base UI. It supports React 18 and 19, Next.js, Vite and server rendering.
+
+Import everything from the package root (`import { Button, DialogContent } from "@fujiui/react"`) - there are no subpath imports. Import `@fujiui/react/styles.css` once at the app root; the app needs no Tailwind setup for Fuji. Set the appearance (theme, material, radius, elevation) once on `FujiProvider`; no component takes those as props. Icons are component references, never string names, and icon-only controls need an accessible name.
+
+## Docs
+
+- [README](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/README.md): installation, the stylesheet, FujiProvider, imports, icons, SSR
+- [Next.js](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/nextjs.md): App Router, Server and Client Components, and the compound-component boundary rule
+- [Vite](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/vite.md): Vite and other bundler-based React apps
+- [Theming](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/theming.md): the `--fuji-*` token system, overriding tokens, glass, elevation and reduced motion
+- [SSR](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/ssr.md): server rendering, hydration and the appearance bootstrap script
+- [Accessibility](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/accessibility.md): what the components handle, and what the app still owns
+- [Upgrading](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/upgrading.md): breaking changes between versions
+- [Migration](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/docs/migration.md): moving from a local or vendored copy of Fuji to the package
+
+## AI coding agents
+
+- [MCP server](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/mcp/README.md): the component API of the `@fujiui/react` version a project has installed, the setup steps, and a checker for the package's conventions - `npx -y @fujiui/mcp`
+- [Agent skill](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/plugins/fuji-ui/skills/fuji-ui/SKILL.md): when to use those tools, how to add Fuji to an existing app, and the rules the checker enforces - `npx skills add fuji-ui-kit/fuji-ui-react`
+- [Claude Code plugin](https://github.com/fuji-ui-kit/fuji-ui-react/blob/main/plugins/fuji-ui/README.md): the server and the skill in one install - `/plugin marketplace add fuji-ui-kit/fuji-ui-react`
+
+## Optional
+
+- [Documentation site](https://fujiui.com/): live component previews and example apps
+- [Site index for agents](https://fujiui.com/llms.txt)
+- [npm package](https://www.npmjs.com/package/@fujiui/react)

@@ -6,10 +6,10 @@ const meta = {
   component: Container,
   tags: ["autodocs"],
   args: {
-    size: "lg",
+    width: "lg",
   },
   argTypes: {
-    size: { control: "select", options: ["sm", "md", "lg", "xl"] },
+    width: { control: "select", options: ["sm", "md", "lg", "xl"] },
   },
 } satisfies Meta<typeof Container>;
 
@@ -33,7 +33,7 @@ export const Sizes: Story = {
   render: () => (
     <div className="flex flex-col gap-4">
       {(["sm", "md", "lg", "xl"] as const).map((size) => (
-        <Container key={size} size={size}>
+        <Container key={size} width={size}>
           <div className="rounded-lg bg-fuji-surface-strong p-3 text-center text-[length:var(--fuji-text-xs)] text-fuji-foreground-muted">
             size="{size}"
           </div>

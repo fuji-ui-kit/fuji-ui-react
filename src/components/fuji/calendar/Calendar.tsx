@@ -12,6 +12,7 @@ import {
   addMonthsPreserveDay,
   clampDate,
   clampMonth,
+  formatFullDate,
   formatMonthLabel,
   getHydrationSafeToday,
   getMonthGrid,
@@ -23,17 +24,24 @@ import {
 } from "./date-utils";
 
 export interface CalendarProps {
+  /** Controlled selection. Pair with `onChange`; omit for uncontrolled. */
   value?: Date | null;
+  /** Starting selection when uncontrolled. */
   defaultValue?: Date | null;
+  /** Called with the picked date. */
   onChange?: (date: Date) => void;
+  /** Earliest selectable date; anything before it renders disabled. */
   minDate?: Date;
+  /** Latest selectable date; anything after it renders disabled. */
   maxDate?: Date;
+  /** BCP 47 tag driving the weekday and month names, via `Intl`. */
   locale?: string;
   /**
    * Makes the header month/year label an interactive chooser. Defaults to false,
    * which keeps the simple non-clickable header.
    */
   interactiveHeader?: boolean;
+  /** Extra classes merged onto the calendar surface. */
   className?: string;
 }
 
@@ -267,7 +275,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     <div
       ref={ref}
       className={cn(
-        "fuji-glass-surface fj:relative fj:w-[280px] fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-3 fj:shadow-fuji-card",
+        "fuji-glass-surface fj:box-border fj:relative fj:w-[280px] fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-3 fj:shadow-fuji-card",
         className,
       )}
     >
@@ -290,7 +298,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
             onClick={() => setChooserOpen((open) => !open)}
             className={cn(
               NATIVE_CONTROL_RESET,
-              "fj:cursor-pointer fj:rounded-fuji-control fj:px-2 fj:py-1 fj:text-[length:var(--fuji-text-sm)] fj:font-medium fj:text-fuji-foreground fj:hover:bg-fuji-surface-strong",
+              "fj:cursor-pointer fj:rounded-fuji-control fj:px-2 fj:py-1 fj:text-[length:var(--fuji-text-sm)] fj:font-medium fj:text-fuji-foreground fuji-hover-raised",
             )}
           >
             {formatMonthLabel(visibleMonth, locale)}
@@ -316,7 +324,12 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
           ref={chooserRef}
           role="dialog"
           aria-label="Choose month and year"
-          className="fj:absolute fj:inset-x-3 fj:top-12 fj:z-10 fj:flex fj:gap-2 fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:p-2 fj:shadow-fuji-overlay"
+          // `fuji-overlay-panel-nested`, not the blur-based overlay material:
+          // this chooser renders inside the calendar card (which is itself a
+          // glass surface) instead of portaling, and an ancestor with a
+          // backdrop-filter becomes a backdrop root - so a blur here would
+          // never see the date grid it covers. See base.css.
+          className="fuji-overlay-panel-nested fj:absolute fj:inset-x-3 fj:top-12 fj:z-10 fj:flex fj:gap-2 fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:p-2 fj:shadow-fuji-overlay"
         >
           <div className="fuji-scrollbar fj:grid fj:max-h-52 fj:flex-1 fj:grid-cols-3 fj:gap-1 fj:overflow-y-auto">
             {monthNames.map((name, index) => {
@@ -333,7 +346,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                     "fj:cursor-pointer fj:rounded-fuji-control fj:px-1.5 fj:py-1.5 fj:text-[length:var(--fuji-text-xs)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
                     index === visibleMonth.getMonth()
                       ? "fj:bg-fuji-default fj:text-fuji-default-foreground"
-                      : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-strong",
+                      : "fj:text-fuji-foreground fuji-hover-raised",
                     monthDisabled && "fj:pointer-events-none fj:cursor-not-allowed fj:opacity-30",
                   )}
                 >
@@ -354,7 +367,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   "fj:shrink-0 fj:cursor-pointer fj:rounded-fuji-control fj:px-1.5 fj:py-1.5 fj:text-[length:var(--fuji-text-xs)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
                   year === visibleMonth.getFullYear()
                     ? "fj:bg-fuji-default fj:text-fuji-default-foreground"
-                    : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-strong",
+                    : "fj:text-fuji-foreground fuji-hover-raised",
                 )}
               >
                 {year}
@@ -397,6 +410,14 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   type="button"
                   role="gridcell"
                   aria-selected={isSelected}
+                  // The visible label is the day number alone, which announces
+                  // as a bare "14" - no month, no year, no weekday. The full
+                  // date is the accessible name; the number stays the visual.
+                  aria-label={formatFullDate(day, locale)}
+                  // The standard way to say "this one is today". Previously
+                  // today was conveyed by an accent color and a bolder weight
+                  // and nothing else.
+                  aria-current={isToday ? "date" : undefined}
                   tabIndex={isActive ? 0 : -1}
                   disabled={disabled}
                   onClick={() => {
@@ -406,16 +427,30 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   }}
                   className={cn(
                     NATIVE_CONTROL_RESET,
-                    "fj:flex fj:size-9 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:text-[length:var(--fuji-text-sm)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
+                    "fj:relative fj:flex fj:size-9 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:text-[length:var(--fuji-text-sm)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
                     outsideMonth && "fj:text-fuji-foreground-subtle",
                     !outsideMonth && "fj:text-fuji-foreground",
-                    !disabled && !isSelected && "fj:hover:bg-fuji-surface-strong",
+                    !disabled && !isSelected && "fuji-hover-raised",
                     isToday && !isSelected && "fj:font-semibold fj:text-fuji-water",
-                    isSelected && "fj:bg-fuji-default fj:text-fuji-default-foreground",
+                    isSelected && "fuji-raised fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
                     disabled && "fj:pointer-events-none fj:cursor-not-allowed fj:opacity-30",
                   )}
                 >
                   {day.getDate()}
+                  {/*
+                    A shape, not just a hue. Colour alone fails WCAG 1.4.1, and
+                    the accent used for "today" is the one marker in this grid
+                    that has no other visual form - selected has a filled
+                    background, disabled has reduced opacity, outside-month has
+                    a lighter weight. The dot inherits `currentColor` so it
+                    stays legible on the selected fill too.
+                  */}
+                  {isToday && (
+                    <span
+                      aria-hidden="true"
+                      className="fj:absolute fj:bottom-1 fj:size-1 fj:rounded-full fj:bg-current"
+                    />
+                  )}
                 </button>
               );
             })}

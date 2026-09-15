@@ -47,17 +47,14 @@ export const AlertDialogContent = React.forwardRef<
     <Base.Portal>
       <Base.Backdrop
         {...portalAttrs}
-        className="fuji-overlay-backdrop fj:fixed fj:inset-0 fj:z-50 fj:transition-opacity fj:duration-[var(--fuji-duration-base)] fj:data-[ending-style]:opacity-0 fj:data-[starting-style]:opacity-0"
+        className="fuji-overlay-backdrop fuji-motion-backdrop fj:fixed fj:inset-0 fj:z-50"
       />
       <Base.Popup
         ref={ref}
         {...portalAttrs}
         className={cn(
-          "fuji-glass-surface-overlay fj:fixed fj:top-1/2 fj:left-1/2 fj:z-50 fj:flex fj:w-[calc(100vw-2rem)] fj:max-w-sm fj:-translate-x-1/2 fj:-translate-y-1/2 fj:flex-col fj:gap-4",
+          "fuji-glass-surface-overlay fuji-motion-modal fj:fixed fj:top-1/2 fj:left-1/2 fj:z-50 fj:flex fj:w-[calc(100vw-2rem)] fj:max-w-sm fj:-translate-x-1/2 fj:-translate-y-1/2 fj:flex-col fj:gap-4",
           "fj:rounded-fuji-overlay fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
-          "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
-          "fj:data-[starting-style]:scale-[0.98] fj:data-[starting-style]:opacity-0",
-          "fj:data-[ending-style]:scale-[0.98] fj:data-[ending-style]:opacity-0",
           className,
         )}
         {...props}
@@ -68,7 +65,7 @@ export const AlertDialogContent = React.forwardRef<
   );
 });
 
-const AlertDialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+export const AlertDialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   function AlertDialogFooter({ className, ...props }, ref) {
     return <div ref={ref} className={cn("fj:flex fj:justify-end fj:gap-3", className)} {...props} />;
   },

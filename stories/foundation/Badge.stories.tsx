@@ -12,7 +12,7 @@ const meta = {
   argTypes: {
     tone: {
       control: "select",
-      options: ["default", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "forest", "sun", "fire", "water"],
     },
   },
 } satisfies Meta<typeof Badge>;
@@ -25,7 +25,7 @@ export const Default: Story = {};
 export const Tones: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-center gap-3">
-      {(["default", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Badge key={tone} {...args} tone={tone}>
           {tone}
         </Badge>

@@ -1,0 +1,60 @@
+{
+  "rules": [
+    {
+      "id": "single-entry-point",
+      "rule": "Import everything from the package root. There are no subpath imports for components and none will be added.",
+      "good": "import { Button, DialogContent } from \"@fujiui/react\";",
+      "bad": "import { Button } from \"@fujiui/react/button\";",
+      "source": "SPEC.md §3"
+    },
+    {
+      "id": "provider-owned-appearance",
+      "rule": "Theme, material, radius and elevation are set once on FujiProvider. No component takes a theme, material, radius or elevation prop. Theme and material are independent - either theme renders in either material. Glass has no separate tint - the active theme is the glass tint.",
+      "good": "<FujiProvider defaultTheme=\"dark\" defaultMaterial=\"glass\" defaultRadius=\"soft\"><App /></FujiProvider>",
+      "bad": "<Button theme=\"dark\" radius=\"soft\">Save</Button>",
+      "source": "SPEC.md §2"
+    },
+    {
+      "id": "icons-are-components",
+      "rule": "Icon props take a component reference, imported individually. Never a string name.",
+      "good": "import { Check } from \"lucide-react\";\n<Icon icon={Check} />",
+      "bad": "<Icon icon=\"check\" />",
+      "source": "SPEC.md §4"
+    },
+    {
+      "id": "value-defaultvalue",
+      "rule": "Controlled inputs use `value` + `onValueChange` (or `onChange`); uncontrolled use `defaultValue`. Passing both makes the component controlled and the default is ignored.",
+      "good": "<Select items={items} defaultValue=\"a\" />",
+      "bad": "<Select items={items} selected=\"a\" />",
+      "source": "SPEC.md §4"
+    },
+    {
+      "id": "no-templated-classes",
+      "rule": "Tailwind's scanner is static, so a class name assembled at runtime is never compiled. Write full class strings and branch between them.",
+      "good": "className={tone === \"fire\" ? \"bg-fuji-fire\" : \"bg-fuji-water\"}",
+      "bad": "className={`bg-fuji-${tone}`}",
+      "source": "ARCHITECTURE.md"
+    },
+    {
+      "id": "server-component-subparts",
+      "rule": "A Server Component may render a compound root, but must not read a sub-part off it (`Dialog.Content`) - the client-module binding does not carry static properties across the boundary. Import the named sub-export instead.",
+      "good": "import { Dialog, DialogContent } from \"@fujiui/react\";\n<Dialog><DialogContent>…</DialogContent></Dialog>",
+      "bad": "import { Dialog } from \"@fujiui/react\";\n<Dialog><Dialog.Content>…</Dialog.Content></Dialog>",
+      "source": "SPEC.md §5"
+    },
+    {
+      "id": "icon-only-needs-a-name",
+      "rule": "An icon-only control has no text, so it needs an explicit accessible name.",
+      "good": "<IconButton aria-label=\"Delete\"><Trash /></IconButton>",
+      "bad": "<IconButton><Trash /></IconButton>",
+      "source": "SPEC.md §4"
+    },
+    {
+      "id": "stylesheet-required",
+      "rule": "The package ships pre-compiled CSS and no Tailwind preflight. Import the stylesheet once at the app root; consumers do not need Tailwind themselves.",
+      "good": "import \"@fujiui/react/styles.css\";",
+      "bad": "// relying on the consuming app's own Tailwind build to produce Fuji's classes",
+      "source": "SPEC.md §8"
+    }
+  ]
+}

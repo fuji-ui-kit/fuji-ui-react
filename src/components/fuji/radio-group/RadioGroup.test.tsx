@@ -5,6 +5,32 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { RadioGroup } from "./RadioGroup";
 
+/**
+ * Tailwind's `x:utility` variant compiles to the CSS pseudo-class `&:x`, and
+ * its `x-[y]:utility` form compiles to the attribute selector `&[y]` (e.g.
+ * `data-[disabled]:opacity-45` -> `[data-disabled] { opacity: .45 }`). Both
+ * are real CSS the browser (and jsdom) evaluates against the live element -
+ * not something this test invents. Pull every disabled-dimming utility class
+ * actually shipped on `el` and ask the DOM whether the selector it compiles
+ * to matches `el` as currently rendered. This fails whenever the shipped
+ * variant can never match the element's real state (e.g. `disabled:` on a
+ * `<span role="radio">`, which can never satisfy `:disabled`), instead of
+ * merely checking that some class string is present.
+ */
+function disabledStylingApplies(el: Element): boolean {
+  const relevant = el.className
+    .split(/\s+/)
+    .filter((c) => /^fj:.+:(opacity-\d+|cursor-not-allowed|pointer-events-none)$/.test(c));
+  if (relevant.length === 0) return false;
+  return relevant.every((c) => {
+    const withoutPrefix = c.slice(3); // strip the "fj:" scoping prefix
+    const variant = withoutPrefix.slice(0, withoutPrefix.lastIndexOf(":"));
+    const bracketed = /^data-\[(.+)\]$/.exec(variant);
+    const selector = bracketed ? `[data-${bracketed[1]}]` : `:${variant}`;
+    return el.matches(selector);
+  });
+}
+
 function Fixture(props: { defaultValue?: string; onValueChange?: (value: string) => void }) {
   return (
     <RadioGroup
@@ -72,5 +98,21 @@ describe("RadioGroup", () => {
   it("has no obvious accessibility violations", async () => {
     const { container } = render(<Fixture defaultValue="light" />);
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // Regression: same root cause as Checkbox/Switch - `Radio.Root` defaults to
+  // `nativeButton={false}` and renders a `<span role="radio">`, so the
+  // `disabled:` pseudo-class variant this control used to ship can never
+  // match. Fails before the `data-[disabled]:` fix; passes after.
+  it("actually applies the disabled-dimming styling to a disabled item (not just the data attribute)", () => {
+    render(
+      <RadioGroup defaultValue="light">
+        <RadioGroup.Item value="light" label="Light" />
+        <RadioGroup.Item value="dark" label="Dark" disabled />
+      </RadioGroup>,
+    );
+    const dark = screen.getByRole("radio", { name: "Dark" });
+    expect(dark).toHaveAttribute("data-disabled", "");
+    expect(disabledStylingApplies(dark)).toBe(true);
   });
 });

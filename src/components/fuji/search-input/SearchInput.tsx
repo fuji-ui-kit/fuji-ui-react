@@ -58,7 +58,7 @@ export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(
             }}
             className={cn(
               NATIVE_CONTROL_RESET,
-              "fj:flex fj:cursor-pointer fj:items-center fj:rounded-sm fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
+              "fj:flex fj:cursor-pointer fj:items-center fj:rounded-fuji-item fj:text-fuji-foreground-subtle fj:hover:text-fuji-foreground",
             )}
           >
             <X className="fj:size-4" />

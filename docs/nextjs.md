@@ -22,10 +22,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-`RootLayout` above stays a Server Component - `FujiProvider` (and every other
-Fuji component) is a Client Component internally, but a Server Component is
-allowed to _render_ a Client Component directly; React handles the boundary.
-You do not need to add `"use client"` to `layout.tsx` just to use Fuji.
+`RootLayout` above stays a Server Component. `FujiProvider` is a Client
+Component internally, but a Server Component is allowed to _render_ a Client
+Component directly; React handles the boundary. You do not need to add
+`"use client"` to `layout.tsx` just to use Fuji.
+
+Not every Fuji component is a Client Component - roughly half are not, and the
+distinction matters for what you can pass them. The next section is the rule.
 
 ## Server Components can render most Fuji components directly
 

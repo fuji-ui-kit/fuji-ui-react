@@ -10,11 +10,11 @@ const meta = {
     children: "Visit the documentation",
     href: "https://example.com",
     underline: "always",
-    color: "default",
+    tone: "default",
   },
   argTypes: {
     underline: { control: "select", options: ["always", "hover", "none"] },
-    color: { control: "select", options: ["default", "blue"] },
+    tone: { control: "select", options: ["default", "blue"] },
   },
 } satisfies Meta<typeof Link>;
 
@@ -38,10 +38,10 @@ export const UnderlineBehaviors: Story = {
 export const Colors: Story = {
   render: (args) => (
     <div className="flex flex-col gap-2">
-      <Link {...args} color="default">
+      <Link {...args} tone="default">
         Default color link
       </Link>
-      <Link {...args} color="blue">
+      <Link {...args} tone="blue">
         Blue color link
       </Link>
     </div>

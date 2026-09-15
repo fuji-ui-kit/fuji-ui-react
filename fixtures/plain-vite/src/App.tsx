@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { FujiProvider, Button, Input, Card, Dialog } from "@fuji-ui/react";
-import type { FujiTheme, FujiElevation } from "@fuji-ui/react";
+import { FujiProvider, Button, Input, Card, Dialog } from "@fujiui/react";
+import type { FujiTheme, FujiElevation } from "@fujiui/react";
 
 export default function App() {
   const [theme, setTheme] = useState<FujiTheme>("light");
@@ -29,7 +29,6 @@ export default function App() {
         <Card style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12, maxWidth: 420 }}>
           <div style={{ display: "flex", gap: 8 }}>
             <Button tone="default">Default</Button>
-            <Button tone="earth">Earth</Button>
             <Button tone="fire">Fire</Button>
             <Button tone="water">Water</Button>
             <Button tone="forest">Forest</Button>

@@ -8,7 +8,7 @@ import type { ComponentTone } from "../../../types";
 
 export type RadioGroupProps = React.ComponentPropsWithoutRef<typeof BaseRadioGroup>;
 
-const RadioGroupRoot = React.forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroupRoot(
+export const RadioGroupRoot = React.forwardRef<HTMLDivElement, RadioGroupProps>(function RadioGroupRoot(
   { className, ...props },
   ref,
 ) {
@@ -20,7 +20,6 @@ const RadioGroupRoot = React.forwardRef<HTMLDivElement, RadioGroupProps>(functio
 // be templated).
 const TONE_CLASSES: Record<ComponentTone, string> = {
   default: "fj:text-fuji-default fj:data-[checked]:border-fuji-default",
-  earth: "fj:text-fuji-earth fj:data-[checked]:border-fuji-earth",
   forest: "fj:text-fuji-forest fj:data-[checked]:border-fuji-forest",
   sun: "fj:text-fuji-sun fj:data-[checked]:border-fuji-sun",
   fire: "fj:text-fuji-fire fj:data-[checked]:border-fuji-fire",
@@ -28,44 +27,72 @@ const TONE_CLASSES: Record<ComponentTone, string> = {
 };
 
 export interface RadioGroupItemProps extends React.ComponentPropsWithoutRef<typeof Radio.Root> {
+  /** The option's visible text. Clicking it selects the radio. */
   label: React.ReactNode;
   /** Color used once selected. Default "default". */
   tone?: ComponentTone;
 }
 
-const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(function RadioGroupItem(
-  { label, tone = "default", className, id, ...props },
-  ref,
-) {
-  const generatedId = React.useId();
-  const inputId = id ?? generatedId;
-  return (
-    <label
-      htmlFor={inputId}
-      className="fj:flex fj:cursor-pointer fj:items-center fj:gap-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground"
-    >
-      <Radio.Root
-        ref={ref}
-        id={inputId}
-        className={cn(
-          "fj:flex fj:size-[18px] fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface",
-          "fj:transition-[border-color,border-width] fj:duration-[var(--fuji-duration-fast)]",
-          TONE_CLASSES[tone],
-          // Selection reads primarily from a thicker, tone-colored border, not
-          // the inner dot - the dot stays a small, restrained accent.
-          "fj:data-[checked]:border-2",
-          "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-          "fj:disabled:cursor-not-allowed fj:disabled:opacity-45",
-          className,
-        )}
-        {...props}
+export const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItemProps>(
+  function RadioGroupItem({ label, tone = "default", className, id, ...props }, ref) {
+    const generatedId = React.useId();
+    const inputId = id ?? generatedId;
+    return (
+      <label
+        htmlFor={inputId}
+        className="fj:flex fj:cursor-pointer fj:items-center fj:gap-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground"
       >
-        <Radio.Indicator className="fj:flex fj:items-center fj:justify-center fj:data-[unchecked]:hidden fj:before:size-2.5 fj:before:rounded-full fj:before:bg-current" />
-      </Radio.Root>
-      {label}
-    </label>
-  );
-});
+        <Radio.Root
+          ref={ref}
+          id={inputId}
+          className={cn(
+            // `box-border` is load-bearing beyond the usual no-preflight reason:
+            // selection thickens the border to 2px, so under content-box the
+            // control grew from 20px to 22px on check - it visibly jumped.
+            "fj:box-border fj:flex fj:size-[18px] fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface",
+            "fj:transition-[border-color,border-width] fj:duration-[var(--fuji-duration-fast)]",
+            TONE_CLASSES[tone],
+            // Selection reads primarily from a thicker, tone-colored border, not
+            // the inner dot - the dot stays a small, restrained accent.
+            "fj:data-[checked]:border-2",
+            "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+            // `Radio.Root` renders a `<span role="radio">` by default (its
+            // `nativeButton` prop defaults to false), not a native form
+            // control - the real `disabled` attribute lives on Base UI's
+            // visually-hidden `<input>` beside it, so a `disabled:`
+            // pseudo-class here can never match. Base UI does mirror the
+            // disabled state onto this element as `data-disabled`, so the
+            // attribute variant is the one that actually fires.
+            "fj:data-[disabled]:cursor-not-allowed fj:data-[disabled]:opacity-45",
+            className,
+          )}
+          {...props}
+        >
+          {/* `keepMounted` so the dot can animate: the default unmounts it
+              when unchecked, and an element that does not exist cannot
+              transition - selection popped in instantly. It stays hidden
+              from assistive tech either way; only the painted dot changes.
+              The scale-plus-spin mirrors Switch's rolling thumb, so both
+              controls answer a toggle the same way. */}
+          <Radio.Indicator
+            keepMounted
+            className={cn(
+              "fj:flex fj:items-center fj:justify-center",
+              "fj:before:size-2.5 fj:before:rounded-full fj:before:bg-current",
+              "fj:before:transition-[scale,rotate] fj:before:duration-[var(--fuji-duration-base)] fj:before:ease-[var(--fuji-ease-spring)]",
+              "fj:data-[unchecked]:before:scale-0 fj:data-[checked]:before:scale-100",
+              "fj:data-[unchecked]:before:rotate-[-140deg] fj:data-[checked]:before:rotate-0",
+              // The dot is decoration; a reduced-motion user gets the state
+              // change with no travel.
+              "fj:motion-reduce:before:transition-none",
+            )}
+          />
+        </Radio.Root>
+        {label}
+      </label>
+    );
+  },
+);
 
 /** `<RadioGroup defaultValue="a"><RadioGroup.Item value="a" label="A"/></RadioGroup>` */
 export const RadioGroup = Object.assign(RadioGroupRoot, { Item: RadioGroupItem });

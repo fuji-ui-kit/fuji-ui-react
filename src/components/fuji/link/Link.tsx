@@ -1,18 +1,18 @@
 import * as React from "react";
 import { cn } from "../../../lib/cn";
-import { isSafeHref } from "../lib/safe-href";
+import { safeHref } from "../lib/safe-href";
 
-export type LinkColor = "default" | "blue";
+export type LinkTone = "default" | "blue";
 
 export interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   /** Underline behavior. Default "always". */
   underline?: "always" | "hover" | "none";
   /** Color tone. "blue" uses a restrained, accessible link blue. Default "default". */
-  color?: LinkColor;
+  tone?: LinkTone;
   /** Deprecated: shorthand for a muted, hover-underlined link. */
   muted?: boolean;
-  /** Color tone applied on hover. Accepts the same tones as `color`. */
-  hover?: LinkColor;
+  /** Color tone applied on hover. Accepts the same tones as `tone`. */
+  hoverTone?: LinkTone;
 }
 
 const UNDERLINE_CLASSES: Record<NonNullable<LinkProps["underline"]>, string> = {
@@ -21,12 +21,12 @@ const UNDERLINE_CLASSES: Record<NonNullable<LinkProps["underline"]>, string> = {
   none: "fj:no-underline",
 };
 
-const COLOR_CLASSES: Record<LinkColor, string> = {
+const TONE_CLASSES: Record<LinkTone, string> = {
   default: "fj:text-fuji-foreground",
   blue: "fj:text-fuji-water",
 };
 
-const HOVER_COLOR_CLASSES: Record<LinkColor, string> = {
+const HOVER_TONE_CLASSES: Record<LinkTone, string> = {
   default: "fj:hover:text-fuji-foreground",
   blue: "fj:hover:text-fuji-water",
 };
@@ -38,7 +38,7 @@ const HOVER_COLOR_CLASSES: Record<LinkColor, string> = {
  * and color tone; `muted` remains as a shorthand for older call sites.
  */
 export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(function Link(
-  { underline = "always", color = "default", muted = false, hover, className, children, href, ...props },
+  { underline = "always", tone = "default", muted = false, hoverTone, className, children, href, ...props },
   ref,
 ) {
   return (
@@ -47,13 +47,13 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(function Link
       // Dropped rather than passed through when unsafe - see safe-href.ts.
       // Only the scheme is validated; relative paths, hashes, and query
       // strings are always allowed, so this is a no-op for every ordinary use.
-      href={isSafeHref(href) ? href : undefined}
+      href={safeHref(href)}
       className={cn(
         "fj:cursor-pointer fj:underline-offset-4 fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
         "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
         muted
           ? "fj:text-fuji-foreground-muted fj:no-underline fj:hover:text-fuji-foreground fj:hover:underline"
-          : cn(COLOR_CLASSES[color], hover && HOVER_COLOR_CLASSES[hover], UNDERLINE_CLASSES[underline]),
+          : cn(TONE_CLASSES[tone], hoverTone && HOVER_TONE_CLASSES[hoverTone], UNDERLINE_CLASSES[underline]),
         className,
       )}
       {...props}

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Tabs } from "@fujiui/react";
 
 const meta = {
@@ -63,4 +63,28 @@ export const KeyboardNavigation: Story = {
     const activity = canvas.getByRole("tab", { name: "Activity" });
     await expect(activity).toHaveFocus();
   },
+};
+
+export const Pill: Story = {
+  name: "Pill variant (raised indicator)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`<Tabs.List variant="pill">` turns the list into a white pill with a raised black tile that slides between tabs - the navigation-style tab bar of the reference designs. Underline remains the default for document sections.',
+      },
+    },
+  },
+  render: () => (
+    <Tabs defaultValue="storage" className="w-full max-w-md">
+      <Tabs.List variant="pill">
+        <Tabs.Tab value="storage">Storage</Tabs.Tab>
+        <Tabs.Tab value="inactive">Inactive</Tabs.Tab>
+        <Tabs.Tab value="archive">Archive</Tabs.Tab>
+      </Tabs.List>
+      <Tabs.Panel value="storage">You're using 68% of your 100 GB plan.</Tabs.Panel>
+      <Tabs.Panel value="inactive">No inactive items.</Tabs.Panel>
+      <Tabs.Panel value="archive">12 archived items.</Tabs.Panel>
+    </Tabs>
+  ),
 };

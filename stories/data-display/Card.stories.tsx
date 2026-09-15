@@ -1,6 +1,17 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { Star, MapPin, Bookmark, Play } from "lucide-react";
-import { Avatar, Badge, Button, Card, Icon, IconButton, Image } from "@fujiui/react";
+import { Star, MapPin, Bookmark, Play, MoreHorizontal } from "lucide-react";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Icon,
+  IconButton,
+  Image,
+  Link,
+  SegmentedControl,
+  Statistic,
+} from "@fujiui/react";
 
 const meta = {
   title: "Data Display/Card",
@@ -35,13 +46,41 @@ export const Default: Story = {
   ),
 };
 
-export const Interactive: Story = {
-  name: "Interactive (hover/tilt)",
+export const Lift: Story = {
+  name: 'Hover effect: "lift"',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "The CSS treatment: the card scales up slightly, tips a degree and deepens its shadow on hover. Pure CSS, so it still works inside a Server Component. This replaces the old `interactive` boolean, which keeps working but is deprecated.",
+      },
+    },
+  },
   render: () => (
-    <Card interactive className="w-full max-w-72">
+    <Card effect="lift" className="w-full max-w-72">
       <Card.Header>
         <Card.Title>Weekly report</Card.Title>
         <Card.Description>Generated every Monday at 9:00 AM.</Card.Description>
+      </Card.Header>
+    </Card>
+  ),
+};
+
+export const Tilt: Story = {
+  name: 'Hover effect: "tilt"',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "Tracks the pointer and tilts in 3D towards it, springing back when the pointer leaves - move the cursor around the card to see it. Skipped for touch pointers, which have no hover to follow, and under `prefers-reduced-motion: reduce`.",
+      },
+    },
+  },
+  render: () => (
+    <Card effect="tilt" className="w-full max-w-72">
+      <Card.Header>
+        <Card.Title>Weekly report</Card.Title>
+        <Card.Description>Move the pointer across this card.</Card.Description>
       </Card.Header>
     </Card>
   ),
@@ -188,6 +227,75 @@ export const PaymentCardComposition: Story = {
         <span>LINDA K ELIASEN</span>
         <span className="font-semibold text-white/80">VISA</span>
       </div>
+    </Card>
+  ),
+};
+
+export const VehicleDetails: Story = {
+  name: "Vehicle details (hero, selector, stat tiles)",
+  parameters: {
+    docs: {
+      description: {
+        story:
+          "A composed dashboard card: hero image, title and subtitle, a `SegmentedControl` for the gear selector, and two `Statistic` tiles in nested cards. Everything is stock components - no bespoke styling beyond layout utilities.",
+      },
+    },
+  },
+  render: () => (
+    <Card className="relative w-full max-w-sm">
+      <Card.Header>
+        <Card.Title>Car details</Card.Title>
+        <Card.Description>Jaguar I-Pace · 2023 release</Card.Description>
+      </Card.Header>
+      <IconButton aria-label="More options" size="sm" className="absolute top-4 right-4">
+        <MoreHorizontal className="size-4" />
+      </IconButton>
+      {/* Media in flow (not the edge-to-edge `top` position): the reference
+          keeps the photo inset inside the card with its own radius. */}
+      <div className="mb-5 overflow-hidden rounded-fuji-control">
+        <Image
+          src="https://picsum.photos/id/111/800/450"
+          alt="Vintage car, front three-quarter view"
+          ratio={16 / 9}
+        />
+      </div>
+      <Card.Content className="flex flex-col items-center gap-4 text-center">
+        <div>
+          <p className="m-0 text-[length:var(--fuji-text-xl)] font-semibold text-fuji-foreground">
+            Jaguar I-Pace
+          </p>
+          <p className="m-0 text-[length:var(--fuji-text-sm)] text-fuji-foreground-muted">
+            2023 Release Jaguar Edition
+          </p>
+        </div>
+        <SegmentedControl
+          aria-label="Gear"
+          defaultValue="n"
+          options={[
+            { label: "R", value: "r" },
+            { label: "P", value: "p" },
+            { label: "N", value: "n" },
+            { label: "D", value: "d" },
+            { label: "S", value: "s" },
+          ]}
+        />
+        <div className="grid w-full grid-cols-2 gap-3 text-left">
+          <Card className="gap-1 p-4">
+            <Card.Title className="text-[length:var(--fuji-text-base)]">Station</Card.Title>
+            <Link
+              href="#station"
+              tone="default"
+              underline="hover"
+              className="text-[length:var(--fuji-text-sm)]"
+            >
+              See location →
+            </Link>
+          </Card>
+          <Card className="p-4">
+            <Statistic label="Battery" value={503} suffix=" km" trend={12} trendLabel="left" />
+          </Card>
+        </div>
+      </Card.Content>
     </Card>
   ),
 };

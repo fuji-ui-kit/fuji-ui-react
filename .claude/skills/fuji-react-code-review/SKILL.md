@@ -1,13 +1,17 @@
 ---
 name: fuji-react-code-review
-description: Review changes to the @fuji-ui/react package for correctness, regressions, public API consistency, Server/Client boundary integrity, cross-version React support, SSR safety, accessibility, styling contracts, and packaging impact. Use for review-only code reviews unless the user explicitly requests fixes.
+description: Review changes to the @fujiui/react package for correctness, regressions, public API consistency, Server/Client boundary integrity, cross-version React support, SSR safety, accessibility, styling contracts, and packaging impact. Use for review-only code reviews unless the user explicitly requests fixes.
+# Contributor skill for working on this repository. Hidden from `npx skills add`,
+# which would otherwise install it into apps that only use @fujiui/react.
+metadata:
+  internal: true
 ---
 
 # Fuji React code review
 
 ## Purpose
 
-Evidence-based review of changes to the `@fuji-ui/react` library source. This is
+Evidence-based review of changes to the `@fujiui/react` library source. This is
 a published package: a defect here ships to every consumer and cannot be hotfixed
 in an app. Default to review-only - do not edit unless the user asks for fixes.
 
@@ -49,8 +53,9 @@ in an app. Default to review-only - do not edit unless the user asks for fixes.
 - No `next/*`, router, or meta-framework import anywhere in `src/`.
 - No `@/*` path aliases - all internal imports are relative.
 - No new runtime dependency without explicit justification; it lands in every
-  consumer bundle. Runtime deps are limited to `@base-ui/react`,
-  `class-variance-authority`, `clsx`, `lucide-react`, `tailwind-merge`.
+  consumer bundle. Runtime deps are limited to `@base-ui/react`, `clsx`,
+  `lucide-react`, `tailwind-merge` (`class-variance-authority` was removed;
+  recipes are plain lookup tables).
 - Tailwind must stay build-time only. Anything that would require consumers to
   configure Tailwind or PostCSS is a contract break.
 
@@ -93,7 +98,26 @@ first-paint output on server and client.
 - Glass keeps opaque fallbacks; `floating` elevation's main effect is deeper
   shadows (`regular` also uses slightly more compact control sizing) - flag
   any newly added scale, translation, or hover motion on a static surface.
-- New animation must respect `prefers-reduced-motion: reduce`.
+- New animation must respect `prefers-reduced-motion: reduce`, and must be a
+  shared recipe in `base.css` (or extend one) rather than an ad-hoc
+  `transition-[...] duration-[...]` string - the timing is the identity.
+- **Entrance/draw-in animations are CSS keyframes with a `from` state.** A
+  `requestAnimationFrame`-toggled class never fires in a throttled tab and
+  leaves the component blank/empty; flag any rAF that gates first paint.
+- **No preflight ships.** Any element that sets a size together with padding
+  or a border needs `box-border`; any styled `<a>` needs `NATIVE_LINK_RESET`;
+  any `<p>`/`<pre>`/heading needs its margin reset. `box-sizing.test.tsx`
+  and the UA-default sweep exist because each of these was shipped once.
+- Radii use the four tiers (`rounded-fuji-item/-control/-panel/-overlay`);
+  a literal `rounded-[6px]` or `rounded-sm` ignores the `soft` axis. Shadows
+  use `--fuji-shadow-*`; `.fuji-raised` is the only raised-object recipe and
+  carries no inset highlight (a 1px inset reads as a border).
+- Every hand-written `fuji-*` class must exist in `src/styles` -
+  `recipes.test.ts` guards it, because a range edit once deleted the
+  `.fuji-carousel` breakpoint block with every test green.
+- Under glass, a glass-only rule needs a `[data-fuji-glass="light"]`
+  counterpart when it assumes white-on-dark; thin fills and strokes use
+  `--fuji-foreground`, not `--fuji-default` (near-black under glass).
 
 ### Quality gates
 

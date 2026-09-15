@@ -15,7 +15,9 @@ const COLUMN_CLASSES: Record<FujiColumns, string> = {
 };
 
 export interface GridProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Column count, or a breakpoint map for a responsive track count. */
   columns?: FujiColumns;
+  /** Space between cells, on the shared spacing scale. */
   gap?: FujiGap;
 }
 

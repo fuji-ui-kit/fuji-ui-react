@@ -11,7 +11,9 @@ import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 
 export interface MultiSelectItem {
+  /** What the option reads as, in the list and on its selected chip. */
   label: string;
+  /** The value reported through `onValueChange`. */
   value: string;
 }
 
@@ -19,13 +21,19 @@ export interface MultiSelectProps extends Omit<
   React.ComponentPropsWithoutRef<typeof Base.Root<MultiSelectItem, true>>,
   "items" | "multiple"
 > {
+  /** Options to render. */
   items: MultiSelectItem[];
+  /** Text shown while nothing is selected. */
   placeholder?: string;
+  /** Control height, matching `Input` and `Button` at the same size. */
   size?: ComponentSize;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
+  /** Extra classes merged onto the input. */
   className?: string;
   /** Accessible name for the search input. Required when there is no visible `<label>` for this field. */
   "aria-label"?: string;
+  /** Points at an existing visible label's id, as an alternative to `aria-label`. */
   "aria-labelledby"?: string;
 }
 
@@ -45,7 +53,15 @@ export function MultiSelect({
   return (
     <Base.Root items={items} multiple {...props}>
       <Base.InputGroup
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
+        // `Base.InputGroup` already mirrors an ancestor `<FormField invalid>`
+        // onto this same element as `data-invalid` automatically, and an
+        // explicit `undefined`-valued prop still occupies the key and wins
+        // the merge in `useRenderElement`, erasing that computed value
+        // whenever this `invalid` prop itself was left unset (see Input.tsx
+        // for the full mechanism, and FormField.tsx for the symptom).
+        // Omitting the key when falsy instead lets the ambient value through.
+        {...(invalid ? { "data-invalid": "" } : null)}
         className={cn(
           fieldSurface({ size }),
           // Reserve fixed space on the right (pr-9) so chips/input never push the
@@ -70,9 +86,9 @@ export function MultiSelect({
                     key={item.value}
                     aria-label={item.label}
                     className={cn(
-                      "fj:flex fj:max-w-[10rem] fj:shrink-0 fj:items-center fj:gap-1.5 fj:rounded-full fj:px-2.5 fj:py-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:outline-none",
+                      "fj:box-border fj:flex fj:max-w-[10rem] fj:shrink-0 fj:items-center fj:gap-1.5 fj:rounded-full fj:px-2.5 fj:py-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:outline-none",
                       softClasses("default"),
-                      "fj:data-[highlighted]:bg-fuji-earth fj:data-[highlighted]:text-fuji-earth-foreground",
+                      "fj:data-[highlighted]:bg-fuji-default fj:data-[highlighted]:text-fuji-default-foreground",
                     )}
                   >
                     <span className="fj:truncate">{item.label}</span>
@@ -116,11 +132,8 @@ export function MultiSelect({
           <Base.Popup
             {...portalAttrs}
             className={cn(
-              "fuji-glass-surface-overlay fj:w-[var(--anchor-width)] fj:max-w-[var(--available-width)] fj:origin-[var(--transform-origin)]",
+              "fuji-glass-surface-overlay fuji-motion-popup fj:w-[var(--anchor-width)] fj:max-w-[var(--available-width)]",
               "fj:overflow-hidden fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:shadow-fuji-overlay fj:outline-none",
-              "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-fast)]",
-              "fj:data-[starting-style]:scale-95 fj:data-[starting-style]:opacity-0",
-              "fj:data-[ending-style]:scale-95 fj:data-[ending-style]:opacity-0",
             )}
           >
             <Base.Empty className="fj:py-4 fj:px-3 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-subtle fj:empty:hidden">
@@ -132,8 +145,13 @@ export function MultiSelect({
                   key={item.value}
                   value={item}
                   className={cn(
-                    "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-[6px] fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-                    "fj:data-[highlighted]:bg-fuji-surface-strong",
+                    "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
+                    // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
+                    // highlighted row tracked the backdrop and washed out over the
+                    // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
+                    // inversion every other selection indicator uses - and the one
+                    // CommandMenu already moved to for this exact reason.
+                    "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
                   )}
                 >
                   <span className="fj:flex fj:size-4 fj:shrink-0 fj:items-center fj:justify-center">

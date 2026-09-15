@@ -12,7 +12,7 @@
    by the parser - exactly the trap this fixture is designed to avoid
    tripping over). */
 @import "tailwindcss";
-@import "@fuji-ui/react/styles.css";
+@import "@fujiui/react/styles.css";
 
 @theme {
   --spacing: 0.75rem; /* default is 0.25rem - 3x the norm, deliberately extreme */

@@ -23,7 +23,12 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
   ref,
 ) {
   const [status, setStatus] = React.useState<"loading" | "loaded" | "error">("loading");
-  const imageRef = React.useRef<HTMLImageElement>(null);
+  // `<HTMLImageElement | null>`, not `<HTMLImageElement>`. React 18 types
+  // `useRef<T>(null)` as a `RefObject<T>` whose `current` is READ-ONLY, so the
+  // ref callback below ("imageRef.current = node") compiles only against React
+  // 19's types. Including `null` in the parameter selects the mutable
+  // overload, which exists in both versions.
+  const imageRef = React.useRef<HTMLImageElement | null>(null);
   const portalAttrs = usePortalThemeAttrs();
 
   // Reset a previous error/loaded state when the caller points the component
@@ -67,7 +72,14 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
             imageRef.current = node;
             if (fullscreen) return;
             if (typeof ref === "function") ref(node);
-            else if (ref) ref.current = node;
+            // Cast to a bare structural type rather than to React's own
+            // `MutableRefObject`: React 19's types made `RefObject.current`
+            // writable, React 18's did not, so the plain assignment compiles
+            // only on 19 ("Cannot assign to 'current' because it is a
+            // read-only property"). This shape is identical on both and
+            // depends on neither version's ref typings. Caught by CI's
+            // `react18` job, which is the only run that resolves React 18.
+            else if (ref) (ref as { current: HTMLImageElement | null }).current = node;
           }}
           alt={alt}
           loading="lazy"
@@ -92,7 +104,7 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
       )}
       {showLoadingSkeleton && status === "loading" && (
         <span
-          className="fj:absolute fj:inset-0 fj:animate-pulse fj:bg-fuji-surface-strong"
+          className="fj:absolute fj:inset-0 fj:animate-fuji-pulse fj:bg-fuji-surface-strong"
           aria-hidden="true"
         />
       )}
@@ -117,32 +129,38 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
       <Base.Portal>
         <Base.Backdrop
           {...portalAttrs}
-          className="fuji-overlay-backdrop fj:fixed fj:inset-0 fj:z-50 fj:transition-opacity fj:duration-[var(--fuji-duration-base)] fj:data-[ending-style]:opacity-0 fj:data-[starting-style]:opacity-0"
+          className="fuji-lightbox-backdrop fuji-motion-backdrop fj:fixed fj:inset-0 fj:z-50"
         />
         <Base.Popup
           {...portalAttrs}
           className={cn(
-            "fj:fixed fj:inset-0 fj:z-50 fj:flex fj:items-center fj:justify-center fj:p-6 fj:outline-none",
-            "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
-            "fj:data-[starting-style]:scale-[0.98] fj:data-[starting-style]:opacity-0",
-            "fj:data-[ending-style]:scale-[0.98] fj:data-[ending-style]:opacity-0",
+            "fuji-motion-modal fj:fixed fj:inset-0 fj:z-50 fj:flex fj:items-center fj:justify-center fj:p-6 fj:outline-none",
           )}
         >
-          <Base.Close
-            render={
-              <DismissButton
-                aria-label="Close"
-                className="fj:absolute fj:top-4 fj:right-4 fj:text-white fj:opacity-90 fj:hover:opacity-100"
-              />
-            }
-          />
-          {/* fullscreen preview of the same source; no next/image dependency by design. */}
-          <img
-            ref={ref}
-            src={props.src}
-            alt={alt}
-            className="fj:block fj:max-h-full fj:max-w-full fj:rounded-fuji-panel fj:object-contain fj:shadow-fuji-overlay"
-          />
+          {/* The frame shrink-wraps the image so the close button can anchor
+              to the PICTURE's corner. Anchored to the popup instead, it sat in
+              the far corner of the viewport - metres away from the photo on a
+              wide display, and unrelated to the thing it closes. */}
+          <div className="fj:relative fj:flex fj:max-h-full fj:max-w-full">
+            {/* fullscreen preview of the same source; no next/image dependency by design. */}
+            <img
+              ref={ref}
+              src={props.src}
+              alt={alt}
+              className="fj:block fj:max-h-full fj:max-w-full fj:rounded-fuji-panel fj:object-contain fj:shadow-fuji-overlay"
+            />
+            <Base.Close
+              render={
+                <DismissButton
+                  aria-label="Close"
+                  // Just inside the corner, on a scrim of its own: the image
+                  // underneath can be any colour, so the button cannot rely on
+                  // the backdrop for contrast.
+                  className="fj:absolute fj:top-2 fj:right-2 fj:bg-black/55 fj:text-white fj:backdrop-blur-sm fj:hover:bg-black/70"
+                />
+              }
+            />
+          </div>
         </Base.Popup>
       </Base.Portal>
     </Base.Root>

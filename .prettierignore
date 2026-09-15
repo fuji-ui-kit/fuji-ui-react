@@ -5,6 +5,12 @@
 
 # build output
 /dist
+/mcp/dist
 /coverage
 /storybook-static
 /.storybook/generated
+
+# Agent worktrees are checked out inside the repo, so they would otherwise be
+# formatted (and reported on) as part of this branch. Each worktree formats
+# itself on its own branch.
+/.claude/worktrees/

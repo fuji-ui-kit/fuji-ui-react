@@ -4,14 +4,20 @@ import * as React from "react";
 import { Search } from "lucide-react";
 import { Dialog as Base } from "@base-ui/react/dialog";
 import { cn } from "../../../lib/cn";
+import { useControllableState } from "../../../hooks/useControllableState";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 
 export interface CommandMenuItem {
+  /** Unique key for the item. */
   id: string;
+  /** What the row reads as, and the default search target. */
   label: string;
+  /** Heading the item is filed under. Items with no group are listed first. */
   group?: string;
+  /** Glyph before the label. */
   icon?: React.ReactNode;
+  /** Keyboard hint shown on the trailing edge ("⌘P"). Display only - bind the key yourself. */
   shortcut?: string;
   /** Extra text matched by search (synonyms, category, summary). Falls back to `label`. */
   searchText?: string;
@@ -27,19 +33,38 @@ function normalize(value: string): string {
 }
 
 export interface CommandMenuProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  /** Controlled open state. Omit to let the component own it. */
+  open?: boolean;
+  /**
+   * Uncontrolled initial open state. Default false.
+   *
+   * `open`/`onOpenChange` used to be required, which meant even a demo, a
+   * story, or a palette whose only trigger is its own ⌘K shortcut had to
+   * carry a `useState` for it - the one component in the package with no
+   * uncontrolled mode.
+   */
+  defaultOpen?: boolean;
+  /** Called whenever the palette opens or closes, including via ⌘K and Escape. */
+  onOpenChange?: (open: boolean) => void;
+  /** Everything searchable. Filtering happens here, not in the consumer. */
   items: CommandMenuItem[];
+  /** Text in the search input while it is empty. */
   placeholder?: string;
 }
 
 /** ⌘K-style command palette: filterable, keyboard-navigable, grouped. */
 export function CommandMenu({
-  open,
+  open: openProp,
+  defaultOpen = false,
   onOpenChange,
   items,
   placeholder = "Type a command or search…",
 }: CommandMenuProps) {
+  const [open, setOpen] = useControllableState({
+    value: openProp,
+    defaultValue: defaultOpen,
+    onChange: onOpenChange,
+  });
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const portalAttrs = usePortalThemeAttrs();
@@ -73,24 +98,21 @@ export function CommandMenu({
   const select = (item: CommandMenuItem | undefined) => {
     if (!item) return;
     item.onSelect();
-    onOpenChange(false);
+    setOpen(false);
   };
 
   return (
-    <Base.Root open={open} onOpenChange={onOpenChange}>
+    <Base.Root open={open} onOpenChange={setOpen}>
       <Base.Portal>
         <Base.Backdrop
           {...portalAttrs}
-          className="fuji-overlay-backdrop fj:fixed fj:inset-0 fj:z-50 fj:transition-opacity fj:duration-[var(--fuji-duration-base)] fj:data-[ending-style]:opacity-0 fj:data-[starting-style]:opacity-0"
+          className="fuji-overlay-backdrop fuji-motion-backdrop fj:fixed fj:inset-0 fj:z-50"
         />
         <Base.Popup
           {...portalAttrs}
           className={cn(
-            "fuji-glass-surface-overlay fj:fixed fj:top-[12%] fj:left-1/2 fj:z-50 fj:flex fj:w-[calc(100vw-2rem)] fj:max-w-lg fj:-translate-x-1/2 fj:flex-col",
+            "fuji-glass-surface-overlay fuji-motion-modal fj:fixed fj:top-[12%] fj:left-1/2 fj:z-50 fj:flex fj:w-[calc(100vw-2rem)] fj:max-w-lg fj:-translate-x-1/2 fj:flex-col",
             "fj:overflow-hidden fj:rounded-fuji-overlay fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:shadow-fuji-overlay fj:outline-none",
-            "fj:transition-[transform,opacity] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
-            "fj:data-[starting-style]:scale-[0.98] fj:data-[starting-style]:opacity-0",
-            "fj:data-[ending-style]:scale-[0.98] fj:data-[ending-style]:opacity-0",
           )}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
@@ -156,8 +178,23 @@ export function CommandMenu({
                       onClick={() => select(item)}
                       className={cn(
                         NATIVE_CONTROL_RESET,
-                        "fj:flex fj:w-full fj:cursor-pointer fj:items-center fj:gap-2.5 fj:rounded-[6px] fj:px-2.5 fj:py-2 fj:text-left fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground",
-                        index === activeIndex && "fj:bg-fuji-surface-strong",
+                        "fj:box-border fj:flex fj:w-full fj:cursor-pointer fj:items-center fj:gap-2.5 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-left fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground",
+                        // `--fuji-surface-strong` is a translucent WHITE fill in
+                        // light+glass (see tokens.css) - painted on top of an
+                        // already-near-white glass panel, the old
+                        // `bg-fuji-surface-strong` swap measured ~1:1 against
+                        // its siblings there (invisible to a keyboard user).
+                        // Every other "current selection" indicator in the
+                        // library - Tabs' pill, Pagination's current page,
+                        // Sidebar's active item, BottomNavigation's pill/circle
+                        // - inverts fill and text per theme instead
+                        // (`bg-fuji-contained-default` / `text-fuji-default
+                        // -foreground`), which is why those measure ~14-17:1 in
+                        // every theme x material combination. CommandMenu was
+                        // the one place still using the flat, theme-blind
+                        // surface tint; use the same pairing here too.
+                        index === activeIndex &&
+                          "fuji-raised fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
                       )}
                     >
                       {item.icon}

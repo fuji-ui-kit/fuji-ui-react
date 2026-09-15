@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect, userEvent, within } from "@storybook/test";
+import { expect, userEvent, within } from "storybook/test";
 import { Button, Toaster, ToastProvider, useToast } from "@fujiui/react";
 
 interface ToastConfig {
@@ -120,4 +120,54 @@ export const Stacked: Story = {
       ]}
     />
   ),
+};
+
+const STACK_MESSAGES: ToastConfig[] = [
+  { title: "Changes saved", description: "Your updates have been applied.", variant: "success" },
+  { title: "Message sent", description: "Your message was delivered.", variant: "info" },
+  { title: "Reminder", description: "Team standup starts in 5 minutes.", variant: "warning" },
+  { title: "Achievement unlocked", description: "You shipped 10 features this week!", variant: "success" },
+  { title: "File uploaded", description: "presentation-final.pdf is ready.", variant: "info" },
+];
+
+function AddToastButton() {
+  const toast = useToast();
+  const count = React.useRef(0);
+  return (
+    <Button
+      onClick={() => {
+        const message = STACK_MESSAGES[count.current++ % STACK_MESSAGES.length];
+        toast.add({
+          title: message.title,
+          description: message.description,
+          timeout: 0,
+          data: { variant: message.variant },
+        });
+      }}
+    >
+      Add toast
+    </Button>
+  );
+}
+
+/**
+ * The stack itself: press the button a few times. Each new toast springs in
+ * from below and the ones behind it are pushed up, scaled down and faded
+ * per step; hover the stack to fan it out and read every toast, and
+ * dismiss any of them. The provider's `limit` (here 4) caps how many are
+ * shown.
+ */
+export const Stack: Story = {
+  name: "Stack (add toasts)",
+  decorators: [
+    (Story) => (
+      <ToastProvider limit={4}>
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Story />
+        </div>
+        <Toaster position="bottom-center" />
+      </ToastProvider>
+    ),
+  ],
+  render: () => <AddToastButton />,
 };

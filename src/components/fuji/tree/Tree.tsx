@@ -5,17 +5,24 @@ import { ChevronRight, Folder } from "lucide-react";
 import { cn } from "../../../lib/cn";
 
 export interface TreeNode {
+  /** Unique across the whole tree - it is the selection and expansion key. */
   id: string;
+  /** What the row reads as. */
   label: React.ReactNode;
+  /** Glyph before the label. */
   icon?: React.ReactNode;
+  /** Nested nodes. A node with children renders as an expandable group. */
   children?: TreeNode[];
 }
 
 export interface TreeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onSelect"> {
+  /** The roots of the tree. */
   data: TreeNode[];
+  /** `id` of the selected node. Controlled - the tree does not track selection itself. */
   selectedId?: string;
   /** Fires when a tree node is activated (click, or Enter/Space while focused) - unrelated to the native `onSelect` text-selection event. */
   onSelect?: (node: TreeNode) => void;
+  /** `id`s expanded on first render. Expansion is uncontrolled from then on. */
   defaultExpandedIds?: string[];
 }
 
@@ -217,7 +224,7 @@ function TreeItem({
         }}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
         className={cn(
-          "fj:flex fj:w-full fj:cursor-pointer fj:items-center fj:gap-1.5 fj:rounded-[6px] fj:py-1.5 fj:pr-2 fj:text-[length:var(--fuji-text-base)] fj:outline-none fj:focus-visible:ring-2 fj:focus-visible:ring-fuji-focus-ring",
+          "fj:box-border fj:flex fj:w-full fj:cursor-pointer fj:items-center fj:gap-1.5 fj:rounded-fuji-item fj:py-1.5 fj:pr-2 fj:text-[length:var(--fuji-text-base)] fj:outline-none fj:focus-visible:ring-2 fj:focus-visible:ring-fuji-focus-ring",
           isSelected
             ? "fj:bg-fuji-default fj:text-fuji-default-foreground"
             : "fj:text-fuji-foreground-muted fj:hover:bg-fuji-surface-subtle fj:hover:text-fuji-foreground",

@@ -27,7 +27,29 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run lint && npm run typecheck && npm run test && npm run build
+      # `build` before `test`, for the same reason as ci.yml: `dist/` is
+      # gitignored and `npm ci` runs no `prepare`, so on a fresh checkout the
+      # suites guarding the generated artifacts skip themselves. This is the
+      # last gate before `changesets/action` publishes, so it is the worst place
+      # of all to report green on a suite that never ran.
+      - run: npm run format:check && npm run skills:check && npm run lint && npm run typecheck && npm run build && npm run test
+
+      # The `exports` map points consumers at these two, so a tarball without
+      # them resolves to a missing file. Mirrors the ci.yml assertion.
+      - name: Inspect packed tarball
+        run: |
+          npm pack
+          tar -tzf *.tgz | grep -q '^package/dist/props.json$'
+          tar -tzf *.tgz | grep -q '^package/dist/registry.json$'
+          # An explicit `if`, not `! grep`. `set -e` does not abort on a command
+          # whose status is inverted with `!`, so the negated form was inert -
+          # and here it was followed by `rm`, which then supplied the step's
+          # exit status. The guard passed no matter what the tarball held.
+          if tar -tzf *.tgz | grep -q '^package/registry/'; then
+            echo "registry/ is authored input and must not ship" >&2
+            exit 1
+          fi
+          rm -f *.tgz
 
       - name: Create release PR or publish
         uses: changesets/action@v1

@@ -4,6 +4,29 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Input } from "./Input";
 
+/**
+ * The slotted branch's visible box is a plain `<div>`, not a Base UI
+ * element - it can only ever pick up an ancestor `<FormField invalid>`'s
+ * state by reacting to the real `<input>` inside it via `:has()` (see
+ * Input.tsx), not by carrying `data-invalid` itself. Pull the
+ * `has-[...]:border-fuji-fire` utility actually shipped on `el` (there
+ * should be exactly one) and ask the DOM whether the selector it compiles to
+ * - `:has(<the bracketed inner selector>)` - matches `el` as currently
+ * rendered, instead of merely checking that a class string is present or
+ * that `:has([data-invalid])` matches regardless of whether that class ships
+ * at all.
+ */
+function invalidStylingApplies(el: Element): boolean {
+  const relevant = el.className.split(/\s+/).filter((c) => /^fj:has-\[.+\]:border-fuji-fire$/.test(c));
+  if (relevant.length === 0) return false;
+  return relevant.every((c) => {
+    const withoutPrefix = c.slice(3); // strip the "fj:" scoping prefix
+    const variant = withoutPrefix.slice(0, withoutPrefix.lastIndexOf(":"));
+    const match = /^has-\[(.+)\]$/.exec(variant);
+    return match != null && el.matches(`:has(${match[1]})`);
+  });
+}
+
 describe("Input", () => {
   it("works uncontrolled, typing freely without a value prop", async () => {
     render(<Input aria-label="Name" defaultValue="" />);
@@ -36,6 +59,20 @@ describe("Input", () => {
     const input = screen.getByRole("textbox", { name: "Email" });
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input).toHaveAttribute("data-invalid", "");
+  });
+
+  // The slotted branch (startSlot/endSlot/clearable) renders a different
+  // element tree - a plain `<div>` wrapper carries the visible border, the
+  // `<input>` inside it is unstyled - so its own `invalid` prop needs to
+  // reach the wrapper independently of the unslotted branch above. The
+  // wrapper never carries `data-invalid` itself (see Input.tsx); it reacts
+  // to the real `<input>`, which does.
+  it("visually flags the wrapper as invalid when rendering a slotted variant", () => {
+    render(<Input aria-label="Amount" invalid startSlot={<span>$</span>} />);
+    const input = screen.getByRole("textbox", { name: "Amount" });
+    expect(input).toHaveAttribute("aria-invalid", "true");
+    expect(input).toHaveAttribute("data-invalid", "");
+    expect(invalidStylingApplies(input.parentElement!)).toBe(true);
   });
 
   it("forwards a ref to the underlying <input>", () => {

@@ -16,7 +16,7 @@ const meta = {
     size: { control: "select", options: ["sm", "md", "lg"] },
     tone: {
       control: "select",
-      options: ["default", "muted", "subtle", "earth", "forest", "sun", "fire", "water"],
+      options: ["default", "muted", "subtle", "forest", "sun", "fire", "water"],
     },
     background: { control: "select", options: ["none", "subtle", "solid"] },
   },
@@ -63,7 +63,7 @@ export const Backgrounds: Story = {
 export const Tones: Story = {
   render: (args) => (
     <div className="flex flex-wrap items-center gap-4">
-      {(["default", "muted", "subtle", "earth", "forest", "sun", "fire", "water"] as const).map((tone) => (
+      {(["default", "muted", "subtle", "forest", "sun", "fire", "water"] as const).map((tone) => (
         <Icon key={tone} {...args} icon={Heart} tone={tone} background="subtle" />
       ))}
     </div>

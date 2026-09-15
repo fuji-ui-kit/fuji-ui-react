@@ -31,7 +31,7 @@ export const ListContent: Story = {
   name: "Long list",
   render: (args) => (
     <ScrollArea {...args} className="h-64 w-full max-w-xs rounded-fuji-panel border border-fuji-border">
-      <ul className="flex flex-col gap-1 p-3">
+      <ul className="m-0 flex list-none flex-col gap-1 p-3">
         {items.map((item) => (
           <li
             key={item}

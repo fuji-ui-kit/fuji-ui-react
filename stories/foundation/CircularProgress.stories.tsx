@@ -30,10 +30,26 @@ export const WithValueLabel: Story = {
 
 export const Sizes: Story = {
   render: (args) => (
-    <div className="flex items-center gap-4">
+    <div className="flex items-center gap-6">
       <CircularProgress {...args} size="sm" />
       <CircularProgress {...args} size="md" />
       <CircularProgress {...args} size="lg" />
+    </div>
+  ),
+};
+
+/**
+ * A numeric `size` is the diameter in px; the stroke follows at a tenth of
+ * it (override with `thickness`) and the centre label scales with the ring.
+ * The arc draws in from empty on mount.
+ */
+export const Rings: Story = {
+  name: "Rings (reference sizes)",
+  render: () => (
+    <div className="flex items-end gap-10">
+      <CircularProgress value={20} size={48} thickness={3} label="Storage" />
+      <CircularProgress value={29} size={120} thickness={6} showValue label="Uploads" />
+      <CircularProgress value={69} size={220} thickness={14} showValue label="Completion" />
     </div>
   ),
 };

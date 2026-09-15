@@ -2,6 +2,7 @@ import * as React from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act } from "react";
 import { render, screen } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { Statistic } from "./Statistic";
 
 function mockIntersectionObserver() {
@@ -35,83 +36,81 @@ function mockIntersectionObserver() {
   };
 }
 
-// The count-up ticks via requestAnimationFrame + performance.now(), so both
-// need to be faked (alongside the timer queue) for `advanceTimersByTime` to
-// actually drive the animation deterministically.
-const FAKE_TIMER_APIS = [
-  "setTimeout",
-  "clearTimeout",
-  "setInterval",
-  "clearInterval",
-  "requestAnimationFrame",
-  "cancelAnimationFrame",
-  "Date",
-  "performance",
-] as const;
-
-function advance(ms: number) {
-  act(() => {
-    vi.advanceTimersByTime(ms);
-  });
+/** The figure as the digit strips currently show it - what a sighted user reads. */
+function shownDigits(container: HTMLElement): string {
+  return [...container.querySelectorAll<HTMLElement>(".fuji-digit")]
+    .map((cell) =>
+      cell.classList.contains("fuji-digit-static")
+        ? cell.textContent
+        : String(cell.style.getPropertyValue("--fuji-digit")),
+    )
+    .join("");
 }
 
 describe("Statistic", () => {
   let io: ReturnType<typeof mockIntersectionObserver>;
 
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: [...FAKE_TIMER_APIS] });
+    vi.useFakeTimers();
     io = mockIntersectionObserver();
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.useRealTimers();
   });
 
-  it("counts up to the target once the value scrolls into view", () => {
-    render(<Statistic label="Revenue" value={1000} />);
-    io.reveal();
-    advance(700);
-    expect(screen.getByText("1,000")).toBeInTheDocument();
+  // The markup must say the real number before any animation runs - the
+  // previous count-up rendered "0" on the server and in no-JS output.
+  it("renders the final value in server markup, one cell per character", () => {
+    const html = renderToStaticMarkup(<Statistic label="Revenue" value={1000} prefix="$" />);
+    expect(html).toContain('aria-label="$1,000"');
+    // Four digit cells rolled to 1,0,0,0 and two static cells ("$" and ",").
+    expect(html.match(/--fuji-digit:\s*1\b/g)).toHaveLength(1);
+    expect(html.match(/--fuji-digit:\s*0\b/g)).toHaveLength(3);
   });
 
-  it("jumps straight to the target under prefers-reduced-motion (no animation)", () => {
-    const originalMatchMedia = window.matchMedia;
-    window.matchMedia = ((query: string) => ({
-      matches: query.includes("prefers-reduced-motion"),
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-    })) as unknown as typeof window.matchMedia;
-
-    render(<Statistic label="Revenue" value={42} />);
-    io.reveal();
-    expect(screen.getByText("42")).toBeInTheDocument();
-
-    window.matchMedia = originalMatchMedia;
+  it("exposes the full figure to assistive tech as one accessible name", () => {
+    render(<Statistic label="Revenue" value={1000} prefix="$" suffix="k" />);
+    expect(screen.getByLabelText("$1,000k")).toBeInTheDocument();
   });
 
-  it("animates a later value change from the currently displayed number, not from 0", () => {
+  it("rolls each digit strip to its target", () => {
+    const { container } = render(<Statistic label="Users" value={1292} />);
+    io.reveal();
+    expect(shownDigits(container)).toBe("1,292");
+  });
+
+  it("flashes the trend colour in the direction of a value change, then clears it", () => {
     function Live({ value }: { value: number }) {
-      return <Statistic label="Live count" value={value} />;
+      return <Statistic label="Live" value={value} />;
     }
-    const { rerender } = render(<Live value={100} />);
+    const { container, rerender } = render(<Live value={100} />);
     io.reveal();
-    advance(700);
-    expect(screen.getByText("100")).toBeInTheDocument();
+    const figure = container.querySelector(".fuji-number")!;
+    expect(figure).not.toHaveAttribute("data-trend");
 
     rerender(<Live value={105} />);
-    // Immediately after the value changes, mid-animation, the display must
-    // never have reset to 0 - it should be somewhere between 100 and 105.
-    advance(1);
-    const mid = Number(screen.getByText(/^[\d,.]+$/).textContent!.replace(/,/g, ""));
-    expect(mid).toBeGreaterThanOrEqual(100);
-    expect(mid).toBeLessThanOrEqual(105);
+    expect(figure).toHaveAttribute("data-trend", "up");
+    expect(shownDigits(container)).toBe("105");
 
-    advance(700);
-    expect(screen.getByText("105")).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(figure).not.toHaveAttribute("data-trend");
+
+    rerender(<Live value={90} />);
+    expect(figure).toHaveAttribute("data-trend", "down");
+    expect(shownDigits(container)).toBe("90");
   });
 
-  it("renders non-numeric values statically without animating", () => {
-    render(<Statistic label="Status" value={<span>Active</span>} />);
+  it("respects `decimals`", () => {
+    const { container } = render(<Statistic label="Rate" value={4.5} decimals={1} />);
+    expect(shownDigits(container)).toBe("4.5");
+  });
+
+  it("renders non-numeric values statically without digit cells", () => {
+    const { container } = render(<Statistic label="Status" value={<span>Active</span>} />);
     expect(screen.getByText("Active")).toBeInTheDocument();
+    expect(container.querySelector(".fuji-digit")).toBeNull();
   });
 });

@@ -7,7 +7,9 @@ import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 import type { ComponentSize } from "../../../types";
 
 export interface OTPInputProps extends Omit<React.ComponentPropsWithoutRef<typeof OTPField.Root>, "render"> {
+  /** Height of each cell. */
   size?: ComponentSize;
+  /** Paints the error state across every cell - a wrong code, not a wrong digit. */
   invalid?: boolean;
 }
 
@@ -51,7 +53,30 @@ export const OTPInput = React.forwardRef<HTMLDivElement, OTPInputProps>(function
         ref={ref}
         length={length}
         aria-labelledby={labelId}
-        data-invalid={invalid ? "" : undefined}
+        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
+        // `OTPField.Root` calls Base UI's Field context hook itself and
+        // registers as the field control (confirmed by reading Base UI's
+        // source - `OTPFieldRoot` calls `useFieldRootContext()` and maps its
+        // `state.valid` to `data-invalid`/`data-valid` via
+        // `stateAttributesMapping`), so it already mirrors an ancestor
+        // `<FormField invalid>` onto this same `role="group"` element as
+        // `data-invalid` automatically - same mechanism as `Field.Control`
+        // (see Input.tsx). An explicit `undefined`-valued prop still
+        // occupies the key, and `useRenderElement` merges this component's
+        // own props over that computed value, so writing `undefined` here
+        // erased the FormField-driven attribute on the group whenever this
+        // `invalid` prop itself was left unset. This one has no visible
+        // consequence today - the group carries no `data-[invalid]:` style
+        // of its own, and each `<OTPField.Input>` slot below independently
+        // and correctly mirrors the same ambient state onto itself (that's
+        // what actually paints the red border per slot) - but it is the
+        // identical clobbering bug on the group's own DOM attribute, which
+        // a consumer styling or querying `[data-invalid]` on the group
+        // itself would still see erased. Omitting the key when `invalid` is
+        // falsy instead of asserting `undefined` lets that ambient value
+        // through, for consistency with every other Field-participating
+        // element Fuji wraps.
+        {...(invalid ? { "data-invalid": "" } : null)}
         className={cn("fj:flex fj:gap-2", className)}
         {...props}
       >
@@ -67,7 +92,7 @@ export const OTPInput = React.forwardRef<HTMLDivElement, OTPInputProps>(function
                 {...(invalid ? { "aria-invalid": true, "data-invalid": "" } : null)}
                 className={cn(
                   NATIVE_CONTROL_RESET,
-                  "fuji-glass-surface-strong fj:rounded-fuji-control fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:text-center fj:font-medium fj:text-fuji-foreground fj:outline-none",
+                  "fj:rounded-fuji-control fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:text-center fj:font-medium fj:text-fuji-foreground fj:outline-none",
                   "fj:transition-[border-color] fj:duration-[var(--fuji-duration-fast)]",
                   "fj:focus-visible:border-fuji-foreground",
                   "fj:data-[invalid]:border-fuji-fire fj:disabled:opacity-45",

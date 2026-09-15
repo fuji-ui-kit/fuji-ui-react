@@ -6,11 +6,28 @@ import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 
 export default defineConfig([
-  globalIgnores(["dist/**", "coverage/**", "node_modules/**", "storybook-static/**"]),
+  globalIgnores([
+    "dist/**",
+    "coverage/**",
+    "node_modules/**",
+    "storybook-static/**",
+    // Agent worktrees live inside the repo, so linting from the main checkout
+    // otherwise reports every other branch's source - and their built `dist`
+    // output - as problems on this one. Each worktree lints itself.
+    ".claude/worktrees/**",
+    // Build output, not source. `dist/**` above is anchored at the repo root,
+    // so a fixture that has been built (which is the whole point of the
+    // fixtures) otherwise drops a bundled, minified vendor file into the lint
+    // run - a thousand errors about single-letter variables in React's own
+    // shipped code.
+    "fixtures/*/dist/**",
+    ".gallery/**",
+    "mcp/dist/**",
+  ]),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
-    files: ["scripts/**/*.mjs", "*.config.ts", "vitest.setup.ts", ".storybook/main.ts"],
+    files: ["scripts/**/*.mjs", "*.config.ts", "vitest.setup.ts", ".storybook/main.ts", "mcp/src/**/*.ts"],
     languageOptions: {
       globals: globals.node,
     },

@@ -19,60 +19,77 @@ const execFileAsync = promisify(execFile);
  * changes, so `storybook dev` never needs a manual restart to reflect a
  * Tailwind class edit.
  *
- * `dist/` and `.storybook/generated/` are build output, outside the set of
- * files Vite's dev server watches by default - without explicitly adding
- * them, Vite never notices this plugin rewrote them, so its own CSS-HMR
- * pipeline keeps serving the stale transform it cached the first time each
- * file was imported. Re-adding them to the watcher (separately from the
- * source paths that *trigger* a rebuild, below) routes the rewrite through
- * Vite's normal `change` handling, which invalidates and hot-updates the
- * `import "../dist/styles.css"` module in preview.tsx on its own.
+ * Vite is never told about the rewrite by its own file watcher, so this
+ * plugin has to invalidate the generated stylesheets itself. `dist/` is the
+ * resolved `build.outDir`, and Vite unconditionally appends `<outDir>/**` to
+ * chokidar's `ignored` list whenever `emptyOutDir` is on (which it is, since
+ * the directory sits inside the project root) - see `resolveChokidarOptions`
+ * in vite/dist/node. An ignored path stays ignored even when it is passed to
+ * `server.watcher.add()`, so no `change` event ever fires for
+ * `dist/styles.css` and Vite keeps serving the transform it cached the first
+ * time preview.tsx imported it - including across a full browser reload,
+ * which is what makes the staleness look like a build problem rather than an
+ * HMR one. Invalidating the modules explicitly after each rebuild is the only
+ * reliable signal; the full reload that follows is cheap and unambiguous.
+ *
+ * `src/styles` is in the watch list because `scripts/css-entry.css` imports
+ * tokens.css, fuji-theme.css and base.css directly. Leaving it out meant a
+ * token or recipe edit - the single most common reason to want a rebuild -
+ * was the one change that never triggered one.
  */
 function fujiCssWatchPlugin(projectRoot: string): Plugin {
-  let running: Promise<void> | null = null;
-  let queued = false;
-
-  const rebuild = () => {
-    if (running) {
-      queued = true;
-      return;
-    }
-    running = (async () => {
-      try {
-        await execFileAsync("node", ["scripts/build-css.mjs"], { cwd: projectRoot });
-        await execFileAsync("node", ["scripts/build-storybook-css.mjs"], { cwd: projectRoot });
-      } catch (error) {
-        console.error("[fuji] Storybook CSS rebuild failed:", error);
-      } finally {
-        running = null;
-        if (queued) {
-          queued = false;
-          rebuild();
-        }
-      }
-    })();
-  };
+  const generatedCss = [
+    join(projectRoot, "dist/styles.css"),
+    join(projectRoot, ".storybook/generated/storybook.css"),
+  ];
 
   return {
     name: "fuji-storybook-css-watch",
     configureServer(server: ViteDevServer) {
-      const generatedCss = [
-        join(projectRoot, "dist/styles.css"),
-        join(projectRoot, ".storybook/generated/storybook.css"),
-      ];
+      let running: Promise<void> | null = null;
+      let queued = false;
+
+      const reloadGeneratedCss = () => {
+        for (const file of generatedCss) {
+          const modules = server.moduleGraph.getModulesByFile(file);
+          modules?.forEach((mod) => server.moduleGraph.invalidateModule(mod));
+        }
+        server.ws.send({ type: "full-reload" });
+      };
+
+      const rebuild = () => {
+        if (running) {
+          queued = true;
+          return;
+        }
+        running = (async () => {
+          try {
+            await execFileAsync("node", ["scripts/build-css.mjs"], { cwd: projectRoot });
+            await execFileAsync("node", ["scripts/build-storybook-css.mjs"], { cwd: projectRoot });
+            reloadGeneratedCss();
+          } catch (error) {
+            console.error("[fuji] Storybook CSS rebuild failed:", error);
+          } finally {
+            running = null;
+            if (queued) {
+              queued = false;
+              rebuild();
+            }
+          }
+        })();
+      };
+
       const watchRoots = [
         join(projectRoot, "src/components/fuji"),
         join(projectRoot, "src/provider"),
         join(projectRoot, "src/lib"),
+        join(projectRoot, "src/styles"),
         join(projectRoot, "stories"),
         join(projectRoot, ".storybook/storybook-entry.css"),
-        ...generatedCss,
       ];
       watchRoots.forEach((path) => server.watcher.add(path));
       server.watcher.on("change", (file) => {
-        // The rebuild's own output: let Vite's normal CSS-HMR handle these,
-        // not another rebuild (which would just loop).
-        if (generatedCss.includes(file)) return;
+        // The rebuild's own output - never a reason to rebuild again.
         if (file.includes(`${sep}dist${sep}`) || file.includes(`${sep}generated${sep}`)) return;
         if (/\.(tsx?|css)$/.test(file) && !file.includes(".test.")) rebuild();
       });
@@ -93,7 +110,10 @@ const config: StorybookConfig = {
   // `src/**/*.{ts,tsx}` build glob (see tsup.config.ts) can never pick them up
   // and ship them as part of the published package.
   stories: ["../stories/**/*.stories.@(ts|tsx)"],
-  addons: ["@storybook/addon-essentials", "@storybook/addon-a11y", "@storybook/addon-interactions"],
+  // `addon-essentials` and `addon-interactions` do not exist past Storybook 8 -
+  // both were folded into core, so listing them is now an error rather than a
+  // no-op. a11y is still a separate addon.
+  addons: ["@storybook/addon-a11y"],
   framework: {
     name: "@storybook/react-vite",
     options: {},

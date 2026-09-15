@@ -13,21 +13,29 @@ import type { ComponentSize } from "../../../types";
 export interface TimePickerProps {
   /** Value as a 24-hour "HH:mm" string. This is the stable form/value contract regardless of display format. */
   value?: string;
+  /** Starting value when uncontrolled, in the same 24-hour "HH:mm" form. */
   defaultValue?: string;
+  /** Called with the 24-hour "HH:mm" string, whatever `hourCycle` displays. */
   onChange?: (value: string) => void;
   /** Display format. The stored value is always 24-hour "HH:mm". Default 24. */
   hourCycle?: 12 | 24;
   /** Minute increment for the list. Default 5. */
   minuteStep?: number;
+  /** Disables the trigger, so the list cannot be opened. */
   disabled?: boolean;
+  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
   /** Show a clear control when a value is set. Default true. */
   clearable?: boolean;
+  /** Text on the trigger while nothing is selected. */
   placeholder?: string;
+  /** Trigger height, matching `Input` and `Button` at the same size. */
   size?: ComponentSize;
   /** Renders a hidden input so the value posts with a form. */
   name?: string;
+  /** Extra classes merged onto the trigger. */
   className?: string;
+  /** Accessible name for the trigger. Required when there is no visible `<label>` for this field. */
   "aria-label"?: string;
 }
 
@@ -169,7 +177,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(f
                       "fj:cursor-pointer fj:rounded-fuji-control fj:px-2 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
                       meridiem === m && parsed
                         ? "fj:bg-fuji-default fj:text-fuji-default-foreground"
-                        : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-strong",
+                        : "fj:text-fuji-foreground fuji-hover-raised",
                     )}
                   >
                     {m}
@@ -213,7 +221,7 @@ function TimeColumn({ label, items, isActive, onSelect, format }: TimeColumnProp
             "fj:shrink-0 fj:cursor-pointer fj:rounded-fuji-control fj:px-2 fj:py-1.5 fj:text-center fj:text-[length:var(--fuji-text-sm)] fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
             isActive(item)
               ? "fj:bg-fuji-default fj:text-fuji-default-foreground"
-              : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-strong",
+              : "fj:text-fuji-foreground fuji-hover-raised",
           )}
         >
           {format(item)}

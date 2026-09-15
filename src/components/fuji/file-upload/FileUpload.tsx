@@ -7,13 +7,21 @@ import { Button } from "../button/Button";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface FileUploadProps {
+  /** Controlled list of picked files. Pair with `onChange`; omit for uncontrolled. */
   value?: File[];
+  /** Starting files when uncontrolled. */
   defaultValue?: File[];
+  /** Called with the whole list after a pick or a removal, never with the delta. */
   onChange?: (files: File[]) => void;
+  /** Forwarded to the native input: a comma-separated list of extensions or MIME types. */
   accept?: string;
+  /** Allows more than one file, and appends each pick to the list rather than replacing it. */
   multiple?: boolean;
+  /** Disables the trigger and the underlying input. */
   disabled?: boolean;
+  /** Text on the trigger button. */
   label?: string;
+  /** Extra classes merged onto the wrapper. */
   className?: string;
 }
 
@@ -71,7 +79,7 @@ export const FileUpload = React.forwardRef<HTMLInputElement, FileUploadProps>(fu
           {files.map((file, index) => (
             <li
               key={`${file.name}-${index}`}
-              className="fj:flex fj:items-center fj:justify-between fj:gap-2 fj:rounded-fuji-control fj:border fj:border-fuji-border fj:bg-fuji-surface-strong fj:px-3 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground"
+              className="fj:flex fj:items-center fj:justify-between fj:gap-2 fj:rounded-fuji-control fj:border fj:border-fuji-border fj:bg-fuji-surface-raised fj:px-3 fj:py-1.5 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground"
             >
               <span className="fj:truncate">{file.name}</span>
               <button

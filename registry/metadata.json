@@ -1,0 +1,507 @@
+{
+  "categories": ["Foundation & Layout", "Forms", "Navigation", "Data Display", "Feedback", "Overlays"],
+  "components": {
+    "button": {
+      "name": "Button",
+      "category": "Foundation & Layout",
+      "summary": "Action control with contained, bordered, dashed, ghost, semantic, size, and loading states.",
+      "keywords": ["cta", "action", "submit"]
+    },
+    "icon-button": {
+      "name": "Icon Button",
+      "category": "Foundation & Layout",
+      "summary": "Square icon-only control with sizes, semantic tones, and accessible labels.",
+      "keywords": ["icon", "action"]
+    },
+    "button-group": {
+      "name": "Button Group",
+      "category": "Foundation & Layout",
+      "summary": "Single-select control group with shared focus, hover, active, and disabled states.",
+      "keywords": ["segmented", "toggle group"]
+    },
+    "typography": {
+      "name": "Typography",
+      "category": "Foundation & Layout",
+      "summary": "Type scale with semantic display, heading, title, body, and caption variants.",
+      "keywords": ["text", "heading", "font"]
+    },
+    "link": {
+      "name": "Link",
+      "category": "Foundation & Layout",
+      "summary": "Accessible anchor styling with color, hover, and underline options.",
+      "keywords": ["anchor", "href"]
+    },
+    "divider": {
+      "name": "Divider",
+      "category": "Foundation & Layout",
+      "summary": "Horizontal or vertical separator for grouping related content.",
+      "keywords": ["separator", "rule", "hr"]
+    },
+    "layout": {
+      "name": "Layout",
+      "category": "Foundation & Layout",
+      "summary": "Composable Box, Container, Stack, Grid, and AspectRatio layout primitives.",
+      "keywords": ["box", "container", "stack", "grid", "flex"],
+      "exports": ["Box", "Container", "Stack", "Grid", "AspectRatio"]
+    },
+    "scroll-area": {
+      "name": "Scroll Area",
+      "category": "Foundation & Layout",
+      "summary": "Themed scroll container with controlled overflow and lightweight scrollbars.",
+      "keywords": ["scrollbar", "overflow"]
+    },
+    "collapsible": {
+      "name": "Collapsible",
+      "category": "Foundation & Layout",
+      "summary": "Expandable panel and accordion primitives with controlled and keyboard-accessible states.",
+      "keywords": ["accordion", "expand", "disclosure"]
+    },
+    "form-field": {
+      "name": "Form Field",
+      "category": "Forms",
+      "summary": "Form label, description, required, invalid, and error-message wiring for controls.",
+      "keywords": ["label", "field", "error"],
+      "exports": ["FormField", "Fieldset"]
+    },
+    "input": {
+      "name": "Input",
+      "category": "Forms",
+      "summary": "Text field, Textarea, Password, Search, Number, and OTP.",
+      "keywords": ["text", "textarea", "password", "search", "otp", "number"]
+    },
+    "checkbox": {
+      "name": "Checkbox",
+      "category": "Forms",
+      "summary": "Checkbox control with checked, unchecked, indeterminate, disabled, and labeled states.",
+      "keywords": ["check", "tick"]
+    },
+    "radio": {
+      "name": "Radio",
+      "category": "Forms",
+      "summary": "Single-choice radio group with labels, descriptions, disabled items, and validation states.",
+      "keywords": ["radio group", "option"],
+      "exports": ["RadioGroup"]
+    },
+    "switch": {
+      "name": "Switch",
+      "category": "Forms",
+      "summary": "Compact on/off control for toggling a setting or feature.",
+      "keywords": ["toggle"]
+    },
+    "select": {
+      "name": "Select",
+      "category": "Forms",
+      "summary": "Native select, custom select, and multi-select with chips.",
+      "keywords": ["dropdown", "picker", "option", "native select", "multi select", "chips"]
+    },
+    "combobox": {
+      "name": "Combobox",
+      "category": "Forms",
+      "summary": "Searchable single-select field with keyboard navigation and filtering.",
+      "keywords": ["autocomplete", "typeahead", "search select"]
+    },
+    "slider": {
+      "name": "Slider",
+      "category": "Forms",
+      "summary": "Single-value range control with keyboard support and configurable bounds.",
+      "keywords": ["range"]
+    },
+    "rating": {
+      "name": "Rating",
+      "category": "Forms",
+      "summary": "Interactive star rating input with sizes, values, and read-only states.",
+      "keywords": ["stars", "score", "review"]
+    },
+    "calendar": {
+      "name": "Calendar",
+      "category": "Forms",
+      "summary": "Interactive month calendar for selecting dates and navigating months.",
+      "keywords": ["date", "month", "day"]
+    },
+    "date-picker": {
+      "name": "Date Picker",
+      "category": "Forms",
+      "summary": "Date field paired with a popover calendar for selecting one date.",
+      "keywords": ["calendar", "date field"]
+    },
+    "time-picker": {
+      "name": "Time Picker",
+      "category": "Forms",
+      "summary": "Accessible hour-and-minute selector with keyboard-friendly controls.",
+      "keywords": ["clock", "hour", "minute"]
+    },
+    "file-upload": {
+      "name": "File Upload",
+      "category": "Forms",
+      "summary": "Button-triggered file upload and drag-and-drop Dropzone with validation states.",
+      "keywords": ["dropzone", "attach", "file", "upload"],
+      "exports": ["FileUpload", "Dropzone"]
+    },
+    "navbar": {
+      "name": "Navbar",
+      "category": "Navigation",
+      "summary": "Responsive top navigation bar with logo, links, and actions.",
+      "keywords": ["header", "top nav", "app bar", "menu"]
+    },
+    "sidebar": {
+      "name": "Sidebar",
+      "category": "Navigation",
+      "summary": "Vertical navigation panel for grouped links, active states, and disabled items.",
+      "keywords": ["side nav", "drawer nav", "menu"]
+    },
+    "tree": {
+      "name": "Tree",
+      "category": "Navigation",
+      "summary": "Recursive expandable tree with roving-tabindex keyboard navigation, for file browsers and nested navigation.",
+      "keywords": ["file browser", "nested", "hierarchy", "folder", "explorer"]
+    },
+    "bottom-navigation": {
+      "name": "Bottom Navigation",
+      "category": "Navigation",
+      "summary": "Responsive mobile navigation bar with icons, labels, and active state.",
+      "keywords": ["tab bar", "mobile nav"]
+    },
+    "breadcrumb": {
+      "name": "Breadcrumb",
+      "category": "Navigation",
+      "summary": "Hierarchical page navigation with current-page and collapsed-path states.",
+      "keywords": ["trail", "path"]
+    },
+    "infinite-scroll": {
+      "name": "Infinite Scroll",
+      "category": "Data Display",
+      "summary": "Loads the next page when the end of a list or table scrolls into view, in place of a pager.",
+      "keywords": ["infinite loading", "load more", "pagination", "lazy", "scroll"]
+    },
+    "floating-action-bar": {
+      "name": "Floating Action Bar",
+      "category": "Navigation",
+      "summary": "A speed dial: a circular trigger that fans a column of labelled actions out from itself.",
+      "keywords": ["fab", "floating action button", "speed dial", "quick actions"]
+    },
+    "tabs": {
+      "name": "Tabs",
+      "category": "Navigation",
+      "summary": "Tabbed navigation and segmented controls with panels, active states, and responsive layouts.",
+      "keywords": ["segmented", "tab", "toggle"]
+    },
+    "pagination": {
+      "name": "Pagination",
+      "category": "Navigation",
+      "summary": "Page navigation with compact, full, disabled, and responsive variants.",
+      "keywords": ["pages", "pager"]
+    },
+    "stepper": {
+      "name": "Stepper",
+      "category": "Navigation",
+      "summary": "Clickable multi-step progress indicator for workflows and forms.",
+      "keywords": ["steps", "wizard", "progress"]
+    },
+    "dropdown-menu": {
+      "name": "Dropdown Menu",
+      "category": "Navigation",
+      "summary": "Trigger-based menu for actions, groups, disabled items, and keyboard navigation.",
+      "keywords": ["menu", "actions"]
+    },
+    "navigation-menu": {
+      "name": "Navigation Menu",
+      "category": "Navigation",
+      "summary": "Responsive navigation with grouped links and flyout menu content.",
+      "keywords": ["mega menu", "flyout"]
+    },
+    "command-menu": {
+      "name": "Command Menu",
+      "category": "Navigation",
+      "summary": "Keyboard-friendly command palette for searching and launching actions.",
+      "keywords": ["palette", "cmdk", "search", "quick actions"]
+    },
+    "card": {
+      "name": "Card",
+      "category": "Data Display",
+      "summary": "Composable content surface with title, description, content, and footer slots.",
+      "keywords": ["panel", "surface", "tile"]
+    },
+    "badge": {
+      "name": "Badge",
+      "category": "Data Display",
+      "summary": "Compact semantic status, count, or category label with soft visual treatment.",
+      "keywords": ["pill", "count", "label"]
+    },
+    "avatar": {
+      "name": "Avatar",
+      "category": "Data Display",
+      "summary": "Avatar images, initials, status indicators, and grouped overflow presentations.",
+      "keywords": ["profile", "user", "photo"]
+    },
+    "list": {
+      "name": "List",
+      "category": "Data Display",
+      "summary": "Composable rows with leading content, metadata, dividers, selection, and states.",
+      "keywords": ["rows", "items"]
+    },
+    "description-list": {
+      "name": "Description List",
+      "category": "Data Display",
+      "summary": "Key-value content layout with horizontal, vertical, bordered, and responsive modes.",
+      "keywords": ["definition", "key value", "details"]
+    },
+    "table": {
+      "name": "Table",
+      "category": "Data Display",
+      "summary": "Responsive tables and sortable DataTable layouts with pagination and selection patterns.",
+      "keywords": ["datatable", "grid", "rows", "columns"],
+      "exports": ["Table", "DataTable"]
+    },
+    "chart": {
+      "name": "Chart",
+      "category": "Data Display",
+      "summary": "Responsive line, bar, and donut charts with tooltips, legends, axes, and animation.",
+      "keywords": ["graph", "analytics", "visualization", "metrics"],
+      "exports": ["LineChart", "BarChart", "DonutChart"]
+    },
+    "statistic": {
+      "name": "Statistic",
+      "category": "Data Display",
+      "summary": "Animated statistic value with labels, prefixes, suffixes, and positive or negative change.",
+      "keywords": ["metric", "kpi", "number"]
+    },
+    "timeline": {
+      "name": "Timeline",
+      "category": "Data Display",
+      "summary": "Event history layout with status dots, timestamps, descriptions, and left/right/alternating alignment.",
+      "keywords": ["events", "history", "activity"]
+    },
+    "empty-state": {
+      "name": "Empty State",
+      "category": "Data Display",
+      "summary": "Clear no-results state with message, optional illustration, and recovery action.",
+      "keywords": ["placeholder", "no data", "blank"]
+    },
+    "image": {
+      "name": "Image",
+      "category": "Data Display",
+      "summary": "Responsive image with loading and error states plus an accessible fullscreen preview.",
+      "keywords": ["picture", "photo", "media"]
+    },
+    "carousel": {
+      "name": "Carousel",
+      "category": "Data Display",
+      "summary": "Autoplay slides with arrows, dots, and multi-slide layouts.",
+      "keywords": ["slider", "slideshow", "gallery"]
+    },
+    "chat-bubble": {
+      "name": "Chat Bubble",
+      "category": "Data Display",
+      "summary": "Incoming/outgoing message bubbles with avatar, sender, timestamp, delivery status, and grouped runs.",
+      "keywords": ["message", "chat", "conversation", "messaging", "thread"]
+    },
+    "alert": {
+      "name": "Alert",
+      "category": "Feedback",
+      "summary": "Inline feedback banner for information, success, warning, and error messages.",
+      "keywords": ["banner", "message", "callout"]
+    },
+    "toast": {
+      "name": "Toast",
+      "category": "Feedback",
+      "summary": "Temporary feedback notification with semantic variants and dismiss behavior.",
+      "keywords": ["snackbar", "notification"],
+      "exports": ["Toaster", "ToastProvider"]
+    },
+    "notification": {
+      "name": "Notification",
+      "category": "Feedback",
+      "summary": "Notification row with avatar or icon, metadata, unread state, and actions.",
+      "keywords": ["inbox", "alert"]
+    },
+    "progress": {
+      "name": "Progress",
+      "category": "Feedback",
+      "summary": "Linear and circular progress indicators with determinate and loading states.",
+      "keywords": ["bar", "loading", "percent"]
+    },
+    "spinner": {
+      "name": "Spinner",
+      "category": "Feedback",
+      "summary": "Lightweight indeterminate loading indicator for inline and centered states.",
+      "keywords": ["loader", "loading"]
+    },
+    "skeleton": {
+      "name": "Skeleton",
+      "category": "Feedback",
+      "summary": "Animated loading placeholder for text, avatars, cards, tables, and images.",
+      "keywords": ["loading", "shimmer", "placeholder"]
+    },
+    "result": {
+      "name": "Result",
+      "category": "Feedback",
+      "summary": "Full-section success, error, warning, or empty outcome state with recovery actions.",
+      "keywords": ["success", "error", "outcome"]
+    },
+    "status-indicator": {
+      "name": "Status Indicator",
+      "category": "Feedback",
+      "summary": "Small status marker with semantic color and a readable label.",
+      "keywords": ["dot", "online", "status"]
+    },
+    "modal": {
+      "name": "Modal",
+      "category": "Overlays",
+      "summary": "Dialog and alert dialog surfaces for focused confirmation and decision flows.",
+      "keywords": ["dialog", "alertdialog", "popup"],
+      "exports": ["Dialog"]
+    },
+    "drawer": {
+      "name": "Drawer",
+      "category": "Overlays",
+      "summary": "Responsive side, top, or bottom panel for secondary content and actions.",
+      "keywords": ["sheet", "panel", "sidebar"]
+    },
+    "popover": {
+      "name": "Popover",
+      "category": "Overlays",
+      "summary": "Tooltip and popover, both floating and portal-aware.",
+      "keywords": ["floating", "flyout", "tooltip", "hint"]
+    },
+    "icons": {
+      "name": "Icons",
+      "category": "Foundation & Layout",
+      "summary": "Lucide icon primitive with tones, sizes, and containers.",
+      "keywords": ["icon", "lucide", "svg", "glyph"],
+      "exports": ["Icon"]
+    },
+    "fuji-provider": {
+      "name": "Fuji Provider",
+      "category": "Foundation & Layout",
+      "summary": "Sets theme, material, radius and elevation for everything inside it. Mount once at the app root; no component takes these as props.",
+      "keywords": ["theme", "material", "glass", "provider", "appearance", "dark mode"],
+      "exports": ["FujiProvider"]
+    },
+    "fuji-portal": {
+      "name": "Fuji Portal",
+      "category": "Foundation & Layout",
+      "summary": "Renders children into document.body while re-stamping the active appearance on a wrapper, so Fuji's CSS variables still resolve outside the tree.",
+      "keywords": ["portal", "overlay", "body"],
+      "exports": ["FujiPortal"]
+    },
+    "dismiss-button": {
+      "name": "Dismiss Button",
+      "category": "Foundation & Layout",
+      "summary": "The bare X control used by dismissible surfaces. No fill, border or shadow - just the glyph, so it never competes with the panel it sits on.",
+      "keywords": ["close", "dismiss", "x"],
+      "exports": ["DismissButton"]
+    },
+    "kbd": {
+      "name": "Kbd",
+      "category": "Foundation & Layout",
+      "summary": "A single keyboard key or shortcut token, for documenting a binding inline.",
+      "keywords": ["keyboard", "shortcut", "key", "hotkey"],
+      "exports": ["Kbd"]
+    },
+    "keyboard": {
+      "name": "Keyboard",
+      "category": "Data Display",
+      "summary": "Full on-screen keyboard in 100%, 75%, 65%, phone and numpad layouts, static or interactive.",
+      "keywords": ["keyboard", "on-screen", "keycap", "shortcut", "layout", "numpad", "phone"],
+      "exports": ["Keyboard"]
+    },
+    "code-block": {
+      "name": "Code Block",
+      "category": "Data Display",
+      "summary": "A plain code block with an optional copy control. No syntax highlighting by design, so it ships no highlighting dependency.",
+      "keywords": ["code", "snippet", "copy", "pre"],
+      "exports": ["CodeBlock"]
+    },
+    "label": {
+      "name": "Label",
+      "category": "Forms",
+      "summary": "A standalone field label. Inside a FormField use FormField.Label instead, which wires up the association for you.",
+      "keywords": ["label", "form"],
+      "exports": ["Label"]
+    },
+    "textarea": {
+      "name": "Textarea",
+      "category": "Forms",
+      "summary": "Multi-line text input. Registers itself with an ancestor FormField automatically.",
+      "keywords": ["textarea", "multiline", "text"],
+      "exports": ["Textarea"]
+    },
+    "password-input": {
+      "name": "Password Input",
+      "category": "Forms",
+      "summary": "Password field with a visibility toggle. Obscured by default, and toggling never clears the value.",
+      "keywords": ["password", "secret", "reveal"],
+      "exports": ["PasswordInput"]
+    },
+    "search-input": {
+      "name": "Search Input",
+      "category": "Forms",
+      "summary": "Search field with a leading icon and a clear button once there is a value.",
+      "keywords": ["search", "filter", "query", "clear"],
+      "exports": ["SearchInput"]
+    },
+    "number-input": {
+      "name": "Number Input",
+      "category": "Forms",
+      "summary": "Numeric field with increment and decrement steppers. Compact by default; pass fullWidth to stretch it.",
+      "keywords": ["number", "stepper", "quantity", "spinner"],
+      "exports": ["NumberInput"]
+    },
+    "otp-input": {
+      "name": "OTP Input",
+      "category": "Forms",
+      "summary": "One-time-code entry as a row of individually focusable character slots.",
+      "keywords": ["otp", "code", "2fa", "verification", "pin"],
+      "exports": ["OTPInput"]
+    },
+    "native-select": {
+      "name": "Native Select",
+      "category": "Forms",
+      "summary": "A styled native <select>. Use it when the platform's own picker is wanted - on mobile especially - and Select when the listbox should match the rest of the UI.",
+      "keywords": ["select", "dropdown", "native"],
+      "exports": ["NativeSelect"]
+    },
+    "multi-select": {
+      "name": "Multi Select",
+      "category": "Forms",
+      "summary": "Multi-selection combobox with removable chips for what is chosen.",
+      "keywords": ["multi", "select", "tags", "chips", "combobox"],
+      "exports": ["MultiSelect"]
+    },
+    "segmented-control": {
+      "name": "Segmented Control",
+      "category": "Navigation",
+      "summary": "Inline single-choice control for view toggles and density switches, with a sliding indicator.",
+      "keywords": ["toggle", "segmented", "switcher", "tabs"],
+      "exports": ["SegmentedControl"]
+    },
+    "avatar-group": {
+      "name": "Avatar Group",
+      "category": "Data Display",
+      "summary": "Overlapping stack of avatars with a \"+N\" tile once the list runs past its limit.",
+      "keywords": ["avatars", "stack", "faces", "overflow"],
+      "exports": ["AvatarGroup"]
+    },
+    "circular-progress": {
+      "name": "Circular Progress",
+      "category": "Feedback",
+      "summary": "Progress as a ring, determinate or indeterminate, with the percentage optionally in the centre.",
+      "keywords": ["progress", "ring", "loading", "percentage"],
+      "exports": ["CircularProgress"]
+    },
+    "alert-dialog": {
+      "name": "Alert Dialog",
+      "category": "Overlays",
+      "summary": "Blocking confirmation for a destructive choice - the WAI-ARIA alertdialog pattern. Use Dialog for anything the user may simply dismiss.",
+      "keywords": ["confirm", "destructive", "alert", "modal"],
+      "exports": ["AlertDialog"]
+    },
+    "tooltip": {
+      "name": "Tooltip",
+      "category": "Overlays",
+      "summary": "A short label revealed on hover or focus. Wrap the app once in Tooltip.Provider so the open and close delays are shared.",
+      "keywords": ["tooltip", "hint", "hover", "title"],
+      "exports": ["Tooltip"]
+    }
+  }
+}
