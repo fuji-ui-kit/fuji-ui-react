@@ -55,8 +55,9 @@ unless the user explicitly instructs it in that turn.
 - `package.json` version, `name`, `license`, `repository`, `homepage`, `bugs`,
   and `keywords` are all correct and non-placeholder. Check `author` - an empty
   string is a gap worth flagging.
-- `engines.node` is honest about what CI actually tests (currently 18.18.x and
-  20.x).
+- `engines.node` is honest about what CI actually checks: 18.18.x installs,
+  lints, typechecks, builds, packs and smoke-tests the MCP server; the test
+  suite runs on 20.x only, because Vitest 4 needs Node 20.
 - Peer dependency ranges cover the React versions actually supported and tested.
 - The pre-1.0 status note in `README.md` still matches the version being cut.
 

@@ -10,6 +10,9 @@ jobs:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
     strategy:
+      # Each leg checks something the other cannot, so one failing must not cancel
+      # the other and hide whether it would have passed.
+      fail-fast: false
       matrix:
         node-version: [18.18.x, 20.x]
     steps:
@@ -39,7 +42,13 @@ jobs:
       # artifacts the tests were written to guard.
       - run: npm run build
 
+      # Vitest 4 needs Node 20+ (its v8 coverage provider imports
+      # `node:inspector/promises`, which Node 18 does not have). The published
+      # package still supports Node 18.18, so that leg keeps installing, linting,
+      # typechecking, building, packing and smoke-testing the MCP server there;
+      # the suite itself runs where its runner is supported.
       - run: npm run test -- --coverage
+        if: matrix.node-version != '18.18.x'
 
       - name: Inspect packed tarball
         run: |

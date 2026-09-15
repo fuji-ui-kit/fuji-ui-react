@@ -10,7 +10,11 @@ npm ci
 npm test
 ```
 
-Node `>= 18.18`. CI runs on 18.18.x and 20.x, so avoid APIs newer than Node 18.
+Developing needs Node 20 or later: Vitest 4 and Storybook 10 do not run on
+Node 18. The published packages still support Node `>= 18.18`, and CI installs,
+lints, typechecks, builds, packs and smoke-tests the MCP server on 18.18.x as
+well as 20.x (the test suite runs on 20.x only), so avoid APIs newer than Node 18
+in `src/` and `mcp/src/`.
 
 ## The check gate
 
