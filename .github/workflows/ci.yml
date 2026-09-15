@@ -74,6 +74,10 @@ jobs:
       # for users. This installs the packed tarball out of the repo's reach and
       # drives it the way the clients in mcp/README.md start it.
       - name: Smoke-test the packed MCP server
+        # The script drives real server processes; a leaked one once kept this step
+        # running after every check had passed. Fail fast instead of at the job's
+        # 6-hour default.
+        timeout-minutes: 5
         run: node scripts/smoke-mcp.mjs
 
       - name: Upload build artifacts

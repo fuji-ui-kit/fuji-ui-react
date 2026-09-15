@@ -145,7 +145,16 @@ try {
 
   async function scenario(label, { cwd, env = {}, args = [], launch = [bin] }, body) {
     console.log(`\n${label}`);
-    const child = spawn(launch[0], [...launch.slice(1), ...args], { cwd, env: { ...baseEnv, ...env } });
+    // Its own process group, so the whole tree can be stopped below. A launcher
+    // can run the server as a grandchild - npm 9's `npx`, the one Node 18.18
+    // ships, does - and killing only the direct child left that grandchild
+    // holding this script's pipes open: every check passed, the process never
+    // exited, and the CI job sat until its timeout.
+    const child = spawn(launch[0], [...launch.slice(1), ...args], {
+      cwd,
+      env: { ...baseEnv, ...env },
+      detached: true,
+    });
     let stderr = "";
     child.stderr.on("data", (chunk) => (stderr += chunk));
     const pending = new Map();
@@ -195,7 +204,16 @@ try {
       const tools = async () => (await request("tools/list", {})).result?.tools ?? [];
       await body({ instructions: init.result?.instructions ?? "", call, tools });
     } finally {
-      child.kill();
+      // End of input is how a stdio MCP server is told to stop, and it reaches
+      // every process sharing the pipe; the group kill covers one that ignores it.
+      child.stdin.end();
+      try {
+        process.kill(-child.pid, "SIGTERM");
+      } catch {
+        // The group is already gone.
+      }
+      child.stdout.destroy();
+      child.stderr.destroy();
     }
   }
 
