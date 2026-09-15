@@ -1,6 +1,6 @@
 {
   "name": "@fujiui/react",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Fuji UI - a themeable, accessible React component system (light/dark theme, solid/glass material, cornered/soft radius, regular/floating elevation).",
   "license": "MIT",
   "publishConfig": {
