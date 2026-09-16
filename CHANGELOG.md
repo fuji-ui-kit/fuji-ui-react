@@ -1,5 +1,250 @@
 # @fujiui/react
 
+## 0.4.0
+
+### Minor Changes
+
+- 5cebea1: **New: `ChatBubble.Typing`** (also exported as `ChatBubbleTyping`). The "someone
+  is typing" indicator: three pulsing dots behind a `role="status"` with a visually
+  hidden `label` (default `"Typing"`), so consumers no longer hand-build it. The
+  pulse is the shared `animate-fuji-pulse` and stops under
+  `prefers-reduced-motion: reduce`. Pure CSS, so `ChatBubble` stays
+  server-renderable.
+
+  **New: `ChatBubble.Attachment` takes a `preview`.** Artwork - an image thumbnail,
+  a video poster - rendered in place of the icon, cropped into a small rounded
+  square (resizable through the new `classNames.preview`). Image attachments had no
+  way to show what they were. Without `onClick` the chip is still a plain `<div>`,
+  so it can sit inside a consumer's own link.
+
+  **New: `BottomNavigation` item `badge` and `badgeLabel`.** A count pill pinned to
+  the item's icon, hidden at `0` and capped at `99+`. A numeric badge is announced
+  as part of the item's name ("Chats, 3 unread") through visually hidden text;
+  `badgeLabel` changes that wording, or names a non-numeric badge. Previously an
+  unread count had to be drawn into the icon by hand, and was never announced.
+
+  **Fixed: `renderLink` dropped `aria-current`.** `Navbar`, `BottomNavigation` and
+  `Breadcrumb` handed a custom `renderLink` only the item's content, so a router
+  link lost what the default anchor carried: `aria-current="page"` on the active
+  item - the only non-colour signal of it - plus the link reset and focus ring.
+  `renderLink` now receives a third argument with exactly those props (`href`,
+  `aria-current`, `className`, `children`, and on `BottomNavigation` the `onClick`
+  that reports `onItemSelect`), exported as `NavbarLinkProps`,
+  `BottomNavigationLinkProps` and `BreadcrumbLinkProps`. They are also applied to
+  the element `renderLink` returns, filling in only what it does not set itself,
+  so existing `(item, children) => <Link href={item.href}>{children}</Link>`
+  callbacks are fixed without changes. One visible effect: a `BottomNavigation`
+  router link now fires `onItemSelect`, as its default anchor always did.
+
+  **Fixed: `Statistic` and the charts could fail hydration.** Numbers were
+  formatted with the runtime's default locale, so a server and a browser in
+  different locales rendered different digits ("1,234" vs "1.234"). They now
+  format with a fixed `"en-US"` locale by default, and take a `locale` prop to
+  localize explicitly. `Statistic` also takes `formatValue` for currency, compact
+  notation or units. This changes the default output for anyone whose runtime
+  locale was not English: pass `locale` to keep localized figures.
+
+  **Fixed: line and bar charts had a 380px minimum width.** The plot carried
+  `min-w-[380px]`, so in a card on a 320-375px screen it overran the card and
+  could only be scrolled sideways. It now shrinks with its container like any
+  scaled image. At very narrow widths the axis text scales down with it; the
+  `sr-only` data table still carries the exact values.
+
+  **Fixed: `Carousel` coverflow ignored `slidesPerView`.** It now sets the centre
+  slide's width (`100% / slidesPerView`, clamped to at least 1), including the
+  responsive map form; without it coverflow keeps its 1.6 default. A non-looping
+  coverflow also now lets every slide become active - it computed its last index
+  as if it were the flat preset, which stopped short of the final slide.
+
+  **New: `Tree` `expandOnSelect`** (default `true`, unchanged behaviour). Selecting
+  a parent both selected and toggled it, so a folder could not be selected without
+  opening or closing it. `expandOnSelect={false}` decouples them per the WAI-ARIA
+  tree pattern: a row click and Enter/Space only select, the chevron toggles on
+  click, and ArrowRight/ArrowLeft expand and collapse.
+
+  **Fixed: grouped `Timeline` timestamps were cut to 32px.** The timestamp column
+  was a fixed `w-8`, which fit a two-digit year and nothing else - "Sep 14" or
+  "9:41 AM" overflowed into the title. Timestamps now share one column sized to
+  the widest in the group (`min-w-8` as the floor, so short stamps align as
+  before), and titles stay aligned across rows, including rows with no timestamp.
+
+  **Fixed: `FloatingActionBar` fought consumer positioning.** Its root carried
+  `relative`, so whether `className="fixed bottom-6 right-6"` won depended on
+  the page's cascade-layer order. The root is now unpositioned and the column anchors to an
+  inner wrapper. Actions are no longer keyed by `label` alone - two actions with
+  the same label caused React key warnings - and take an optional `id` to key by.
+
+  **New: `Card` `padding`** (`"none" | "sm" | "md" | "lg"`, default `"md"` - the
+  existing 20px). A consumer `p-0` for flush content only wins with the right
+  cascade-layer order, and left `Card.Media` cancelling 20px of padding that was
+  no longer there. The prop works regardless of stylesheet order, and
+  `Card.Media` follows it, so media still bleeds to the edge at any value. New type: `CardPadding`.
+
+- 5cebea1: Date and form-field fixes found while building example apps, plus two small
+  `Calendar` additions.
+
+  **`DatePicker` and `TimePicker` ignored their `FormField`.** Their triggers were
+  bare `Popover.Trigger`s, invisible to Base UI's Field: `FormField.Label`'s
+  `for` pointed at an id nothing rendered (clicking it did nothing, and the
+  trigger had no accessible name), `FormField.Description` was never announced,
+  and `<FormField invalid>` painted neither the red border nor `aria-invalid`.
+  Both triggers now render through `Field.Control` - the same Field-aware leaf
+  `Input` uses - so they get the field's `id`, `aria-labelledby`,
+  `aria-describedby`, `data-invalid`/`aria-invalid` and `disabled` like every
+  other Fuji field. A FormField `validate` function receives the selected day as
+  `YYYY-MM-DD` (DatePicker) or the `HH:mm` string (TimePicker). `TimePicker` also
+  gains the `aria-labelledby` prop its siblings already had.
+
+  **`Combobox`, `MultiSelect`, and `NumberInput` erased their FormField label
+  reference.** Each passed `aria-labelledby={undefined}` explicitly, which wins
+  Base UI's merge over the label id it sets - the same stomping pattern fixed for
+  `data-invalid` earlier. The fields stayed named only through `label[for]`; they
+  now keep `aria-labelledby` pointing at the label too.
+
+  **`minDate={new Date()}` disabled today.** `Calendar` (and so `DatePicker`)
+  compared bounds by timestamp, so today's midnight cell sat "before" a `minDate`
+  carrying the current time. `minDate`/`maxDate` now compare by calendar day,
+  including when clamping the keyboard focus position.
+
+  **`MultiSelect`'s `size` only changed its font size.** The field hard-coded the
+  `md` control height, so `sm` and `lg` rendered as tall as `md` beside a
+  `Select` or `Input` of the same size. Height, input row, and chip padding now
+  follow `size`.
+
+  **`Slider`'s `aria-label` never reached the slider.** It was spread onto the
+  wrapping group, leaving the focusable `role="slider"` input unnamed. It is now
+  applied to the thumb input. A range value (`[20, 80]`) also rendered only one
+  thumb - the second value had no handle at all; `Slider` now renders one thumb
+  per value, and the new `getAriaLabel(index)` prop names each one
+  ("Minimum price" / "Maximum price").
+
+  **New: `Calendar` `markedDates` and `markedDateLabel`.** Pass a list of dates
+  (matched by day) or a predicate to put a small dot under days with something on
+  them. The mark is not visual-only: `markedDateLabel` (default `"marked"`) is
+  appended to each marked day's accessible name, e.g. "Monday, May 20, 2024, has
+  tasks".
+
+  **New: `today` on `Calendar` and `DatePicker`.** "Today" always came from the
+  real clock (reconciled after mount), so demos and tests could not pin it.
+  `today` sets the date used for the highlight, `aria-current="date"`, and the
+  initial month; it renders identically on server and client. Omit it to keep
+  the existing behavior.
+
+- 5cebea1: Overlay, palette, keyboard and field fixes found while building example apps
+  against the package, plus the small APIs those apps had to work around.
+
+  **Behaviour changes, under a minor bump (pre-1.0).** SPEC.md §10 asks for the
+  callout, so: the standalone `Keyboard layout="numpad"` no longer has a
+  `NumLock` cap (it is now `Backspace`); an in-flow `Keyboard` no longer takes
+  focus when a cap is clicked; an explicit `Keyboard width` is no longer capped
+  by the size's cap ceiling; a `Textarea` given `rows` no longer has the size's
+  minimum height; and `CommandMenu` lists ungrouped items first even when a
+  grouped item comes earlier in `items`. Each is below, with why.
+
+  **`Keyboard` never steals focus.** Only a `floating` board swallowed the
+  mousedown that moves focus onto a clicked cap, so an inline keypad beside an
+  input blurred that input on every press and consumers wrapped it in a div
+  cancelling mousedown themselves. Every interactive board does it now. Caps are
+  still buttons reached with Tab and the arrow keys.
+
+  **`Keyboard` fills its container when asked.** An explicit `width` was still
+  capped by the size's cap ceiling (38px caps at `md`), so in flow
+  `width="900px"` drew a 630px board and a numpad could never fill its card; an
+  explicit width now lifts that ceiling. A percentage was read against the grid
+  itself rather than the space it was given - `width="100%"` collapsed a numpad
+  to an 88px sliver - and is now a share of the box the board sits in, so
+  `width="100%"` spans its parent. The board still never outgrows that box. The
+  container-bound cap unit also forgot the deck's 1px border, leaving the
+  right-hand inset 2px thinner than the left; measured symmetric at 320px and
+  375px, with no horizontal overflow at either.
+
+  **`Keyboard`'s numpad can delete.** A PIN or OTP keypad built on
+  `layout="numpad"` had no way to remove a digit. Its top-left cap is now a `⌫`
+  Backspace (code `Backspace`, the same glyph and name as the `phone` board's) in
+  place of Num Lock, which on a drawn board typed nothing and toggled nothing.
+  `full` keeps its Num Lock.
+
+  **`Popover.Content` takes `side`, `align` and `alignOffset`.** Everything but
+  `sideOffset` was spread onto the popup rather than Base UI's Positioner, where
+  it was silently dropped. `Tooltip.Content` had the same gap and gains the same
+  three props; `DropdownMenu.Content`, which already had `align`, gains `side`
+  and `alignOffset`. Defaults are Base UI's own.
+
+  **`CommandMenu` can open a second step and bind ⌘K.** An item with
+  `closeOnSelect: false` keeps the palette open after its `onSelect`, clears the
+  query and returns focus to the search field, so swapping `items` shows the next
+  step. New `hotkey` prop: `hotkey="k"` toggles the palette on ⌘K or Ctrl+K
+  through the same controlled/uncontrolled state as everything else, with the
+  listener removed on unmount. Off by default. The arrow keys also walked
+  `items` in array order while rows are drawn bucketed by group, so with groups
+  interleaved the highlight jumped around the list; navigation, Enter and
+  `aria-activedescendant` now follow the drawn order.
+
+  **`Dialog` and `Drawer` scroll.** Both capped the popup at the viewport and
+  then let taller content spill past it, with the page scroll-locked behind so
+  the end was unreachable. The popup now scrolls its own content without
+  chaining into the page.
+
+  **`Drawer.Content` gains `width`** (`sm` 16rem | `md` 20rem | `lg` 28rem |
+  `full`, default `md` - the old fixed width) for `left`/`right` panels, still
+  capped at `calc(100vw - 3rem)`. Named `width` rather than `size` for the reason
+  `Container`'s is: `size` is a control's height/padding scale everywhere else.
+  New type `DrawerWidth`.
+
+  **`Input` and `SearchInput` keep their height in a flex column.** In an
+  overflowing flex column - a Sidebar - the field root's automatic minimum
+  height is one line of text, and it collapsed from 38px to a 19px sliver. The
+  root now carries a `min-height` equal to its control height. Not `shrink-0`:
+  every field is `w-full`, and in a flex row (a search box beside a button)
+  `shrink-0` measured the button pushed 83px out of its container. `Textarea`
+  was measured unaffected.
+
+  **`Textarea rows` sets the height.** The size's minimum height (5rem / 6rem /
+  8rem) beat the height `rows` asked for, so `rows={1}` still drew a 96px box.
+  With `rows` given, that minimum is dropped - a one-line composer that grows
+  with its content is now possible.
+
+### Patch Changes
+
+- 5cebea1: Fixed: a utility passed through `className` could not override a component's
+  own styling in a Tailwind v4 app. `<Card className="p-0">`,
+  `<Sidebar className="w-full">`, `<Drawer className="w-[28rem]">` and margins
+  on `<Typography>` all silently did nothing.
+
+  A cascade layer ranks by the first time its name appears on a page, and that
+  ranking is compared before specificity. `styles.css` only declared its own
+  `fuji.*` layers, so where they landed depended on which stylesheet the bundler
+  emitted first. If the app's Tailwind CSS came first, `fuji` ranked above the
+  app's `utilities` and every override lost. If `styles.css` came first, `fuji`
+  ranked below the app's `base`, and Tailwind's preflight
+  (`* { padding: 0; margin: 0; border: 0 solid }`,
+  `button { background-color: transparent }`) stripped the padding, borders and
+  fills off every component.
+
+  `styles.css` now opens with
+  `@layer properties, theme, base, fuji, components, utilities;`, which puts
+  Fuji above the app's preflight and below its own components and utilities
+  whenever the package stylesheet loads first. To get that order whichever file
+  loads first, add the same line at the top of your global CSS, above every
+  `@import`:
+
+  ```css
+  @layer properties, theme, base, fuji, components, utilities;
+  ```
+
+  Fuji's rules still live only in its own `fuji.*` layers. The bare layer names
+  are only declared, and stay empty. Apps whose CSS is not in any layer (plain
+  CSS, Tailwind v3) are unaffected: unlayered CSS already outranks every layer.
+  See "Overriding a component's styles with `className`" in `docs/theming.md`.
+
+  Checked in headless Chrome against a real Tailwind v4.1 build. Without the
+  line, loading the app's CSS first still loses overrides and loading
+  `styles.css` first now works. With the line, both orders pass, and so does
+  importing both files from one `globals.css`. Checked for both orders:
+  overrides for padding, width, background, margin and display win; Fuji's
+  padding, border, fill, margin and font weight survive preflight; and
+  `fuji.components` still beats `fuji.utilities`.
+
 ## 0.3.0
 
 ### Minor Changes
