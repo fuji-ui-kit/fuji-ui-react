@@ -136,12 +136,29 @@ export const Coverflow: Story = {
     docs: {
       description: {
         story:
-          '`effect="coverflow"` ports motion.dev\'s coverflow carousel: drag the fan and it follows the pointer continuously - neighbours rotate to 20°, shrink to 70% and tuck under each other by distance, and the edges fade out - then snaps to the nearest slide on release. Arrow keys, loop and controls work as in the default preset; `slidesPerView` is ignored.',
+          "`effect=\"coverflow\"` ports motion.dev's coverflow carousel: drag the fan and it follows the pointer continuously - neighbours rotate to 20°, shrink to 70% and tuck under each other by distance, and the edges fade out - then snaps to the nearest slide on release. Arrow keys, loop and controls work as in the default preset; `slidesPerView` sets the centre slide's width (default 1.6).",
       },
     },
   },
   render: (args) => (
     <Carousel {...args} effect="coverflow" controls className="mx-auto w-full max-w-xl">
+      {COVERFLOW_PHOTOS.map((photo) => (
+        <CoverflowSlide key={photo.id} photo={photo} />
+      ))}
+    </Carousel>
+  ),
+};
+
+export const CoverflowSlidesPerView: Story = {
+  name: "Coverflow with slidesPerView",
+  render: (args) => (
+    <Carousel
+      {...args}
+      effect="coverflow"
+      controls
+      slidesPerView={{ base: 1.4, md: 2.5 }}
+      className="mx-auto w-full max-w-3xl"
+    >
       {COVERFLOW_PHOTOS.map((photo) => (
         <CoverflowSlide key={photo.id} photo={photo} />
       ))}

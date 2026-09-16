@@ -22,6 +22,15 @@ export interface CommandMenuItem {
   /** Extra text matched by search (synonyms, category, summary). Falls back to `label`. */
   searchText?: string;
   onSelect: () => void;
+  /**
+   * Close the palette once `onSelect` has run. Default `true`.
+   *
+   * Set it to `false` for an item that opens a second step - swap `items` from
+   * its `onSelect` and the palette stays up to show them. The search query is
+   * cleared and focus goes back to the search field, so the next step starts
+   * from its full list.
+   */
+  closeOnSelect?: boolean;
 }
 
 /** Lowercase and collapse punctuation so "multi-select" matches "multi select". */
@@ -50,6 +59,19 @@ export interface CommandMenuProps {
   items: CommandMenuItem[];
   /** Text in the search input while it is empty. */
   placeholder?: string;
+  /**
+   * A key that toggles the palette when pressed with ⌘ or Ctrl - `"k"` binds
+   * ⌘K on macOS and Ctrl+K elsewhere (either modifier is accepted on every
+   * platform, so nothing sniffs the user agent). Off by default.
+   *
+   * The listener is on `document` and goes away on unmount. It ignores a
+   * keydown something else already called `preventDefault()` on, so an
+   * editor that owns the same chord keeps it, and it prevents the browser's
+   * own binding (Ctrl+K focuses the address bar in Chrome and Firefox).
+   * `item.shortcut` stays display-only; this is the one key the palette binds
+   * itself.
+   */
+  hotkey?: string;
 }
 
 /** ⌘K-style command palette: filterable, keyboard-navigable, grouped. */
@@ -59,6 +81,7 @@ export function CommandMenu({
   onOpenChange,
   items,
   placeholder = "Type a command or search…",
+  hotkey,
 }: CommandMenuProps) {
   const [open, setOpen] = useControllableState({
     value: openProp,
@@ -68,6 +91,7 @@ export function CommandMenu({
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
   const portalAttrs = usePortalThemeAttrs();
+  const inputRef = React.useRef<HTMLInputElement>(null);
   const listboxId = React.useId();
   const optionId = (id: string) => `${listboxId}-option-${id}`;
 
@@ -78,13 +102,35 @@ export function CommandMenu({
   }, [items, query]);
 
   const groups = React.useMemo(() => {
-    const map = new Map<string, CommandMenuItem[]>();
+    // Seeded with the ungrouped bucket so it is listed first, as documented on
+    // `CommandMenuItem.group`, even when the first item carries a group.
+    const map = new Map<string, CommandMenuItem[]>([["", []]]);
     for (const item of filtered) {
       const key = item.group ?? "";
       map.set(key, [...(map.get(key) ?? []), item]);
     }
-    return Array.from(map.entries());
+    return Array.from(map.entries()).filter(([, groupItems]) => groupItems.length > 0);
   }, [filtered]);
+
+  // The rows in the order they are drawn. Navigation, Enter and
+  // `aria-activedescendant` all index into this rather than `filtered`: items
+  // arrive in the consumer's order but are drawn bucketed by group, so with
+  // groups interleaved (`A:x, B:y, C:x` draws `A, C, B`) the arrow keys used to
+  // walk the array while the highlight jumped around the screen.
+  const ordered = React.useMemo(() => groups.flatMap(([, groupItems]) => groupItems), [groups]);
+
+  React.useEffect(() => {
+    if (!hotkey) return;
+    const key = hotkey.toLowerCase();
+    const toggle = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey) return;
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== key) return;
+      event.preventDefault();
+      setOpen(!open);
+    };
+    document.addEventListener("keydown", toggle);
+    return () => document.removeEventListener("keydown", toggle);
+  }, [hotkey, open, setOpen]);
 
   // Reset the highlighted row whenever the query or open-state changes,
   // without an effect (React's "adjusting state during render" pattern:
@@ -98,6 +144,12 @@ export function CommandMenu({
   const select = (item: CommandMenuItem | undefined) => {
     if (!item) return;
     item.onSelect();
+    if (item.closeOnSelect === false) {
+      setQuery("");
+      setActiveIndex(0);
+      inputRef.current?.focus();
+      return;
+    }
     setOpen(false);
   };
 
@@ -117,13 +169,13 @@ export function CommandMenu({
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
               event.preventDefault();
-              setActiveIndex((i) => Math.min(filtered.length - 1, i + 1));
+              setActiveIndex((i) => Math.min(ordered.length - 1, i + 1));
             } else if (event.key === "ArrowUp") {
               event.preventDefault();
               setActiveIndex((i) => Math.max(0, i - 1));
             } else if (event.key === "Enter") {
               event.preventDefault();
-              select(filtered[activeIndex]);
+              select(ordered[activeIndex]);
             }
           }}
         >
@@ -131,12 +183,13 @@ export function CommandMenu({
           <div className="fj:flex fj:items-center fj:gap-2 fj:border-b fj:border-fuji-border fj:px-4 fj:py-3">
             <Search className="fj:size-4 fj:shrink-0 fj:text-fuji-foreground-muted" />
             <input
+              ref={inputRef}
               // eslint-disable-next-line jsx-a11y/no-autofocus -- deliberate: a command palette's whole purpose is instant keyboard search the moment it opens (same convention as VS Code / Linear / cmdk).
               autoFocus
               role="combobox"
               aria-expanded="true"
               aria-controls={listboxId}
-              aria-activedescendant={filtered[activeIndex] ? optionId(filtered[activeIndex].id) : undefined}
+              aria-activedescendant={ordered[activeIndex] ? optionId(ordered[activeIndex].id) : undefined}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={placeholder}
@@ -166,7 +219,7 @@ export function CommandMenu({
                   </p>
                 )}
                 {groupItems.map((item) => {
-                  const index = filtered.indexOf(item);
+                  const index = ordered.indexOf(item);
                   return (
                     <button
                       key={item.id}

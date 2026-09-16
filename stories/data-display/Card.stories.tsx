@@ -12,6 +12,7 @@ import {
   SegmentedControl,
   Statistic,
 } from "@fujiui/react";
+import { placeholderPhoto } from "../lib/placeholder-image";
 
 const meta = {
   title: "Data Display/Card",
@@ -297,5 +298,35 @@ export const VehicleDetails: Story = {
         </div>
       </Card.Content>
     </Card>
+  ),
+};
+
+export const Padding: Story = {
+  name: "Padding (none / sm / md / lg)",
+  render: () => (
+    <div className="grid w-full max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2">
+      {(["none", "sm", "md", "lg"] as const).map((padding) => (
+        <Card key={padding} padding={padding}>
+          <Card.Media>
+            <img
+              src={placeholderPhoto(`card-padding-${padding}`, 600, 240)}
+              alt=""
+              className="block h-28 w-full object-cover"
+            />
+          </Card.Media>
+          <Card.Header className={padding === "none" ? "px-4" : undefined}>
+            <Card.Title>padding=&quot;{padding}&quot;</Card.Title>
+            <Card.Description>Card.Media stays flush at every padding.</Card.Description>
+          </Card.Header>
+        </Card>
+      ))}
+      <Card padding="none" className="overflow-hidden">
+        <img
+          src={placeholderPhoto("card-flush", 600, 300)}
+          alt="A mountain lake, shown edge to edge"
+          className="block w-full"
+        />
+      </Card>
+    </div>
   ),
 };

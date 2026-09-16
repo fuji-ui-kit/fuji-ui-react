@@ -5,6 +5,13 @@ import { cn } from "../../../lib/cn";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface FloatingActionBarAction {
+  /**
+   * Stable identity for the action, used as its React key. Optional: without
+   * it the key falls back to `label` plus position, so two actions that share
+   * a label no longer collide. Set it when actions are added, removed or
+   * reordered while the dial is open, so each keeps its own DOM node.
+   */
+  id?: string;
   /** Icon element. Sized by the bar, so pass an unsized icon. */
   icon: React.ReactNode;
   /** Accessible name, and the label shown beside the action when open. */
@@ -143,87 +150,105 @@ export const FloatingActionBar = React.forwardRef<HTMLDivElement, FloatingAction
         ref={setRefs}
         data-open={open ? "" : undefined}
         data-side={resolved}
-        // Sized to the trigger alone. The column below is out of flow, so this
-        // box never changes size and the trigger never moves.
-        className={cn("fj:relative fj:inline-flex fj:w-fit", className)}
+        // Deliberately unpositioned. This carried `relative`, which competed
+        // with a consumer placing the dial via `className="fixed bottom-6
+        // right-6"`: Fuji's class lives in its own cascade layer, so which
+        // `position` won depended on the page's layer order (see
+        // docs/theming.md), and the dial could land in the document flow
+        // instead of the corner. With nothing to compete with, positioning
+        // the root is the consumer's in any setup; the anchor the column
+        // needs is the wrapper below.
+        className={cn("fj:inline-flex fj:w-fit", className)}
         {...props}
       >
-        <button
-          type="button"
-          aria-expanded={open}
-          aria-label={label}
-          data-open={open ? "" : undefined}
-          onClick={() => setOpen(!open)}
-          className={cn(
-            NATIVE_CONTROL_RESET,
-            "fuji-fab-trigger fj:relative fj:z-10 fj:flex fj:size-14 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full",
-            "fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
-            "fj:transition-[rotate,scale] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease-spring)]",
-            // The plus becomes a close by rotating, so there is nothing to
-            // cross-fade and the glyph stays one continuous object.
-            "fj:data-[open]:rotate-45 fj:active:scale-95",
-            "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-            "fj:motion-reduce:transition-none",
-          )}
-        >
-          {icon ?? <PlusIcon />}
-        </button>
-
         <div
-          // `inert` as a DOM property in a ref callback, not a JSX prop -
-          // React 18 and 19 disagree about serialising it. See AGENTS.md.
-          ref={(node) => {
-            if (node) node.inert = !open;
-          }}
-          aria-hidden={open ? undefined : true}
-          className={cn(
-            // Always absolute, open or closed. `right-1` centres the 48px
-            // action circles on the 56px trigger ((56-48)/2 = 4px).
-            "fj:absolute fj:right-1 fj:flex fj:items-end fj:gap-3",
-            up ? "fj:bottom-full fj:mb-3 fj:flex-col-reverse" : "fj:top-full fj:mt-3 fj:flex-col",
-            !open && "fj:pointer-events-none",
-          )}
+          // The column's positioning context. Sized to the trigger alone - the
+          // column is out of flow, so this box never changes size and the
+          // trigger never moves. `data-open` here too, because base.css
+          // animates `[data-open] > * > .fuji-fab-action` (this wrapper is
+          // that `[data-open]` parent now).
+          data-open={open ? "" : undefined}
+          className="fj:relative fj:inline-flex"
         >
-          {actions.map((action, index) => (
-            <div
-              key={action.label}
-              className="fuji-fab-action fj:flex fj:items-center fj:gap-2.5"
-              style={
-                {
-                  // Nearest-first on open, reversed on close so the column
-                  // furls back into the trigger.
-                  transitionDelay: `${(open ? index : actions.length - 1 - index) * STAGGER_MS}ms`,
-                  "--fuji-fab-scale": 1 - index * TAPER,
-                } as React.CSSProperties
-              }
-            >
-              <span className="fuji-fab-label fj:rounded-fuji-control fj:bg-fuji-surface fj:px-2.5 fj:py-1 fj:text-[length:var(--fuji-text-sm)] fj:font-medium fj:whitespace-nowrap fj:text-fuji-foreground fj:shadow-fuji-control">
-                {action.label}
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  action.onSelect?.();
-                  setOpen(false);
-                }}
-                aria-label={action.label}
-                className={cn(
-                  NATIVE_CONTROL_RESET,
-                  "fj:flex fj:size-12 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full",
-                  "fj:border fj:border-fuji-border fj:bg-fuji-surface fj:shadow-fuji-card",
-                  "fj:transition-[background-color,scale] fj:duration-[var(--fuji-duration-fast)]",
-                  "fj:hover:scale-105",
-                  action.destructive
-                    ? "fj:text-fuji-fire fj:hover:bg-fuji-fire-soft"
-                    : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-subtle",
-                  "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-                  "fj:[&_svg]:size-5",
-                )}
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-label={label}
+            data-open={open ? "" : undefined}
+            onClick={() => setOpen(!open)}
+            className={cn(
+              NATIVE_CONTROL_RESET,
+              "fuji-fab-trigger fj:relative fj:z-10 fj:flex fj:size-14 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full",
+              "fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
+              "fj:transition-[rotate,scale] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease-spring)]",
+              // The plus becomes a close by rotating, so there is nothing to
+              // cross-fade and the glyph stays one continuous object.
+              "fj:data-[open]:rotate-45 fj:active:scale-95",
+              "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+              "fj:motion-reduce:transition-none",
+            )}
+          >
+            {icon ?? <PlusIcon />}
+          </button>
+
+          <div
+            // `inert` as a DOM property in a ref callback, not a JSX prop -
+            // React 18 and 19 disagree about serialising it. See AGENTS.md.
+            ref={(node) => {
+              if (node) node.inert = !open;
+            }}
+            aria-hidden={open ? undefined : true}
+            className={cn(
+              // Always absolute, open or closed. `right-1` centres the 48px
+              // action circles on the 56px trigger ((56-48)/2 = 4px).
+              "fj:absolute fj:right-1 fj:flex fj:items-end fj:gap-3",
+              up ? "fj:bottom-full fj:mb-3 fj:flex-col-reverse" : "fj:top-full fj:mt-3 fj:flex-col",
+              !open && "fj:pointer-events-none",
+            )}
+          >
+            {actions.map((action, index) => (
+              <div
+                // `label` alone collided when two actions shared one (React
+                // key warning, and the wrong node reused on update).
+                key={action.id ?? `${action.label}-${index}`}
+                className="fuji-fab-action fj:flex fj:items-center fj:gap-2.5"
+                style={
+                  {
+                    // Nearest-first on open, reversed on close so the column
+                    // furls back into the trigger.
+                    transitionDelay: `${(open ? index : actions.length - 1 - index) * STAGGER_MS}ms`,
+                    "--fuji-fab-scale": 1 - index * TAPER,
+                  } as React.CSSProperties
+                }
               >
-                {action.icon}
-              </button>
-            </div>
-          ))}
+                <span className="fuji-fab-label fj:rounded-fuji-control fj:bg-fuji-surface fj:px-2.5 fj:py-1 fj:text-[length:var(--fuji-text-sm)] fj:font-medium fj:whitespace-nowrap fj:text-fuji-foreground fj:shadow-fuji-control">
+                  {action.label}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    action.onSelect?.();
+                    setOpen(false);
+                  }}
+                  aria-label={action.label}
+                  className={cn(
+                    NATIVE_CONTROL_RESET,
+                    "fj:flex fj:size-12 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full",
+                    "fj:border fj:border-fuji-border fj:bg-fuji-surface fj:shadow-fuji-card",
+                    "fj:transition-[background-color,scale] fj:duration-[var(--fuji-duration-fast)]",
+                    "fj:hover:scale-105",
+                    action.destructive
+                      ? "fj:text-fuji-fire fj:hover:bg-fuji-fire-soft"
+                      : "fj:text-fuji-foreground fj:hover:bg-fuji-surface-subtle",
+                    "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+                    "fj:[&_svg]:size-5",
+                  )}
+                >
+                  {action.icon}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

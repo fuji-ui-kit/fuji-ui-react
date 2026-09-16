@@ -1,7 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { expect, userEvent, within } from "storybook/test";
-import { DatePicker } from "@fujiui/react";
+import { DatePicker, FormField } from "@fujiui/react";
 
 const meta = {
   title: "Data Display/DatePicker",
@@ -33,6 +33,20 @@ export const Sizes: Story = {
 
 export const Invalid: Story = {
   args: { invalid: true },
+};
+
+/** Label, description and invalid state all come from the surrounding FormField - no `aria-label` or `invalid` on the picker. */
+export const InFormField: Story = {
+  name: "In a FormField",
+  render: () => (
+    <div className="w-72">
+      <FormField invalid>
+        <FormField.Label>Due date</FormField.Label>
+        <DatePicker minDate={new Date()} />
+        <FormField.Error>Pick a due date.</FormField.Error>
+      </FormField>
+    </div>
+  ),
 };
 
 export const Disabled: Story = {

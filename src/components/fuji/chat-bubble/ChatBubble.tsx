@@ -180,14 +180,29 @@ export const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(
 });
 
 export interface ChatBubbleAttachmentProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onClick"> {
-  /** Icon shown before the name - defaults to a generic paperclip. */
+  /** Icon shown before the name - defaults to a generic paperclip. Ignored when `preview` is given. */
   icon?: IconComponent;
+  /**
+   * Artwork shown in place of the icon - an image thumbnail, a video poster,
+   * a waveform. Rendered inside a small rounded square (40px by default,
+   * resizable through `classNames.preview`) that crops its content, so an
+   * `<img>` fills it edge to edge. Give the artwork an empty `alt` when the
+   * `name` already describes the file, so it is not announced twice.
+   */
+  preview?: React.ReactNode;
   /** File/attachment name. */
   name: React.ReactNode;
   /** Secondary detail, e.g. a file size or an audio duration ("2.4 MB", "0:42"). */
   meta?: React.ReactNode;
-  /** Renders as a real, keyboard-accessible `<button type="button">` (e.g. to open/download the attachment) instead of a static chip. */
+  /**
+   * Renders as a real, keyboard-accessible `<button type="button">` (e.g. to
+   * open/download the attachment) instead of a static chip. Without it the
+   * chip is a plain, non-interactive `<div>`, so it can sit inside a consumer's
+   * own `<a>` without nesting one interactive element inside another.
+   */
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
+  /** Per-slot class overrides. `preview` is the artwork box. */
+  classNames?: SlotClassNames<"preview">;
 }
 
 const ATTACHMENT_ROW_CLASSNAME =
@@ -195,10 +210,25 @@ const ATTACHMENT_ROW_CLASSNAME =
 
 /** Small file/media chip for use inside `ChatBubble` children - an attachment, voice note, or similar rich-content row. */
 const ChatBubbleAttachment = React.forwardRef<HTMLDivElement, ChatBubbleAttachmentProps>(
-  function ChatBubbleAttachment({ icon: Glyph = Paperclip, name, meta, onClick, className, ...props }, ref) {
+  function ChatBubbleAttachment(
+    { icon: Glyph = Paperclip, preview, name, meta, onClick, classNames, className, ...props },
+    ref,
+  ) {
     const content = (
       <>
-        <Glyph aria-hidden="true" className="fj:size-4 fj:shrink-0" />
+        {preview ? (
+          <span
+            className={cn(
+              "fj:flex fj:size-10 fj:shrink-0 fj:items-center fj:justify-center fj:overflow-hidden fj:rounded-fuji-item fj:bg-current/10",
+              "fj:[&>img]:size-full fj:[&>img]:object-cover fj:[&>video]:size-full fj:[&>video]:object-cover",
+              classNames?.preview,
+            )}
+          >
+            {preview}
+          </span>
+        ) : (
+          <Glyph aria-hidden="true" className="fj:size-4 fj:shrink-0" />
+        )}
         <span className="fj:min-w-0 fj:flex-1">
           <span className="fj:block fj:truncate fj:text-left fj:font-medium">{name}</span>
           {meta && (
@@ -237,7 +267,53 @@ const ChatBubbleAttachment = React.forwardRef<HTMLDivElement, ChatBubbleAttachme
   },
 );
 
-export { ChatBubbleAttachment };
+export interface ChatBubbleTypingProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /**
+   * Text announced to assistive technology in place of the animated dots,
+   * which are hidden from it. Default "Typing". Pass a name for a group
+   * thread ("Priya is typing") or a translated string.
+   */
+  label?: string;
+}
+
+/**
+ * Three pulsing dots - the "someone is typing" indicator. Place it as a
+ * bubble's only child: `<ChatBubble avatar={...}><ChatBubble.Typing /></ChatBubble>`.
+ *
+ * `role="status"` so a screen reader hears `label` when the indicator
+ * appears; the dots themselves are decorative. The pulse is the shared
+ * `animate-fuji-pulse`, which stops entirely under
+ * `prefers-reduced-motion: reduce` (the dots then sit still). Pure CSS, so this stays server-renderable.
+ */
+const ChatBubbleTyping = React.forwardRef<HTMLSpanElement, ChatBubbleTypingProps>(function ChatBubbleTyping(
+  { label = "Typing", className, ...props },
+  ref,
+) {
+  const dot =
+    "fj:size-1.5 fj:rounded-full fj:bg-current fj:animate-fuji-pulse fj:[animation-duration:1.2s] fj:motion-reduce:animate-none";
+  return (
+    <span
+      ref={ref}
+      role="status"
+      className={cn("fj:inline-flex fj:h-[1lh] fj:items-center fj:gap-1 fj:align-middle", className)}
+      {...props}
+    >
+      <span aria-hidden="true" className="fj:inline-flex fj:items-center fj:gap-1">
+        {/* Staggered so the pulse travels left to right. Full class strings,
+            never templated - Tailwind's scanner is static. */}
+        <span className={dot} />
+        <span className={cn(dot, "fj:[animation-delay:200ms]")} />
+        <span className={cn(dot, "fj:[animation-delay:400ms]")} />
+      </span>
+      <span className="fj:sr-only">{label}</span>
+    </span>
+  );
+});
+
+export { ChatBubbleAttachment, ChatBubbleTyping };
 
 /** `<ChatBubble align="outgoing" avatar={...} timestamp="..." status="read"><ChatBubble.Attachment name="..." /></ChatBubble>` */
-export const ChatBubble = Object.assign(ChatBubbleRoot, { Attachment: ChatBubbleAttachment });
+export const ChatBubble = Object.assign(ChatBubbleRoot, {
+  Attachment: ChatBubbleAttachment,
+  Typing: ChatBubbleTyping,
+});

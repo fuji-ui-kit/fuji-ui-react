@@ -100,3 +100,18 @@ Tracks the pointer and tilts the card in 3D towards it, springing back when the 
   {/* freeform content - Card is just a styled, themeable container */}
 </Card>
 ```
+
+## Padding
+
+padding sets the card's inner padding: "none", "sm", "md" (default, 20px) or "lg". Use "none" for flush content - an edge-to-edge image, or a list/table with its own row padding. Card.Media follows the value, so it bleeds to the edge at any padding.
+
+```tsx
+<Card padding="none" className="overflow-hidden">
+  <Image src="/photos/banff.jpg" alt="A turquoise lake below snow-capped peaks" ratio={16 / 9} />
+</Card>
+<Card padding="sm">
+  <Card.Header>
+    <Card.Title>Compact</Card.Title>
+  </Card.Header>
+</Card>
+```

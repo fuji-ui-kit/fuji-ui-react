@@ -26,6 +26,27 @@ export interface InputProps extends Omit<React.ComponentPropsWithoutRef<typeof B
   clearable?: boolean;
 }
 
+/**
+ * A height floor equal to the control height, on whichever element is the
+ * field's root.
+ *
+ * In a flex column that overflows - a Sidebar, a scrolling panel - the root is
+ * a flex item whose automatic minimum height is its *content* height, and an
+ * `<input>`'s content is one line of text: the field was squeezed from 38px
+ * to a 19px sliver. `shrink-0` would stop that too, but `flex-shrink` acts on
+ * whichever axis is the main one, and every field is `w-full` - in the far
+ * more common flex ROW (a search box beside a button) it refused to give up
+ * any width and pushed the button 83px out of its container. A `min-height`
+ * only ever constrains the block axis, so it fixes the column and leaves rows
+ * alone. Written after `fieldSurface()` and before `className`, so a consumer
+ * `min-h-*` still wins.
+ */
+const MIN_HEIGHT: Record<ComponentSize, string> = {
+  sm: "fj:min-h-[var(--fuji-control-h-sm)]",
+  md: "fj:min-h-[var(--fuji-control-h-md)]",
+  lg: "fj:min-h-[var(--fuji-control-h-lg)]",
+};
+
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Input(
   {
     size = "md",
@@ -90,7 +111,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
         // of asserting `undefined` lets that ambient value through.
         {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
-        className={cn(fieldSurface({ size }), className)}
+        className={cn(fieldSurface({ size }), MIN_HEIGHT[size], className)}
         value={value}
         defaultValue={defaultValue}
         onChange={onChange}
@@ -127,6 +148,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
       // painted the border a plain `<Input/>` there does); passes after.
       className={cn(
         fieldSurface({ size }),
+        MIN_HEIGHT[size],
         "fj:flex fj:items-center fj:gap-2 fj:has-disabled:opacity-45 fj:has-[[data-invalid]]:border-fuji-fire",
         className,
       )}

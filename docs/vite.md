@@ -24,6 +24,16 @@ import, not one per page/route.
 No Tailwind setup, PostCSS config, or bundler plugin is required - `styles.css`
 is plain, pre-compiled CSS.
 
+If the app _does_ use Tailwind v4, put this line first in the CSS file your
+entry imports (above every `@import`), so a utility passed through `className`
+overrides a component's own styling and your preflight stays below Fuji:
+
+```css
+@layer properties, theme, base, fuji, components, utilities;
+```
+
+See [theming.md](theming.md#overriding-a-components-styles-with-classname).
+
 ## TypeScript
 
 If your `tsconfig.json` uses `"moduleResolution": "bundler"` or `"node16"`/

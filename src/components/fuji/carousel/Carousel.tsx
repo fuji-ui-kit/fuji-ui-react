@@ -27,7 +27,16 @@ export interface CarouselProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   controls?: boolean;
   /** Bottom dot indicators. Default true. */
   indicators?: boolean;
-  /** Slides visible per view. A number, or a responsive map keyed by breakpoint. Default 1. */
+  /**
+   * Slides visible per view. A number, or a responsive map keyed by breakpoint.
+   * Default 1 - or 1.6 with `effect="coverflow"`.
+   *
+   * With `effect="coverflow"` it sets the active slide's width as a fraction
+   * of the viewport (`100% / slidesPerView`), and so how much of the fan shows
+   * either side: `1.6` (the default) is a ~62% centre slide with neighbours
+   * peeking, `3` a third-width slide with more of the fan visible. Values below
+   * 1 are treated as 1.
+   */
   slidesPerView?: ResponsiveCount;
   /**
    * Advance automatically. Paused on hover/focus/touch/tab-hidden, and always
@@ -68,7 +77,8 @@ export interface CarouselProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * slide sits centred at ~62% width, neighbours rotate away 20° and shrink
    * to 70% by distance and tuck under each other, the fan fades out at the
    * edges, and the whole thing follows the pointer continuously while you
-   * drag before snapping to the nearest slide. Ignores `slidesPerView`.
+   * drag before snapping to the nearest slide. `slidesPerView` sets the centre
+   * slide's width (default 1.6, a ~62% slide).
    * Default `"slide"`.
    */
   effect?: "slide" | "coverflow";
@@ -83,7 +93,7 @@ export interface CarouselProps extends Omit<React.HTMLAttributes<HTMLDivElement>
 const ARROW_CLASSES =
   "fj:flex fj:size-9 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-surface-overlay/85 fj:text-fuji-foreground fj:shadow-fuji-control fj:backdrop-blur-sm fj:transition-[transform,opacity,box-shadow] fj:duration-[var(--fuji-duration-fast)] fj:hover:shadow-fuji-control-hover fj:active:scale-[var(--fuji-press-scale)] fj:disabled:cursor-not-allowed fj:disabled:opacity-35 fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
 
-/** Coverflow slide width as a `--fuji-cv-per` divisor: 100% / 1.6 = 62.5%. */
+/** Default coverflow slide width as a `--fuji-cv-per` divisor: 100% / 1.6 = 62.5%. */
 const COVERFLOW_PER = 1.6;
 
 function usePrefersReducedMotion() {
@@ -226,7 +236,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
       onIndexChange,
       controls = false,
       indicators = true,
-      slidesPerView = 1,
+      slidesPerView,
       effect = "slide",
       autoplay = false,
       autoplayInterval = 3000,
@@ -242,14 +252,23 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     const slides = React.Children.toArray(children);
     const count = slides.length;
     const coverflow = effect === "coverflow";
-    const per = React.useMemo(
-      () =>
-        coverflow
-          ? { base: COVERFLOW_PER, sm: COVERFLOW_PER, md: COVERFLOW_PER, lg: COVERFLOW_PER }
-          : resolvePerView(slidesPerView),
-      [slidesPerView, coverflow],
-    );
-    // Whole slides only: coverflow's `per` is 1.6, and a fractional clone
+    const per = React.useMemo(() => {
+      if (!coverflow) return resolvePerView(slidesPerView ?? 1);
+      // Coverflow used to hard-code 1.6 and silently ignore `slidesPerView`.
+      // It now honours it, keeping 1.6 only as the default. Clamped to 1: a
+      // centre slide wider than the viewport has nothing to fan out from.
+      if (slidesPerView === undefined) {
+        return { base: COVERFLOW_PER, sm: COVERFLOW_PER, md: COVERFLOW_PER, lg: COVERFLOW_PER };
+      }
+      const resolved = resolvePerView(slidesPerView);
+      return {
+        base: Math.max(resolved.base, 1),
+        sm: Math.max(resolved.sm, 1),
+        md: Math.max(resolved.md, 1),
+        lg: Math.max(resolved.lg, 1),
+      };
+    }, [slidesPerView, coverflow]);
+    // Whole slides only: coverflow's default `per` is 1.6, and a fractional clone
     // count slices the clone arrays at a fraction. Coverflow also needs a
     // neighbour on BOTH sides of the active slide, hence at least two.
     const cloneCount = Math.min(
@@ -261,7 +280,9 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     // at the current viewport, not just the mobile `base` value, so it stays
     // in sync with the CSS breakpoint that really controls visible slide count.
     const activePer = useActivePer(per);
-    const nonLoopMaxIndex = Math.max(count - Math.max(activePer, 1), 0);
+    // Coverflow centres the active slide, so every slide - the last included -
+    // can be active; only the flat preset stops early to keep the final page full.
+    const nonLoopMaxIndex = coverflow ? Math.max(count - 1, 0) : Math.max(count - Math.max(activePer, 1), 0);
     const reduceMotion = usePrefersReducedMotion();
 
     const [active, setActive] = useControllableState<number>({
@@ -441,6 +462,9 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     const dragPx = React.useRef(0);
     const displayRef = React.useRef(display);
     displayRef.current = display;
+    // Read by `applyDrag` per pointermove; a ref so the callback stays stable.
+    const activePerRef = React.useRef(activePer);
+    activePerRef.current = activePer;
 
     const applyDrag = React.useCallback(
       (px: number) => {
@@ -452,7 +476,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
         if (!coverflow) return;
         // `viewportWidth` is read once at pointerdown - reading `clientWidth`
         // here, after the write above, would force a layout per move.
-        const slideWidth = viewportWidth.current / COVERFLOW_PER;
+        const slideWidth = viewportWidth.current / Math.max(activePerRef.current, 1);
         const fraction = slideWidth > 0 ? px / slideWidth : 0;
         const slides = track.children;
         for (let childIndex = 0; childIndex < slides.length; childIndex++) {

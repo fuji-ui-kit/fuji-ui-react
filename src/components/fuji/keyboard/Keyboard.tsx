@@ -79,6 +79,11 @@ export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
    * follows, so the board stays in proportion at any width. It is a target,
    * not a floor: a board never outgrows the space it is given.
    *
+   * A percentage is of the box the board sits in, so `width="100%"` fills its
+   * parent - a keypad spanning its card. An explicit width lifts the size's
+   * cap ceiling (in flow as well as docked), so it can grow a board as well as
+   * shrink one.
+   *
    * Floating boards default to a screen-relative width per `size` - roughly
    * 45vw / 60vw / 75vw for `sm` / `md` / `lg`, never past 96vw - because a
    * docked keyboard is something you type on, not a diagram. In flow the
@@ -214,6 +219,22 @@ function playClick(context: AudioContext): void {
   oscillator.connect(gain).connect(context.destination);
   oscillator.start(now);
   oscillator.stop(now + 0.06);
+}
+
+/**
+ * The `width` prop as a `--fuji-key-target` value.
+ *
+ * A percentage is rewritten to container query units. The target is read
+ * inside `calc()`s that end up in `grid-auto-rows` and the column tracks,
+ * where a bare `%` resolves against the grid's own (content-sized, or
+ * indefinite) box instead of the space the board was given - `width="100%"`
+ * collapsed a numpad to an 88px sliver. The board's root is the query
+ * container, so `cqi` is exactly "percent of the box the board sits in".
+ */
+function boardTarget(width: string | number): string {
+  if (typeof width === "number") return `${width}px`;
+  const percent = /^\s*(\d*\.?\d+)%\s*$/.exec(width);
+  return percent ? `${percent[1]}cqi` : width;
 }
 
 /** Horizontal centre of a cap, in quarter units - the axis vertical moves are matched on. */
@@ -467,13 +488,21 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
   }, [captureKeys]);
 
   React.useEffect(() => {
-    if (!floating || !isOpen) return;
+    if (!interactive) return;
     const node = deck.current;
+    // Null while a floating board is closed - it renders nothing.
     if (!node) return;
-    // A docked keyboard types into something else, so the one thing it must
-    // never do is take focus away from it. Swallowing the mousedown leaves the
-    // field focused and its caret where it was; the cap still gets its
-    // pointerdown, its strike and its click.
+    // A keyboard types into something else, so the one thing it must never do
+    // is take focus away from it. Swallowing the mousedown leaves the field
+    // focused and its caret where it was; the cap still gets its pointerdown,
+    // its strike and its click.
+    //
+    // Every mode, not just `floating`: an in-flow board beside an input is
+    // typing into that input just as much as a docked one, and binding this
+    // only when floating made every consumer of an inline board wrap it in a
+    // div cancelling mousedown themselves. Keyboard users are unaffected - a
+    // cap is still a focusable button reached with Tab and the arrow keys;
+    // only a pointer press no longer moves focus onto it.
     //
     // Bound imperatively rather than as an `onMouseDown` prop: this is a
     // non-interactive container by design - the caps inside it are the
@@ -482,7 +511,9 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     const keepFocus = (event: MouseEvent) => event.preventDefault();
     node.addEventListener("mousedown", keepFocus);
     return () => node.removeEventListener("mousedown", keepFocus);
-  }, [floating, isOpen]);
+    // `floating` and `isOpen` decide whether the deck is mounted at all, so a
+    // board that opens (or stops floating) re-binds onto the new node.
+  }, [interactive, floating, isOpen]);
 
   React.useEffect(() => {
     if (!floating || !isOpen || !dismissible) return;
@@ -606,7 +637,18 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
             "--fuji-key-columns": String(resolved.columns),
             ...(width === undefined
               ? null
-              : { "--fuji-key-target": typeof width === "number" ? `${width}px` : width }),
+              : {
+                  "--fuji-key-target": boardTarget(width),
+                  // An explicit width is the consumer's own answer to "how big",
+                  // so the size's cap ceiling steps aside for it. The ceiling
+                  // exists to keep a *default* target from producing absurd caps
+                  // on a low-column board; left in place here it silently
+                  // capped an in-flow board at 38px caps, so `width="900px"`
+                  // drew a 630px board and a numpad could never fill its card.
+                  // The container `min()` in base.css still applies, so the
+                  // board never outgrows what it is given.
+                  "--fuji-key-ceiling": "100000px",
+                }),
             // `repeat(var(--n), ...)` is written from here rather than from the
             // stylesheet: the column count is per layout, and a class name
             // carrying it could never be generated by Tailwind's static scanner.

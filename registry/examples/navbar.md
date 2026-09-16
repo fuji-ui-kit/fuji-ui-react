@@ -22,3 +22,11 @@ A semantic header composed around Navbar with a logo, primary links, and trailin
   </Stack>
 </header>
 ```
+
+## With a router link
+
+renderLink receives the item, the styled content, and the props Fuji's own anchor would get (href, aria-current, className, children), so the active item stays announced as the current page. Spread them onto your router's link; if you don't, they are applied to the element you return.
+
+```tsx
+<Navbar items={links} renderLink={(item, children, linkProps) => <Link {...linkProps} />} />
+```

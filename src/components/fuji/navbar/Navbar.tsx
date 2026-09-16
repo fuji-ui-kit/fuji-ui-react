@@ -2,6 +2,15 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 import { safeHref } from "../lib/safe-href";
 import { NATIVE_CONTROL_RESET, NATIVE_LINK_RESET } from "../lib/native-control-reset";
+import { applyLinkProps, type NavigationLinkProps } from "../lib/link-props";
+
+/** The props Fuji's own anchor receives, passed to `renderLink` as its third argument. */
+export type NavbarLinkProps = NavigationLinkProps;
+
+const LINK_CLASSNAME = cn(
+  NATIVE_LINK_RESET,
+  "fj:rounded-fuji-control fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+);
 
 export interface NavbarItem {
   /** What the link reads as. */
@@ -16,10 +25,16 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
   /** The links, in display order. */
   items: NavbarItem[];
   /**
-   * Wraps each item in a router link - `next/link`, a TanStack `Link` - while
-   * keeping Fuji's styling on the content it is handed.
+   * Wraps each item that has an `href` in a router link - `next/link`, a
+   * TanStack `Link` - while keeping Fuji's styling on the content it is handed.
+   *
+   * The third argument carries what Fuji's own anchor gets: `href`,
+   * `aria-current`, the link `className` and `children`, so
+   * `(item, children, props) => <Link {...props} />` is a complete link.
+   * Returning a single element without spreading them is also fine - they are
+   * applied to it for you, filling in only what it does not set itself.
    */
-  renderLink?: (item: NavbarItem, children: React.ReactNode) => React.ReactNode;
+  renderLink?: (item: NavbarItem, children: React.ReactNode, linkProps: NavbarLinkProps) => React.ReactNode;
   /** Called when an item is activated. An item with no `href` needs this to do anything. */
   onItemSelect?: (item: NavbarItem, index: number) => void;
   /** Additional classes applied to each item's inner label span (e.g. to override its text size). */
@@ -88,25 +103,33 @@ export const Navbar = React.forwardRef<HTMLElement, NavbarProps>(function Navbar
           );
         }
         if (!item.href) return <React.Fragment key={key}>{content}</React.Fragment>;
+        if (renderLink) {
+          // A router link gets exactly what the default anchor below gets -
+          // it used to receive only the content, so `aria-current` and the
+          // link reset/focus ring silently disappeared with a custom link.
+          const linkProps: NavbarLinkProps = {
+            href: item.href,
+            "aria-current": item.active ? "page" : undefined,
+            className: LINK_CLASSNAME,
+            children: content,
+          };
+          return (
+            <React.Fragment key={key}>
+              {applyLinkProps(renderLink(item, content, linkProps), linkProps)}
+            </React.Fragment>
+          );
+        }
         return (
-          <React.Fragment key={key}>
-            {renderLink ? (
-              renderLink(item, content)
-            ) : (
-              <a
-                href={safeHref(item.href)}
-                // The active item was distinguished by color alone; this is
-                // the part a screen reader can announce.
-                aria-current={item.active ? "page" : undefined}
-                className={cn(
-                  NATIVE_LINK_RESET,
-                  "fj:rounded-fuji-control fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-                )}
-              >
-                {content}
-              </a>
-            )}
-          </React.Fragment>
+          <a
+            key={key}
+            href={safeHref(item.href)}
+            // The active item was distinguished by color alone; this is
+            // the part a screen reader can announce.
+            aria-current={item.active ? "page" : undefined}
+            className={LINK_CLASSNAME}
+          >
+            {content}
+          </a>
         );
       })}
     </nav>

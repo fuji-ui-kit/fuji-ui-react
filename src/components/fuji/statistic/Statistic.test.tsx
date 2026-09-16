@@ -113,4 +113,26 @@ describe("Statistic", () => {
     expect(screen.getByText("Active")).toBeInTheDocument();
     expect(container.querySelector(".fuji-digit")).toBeNull();
   });
+
+  // Formatting with the runtime's default locale made server and client
+  // disagree whenever their locales differed - a hydration mismatch.
+  it("formats with a fixed en-US locale by default, whatever the runtime locale is", () => {
+    const spy = vi.spyOn(Number.prototype, "toLocaleString");
+    render(<Statistic label="Revenue" value={1234.5} decimals={1} />);
+    expect(spy).toHaveBeenCalledWith("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    expect(screen.getByLabelText("1,234.5")).toBeInTheDocument();
+  });
+
+  it("formats with an explicit locale", () => {
+    render(<Statistic label="Umsatz" value={1234.5} decimals={1} locale="de-DE" />);
+    expect(screen.getByLabelText("1.234,5")).toBeInTheDocument();
+  });
+
+  it("uses formatValue in place of the built-in formatting, rolling its digits", () => {
+    const { container } = render(
+      <Statistic label="Revenue" value={1500} formatValue={(value) => `${value / 1000}K`} />,
+    );
+    expect(screen.getByLabelText("1.5K")).toBeInTheDocument();
+    expect(shownDigits(container)).toBe("1.5K");
+  });
 });

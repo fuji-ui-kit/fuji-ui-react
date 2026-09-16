@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { Play } from "lucide-react";
 import { Avatar, ChatBubble } from "@fujiui/react";
+import { placeholderPhoto } from "../lib/placeholder-image";
 
 const meta = {
   title: "Data Display/ChatBubble",
@@ -132,20 +133,32 @@ export const TypingIndicator: Story = {
   render: () => (
     <div className="flex w-full max-w-md flex-col">
       <ChatBubble avatar={<Avatar alt="Priya Natarajan" fallback="PN" />} sender="Priya Natarajan">
-        <div role="status" className="flex items-center gap-1 py-0.5">
-          <span className="sr-only">Priya Natarajan is typing</span>
-          <span
-            aria-hidden="true"
-            className="size-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:0ms] motion-reduce:animate-none"
+        <ChatBubble.Typing label="Priya Natarajan is typing" />
+      </ChatBubble>
+    </div>
+  ),
+};
+
+export const ImageAttachment: Story = {
+  name: "Attachment with a preview",
+  render: () => (
+    <div className="flex w-full max-w-md flex-col">
+      <ChatBubble align="outgoing" timestamp="4:07 PM" status="read">
+        Photos from the site visit
+        <div className="mt-2 flex flex-col gap-1.5">
+          <ChatBubble.Attachment
+            preview={<img src={placeholderPhoto("site-visit-1", 80, 80)} alt="" />}
+            name="IMG_2041.jpg"
+            meta="3.1 MB"
+            onClick={() => {}}
           />
-          <span
-            aria-hidden="true"
-            className="size-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:150ms] motion-reduce:animate-none"
-          />
-          <span
-            aria-hidden="true"
-            className="size-1.5 animate-bounce rounded-full bg-current opacity-60 [animation-delay:300ms] motion-reduce:animate-none"
-          />
+          <a href="#download" className="text-inherit no-underline">
+            <ChatBubble.Attachment
+              preview={<img src={placeholderPhoto("site-visit-2", 80, 80)} alt="" />}
+              name="IMG_2042.jpg"
+              meta="2.8 MB · static chip inside a link"
+            />
+          </a>
         </div>
       </ChatBubble>
     </div>

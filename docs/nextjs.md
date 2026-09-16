@@ -87,3 +87,15 @@ Either import the named sub-export directly (`DialogContent` instead of
 Import `@fujiui/react/styles.css` exactly once, in the root layout (as shown
 above) - not per-page, and not per-component. Next.js deduplicates/merges
 global CSS imports from `layout.tsx` automatically.
+
+If the app also uses Tailwind v4, make this the first line of `app/globals.css`
+(above every `@import`):
+
+```css
+@layer properties, theme, base, fuji, components, utilities;
+```
+
+It ranks Fuji's styles above your preflight and below your own utilities, so
+`<Card className="p-0">` or `<Sidebar className="w-full">` overrides the
+component's own styling whichever stylesheet Next.js emits first. See
+[theming.md](theming.md#overriding-a-components-styles-with-classname).

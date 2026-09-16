@@ -22,10 +22,21 @@ defaultOpen renders it already expanded - useful for a toolbar that is the prima
 
 ## Over content
 
-Its natural home: pinned above a scrolling surface, where it stays reachable without occupying layout.
+Its natural home: pinned above a scrolling surface, where it stays reachable without occupying layout. The root carries no position of its own, so position it directly with className.
 
 ```tsx
-<div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-  <FloatingActionBar actions={actions} />
-</div>
+<FloatingActionBar className="fixed right-6 bottom-6" actions={actions} />
+```
+
+## Actions with the same label
+
+Actions are keyed by id when given, else by label and position - so repeated labels are fine. Pass a stable id when the list changes while open.
+
+```tsx
+<FloatingActionBar
+  actions={[
+    { id: "share-link", icon: <Link />, label: "Share", onSelect: shareLink },
+    { id: "share-file", icon: <FileDown />, label: "Share", onSelect: shareFile },
+  ]}
+/>
 ```

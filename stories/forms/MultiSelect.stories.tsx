@@ -1,6 +1,6 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
-import { MultiSelect, type MultiSelectItem } from "@fujiui/react";
+import { FormField, Input, MultiSelect, Select, type MultiSelectItem } from "@fujiui/react";
 
 const SKILLS: MultiSelectItem[] = [
   { value: "react", label: "React" },
@@ -37,6 +37,35 @@ export const Sizes: Story = {
       <MultiSelect {...args} size="sm" />
       <MultiSelect {...args} size="md" />
       <MultiSelect {...args} size="lg" />
+    </div>
+  ),
+};
+
+/** Each size matches the height of a `Select` and `Input` at the same size. */
+export const SizesAlongsideFields: Story = {
+  name: "Sizes alongside Select and Input",
+  render: (args) => (
+    <div className="flex w-full max-w-2xl flex-col gap-3">
+      {(["sm", "md", "lg"] as const).map((size) => (
+        <div key={size} className="grid grid-cols-3 items-start gap-2">
+          <MultiSelect {...args} size={size} />
+          <Select aria-label="Level" size={size} items={[{ value: "a", label: "Senior" }]} />
+          <Input aria-label="Name" size={size} placeholder="Name" />
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/** `FormField.Label` names the input - no `aria-label` needed. */
+export const InFormField: Story = {
+  name: "In a FormField",
+  render: () => (
+    <div className="w-full max-w-md">
+      <FormField>
+        <FormField.Label>Skills</FormField.Label>
+        <MultiSelect items={SKILLS} placeholder="Select skills…" />
+      </FormField>
     </div>
   ),
 };

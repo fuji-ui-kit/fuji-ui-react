@@ -154,3 +154,30 @@ export const History: Story = {
     </div>
   ),
 };
+
+export const GroupedWithWideTimestamps: Story = {
+  name: "Grouped, with dates and times as timestamps",
+  render: () => (
+    <div className="w-full max-w-3xl">
+      <Timeline
+        groups={[
+          {
+            label: "This week",
+            items: [
+              { timestamp: "Sep 14", title: "Glass material shipped" },
+              { timestamp: "9:41 AM", title: "Release candidate tagged" },
+              { title: "Changelog drafted (no timestamp, still aligned)" },
+            ],
+          },
+          {
+            label: "Last week",
+            items: [
+              { timestamp: "Sep 7", title: "Design review" },
+              { timestamp: "Sep 2", title: "Kickoff" },
+            ],
+          },
+        ]}
+      />
+    </div>
+  ),
+};

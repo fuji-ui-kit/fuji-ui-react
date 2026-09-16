@@ -15,6 +15,24 @@ export interface SliderProps extends React.ComponentPropsWithoutRef<typeof Base.
   tone?: ComponentTone;
   /** Track thickness and thumb size. Default "md". */
   size?: ComponentSize;
+  /**
+   * Accessible name for the slider when there is no visible `label`. Applied
+   * to the focusable thumb input(s) - the `role="slider"` element a screen
+   * reader actually lands on - not to the wrapping group. For a range slider
+   * every thumb gets the same name; use `getAriaLabel` to tell them apart.
+   */
+  "aria-label"?: string;
+  /**
+   * Points at an existing visible label's id, as an alternative to
+   * `aria-label`. Names every thumb.
+   */
+  "aria-labelledby"?: string;
+  /**
+   * Per-thumb accessible name, called with each thumb's index - for a range
+   * slider, e.g. `(index) => (index === 0 ? "Minimum price" : "Maximum price")`.
+   * Takes precedence over `aria-label`.
+   */
+  getAriaLabel?: (index: number) => string;
 }
 
 // Filled-track color per tone - written out in full for the Tailwind scanner.
@@ -43,10 +61,29 @@ const THUMB_SIZE_CLASSES: Record<ComponentSize, string> = {
 
 /** Single or range slider (wraps Base UI Slider). */
 export const Slider = React.forwardRef<HTMLDivElement, SliderProps>(function Slider(
-  { label, showValue = false, tone = "default", size = "md", className, ...props },
+  {
+    label,
+    showValue = false,
+    tone = "default",
+    size = "md",
+    className,
+    "aria-label": ariaLabel,
+    getAriaLabel,
+    ...props
+  },
   ref,
 ) {
+  // One thumb per value. A range (`[20, 80]`) used to render a single thumb,
+  // so the second value had no handle at all. The count follows the shape of
+  // `value` (or `defaultValue`); `index` is what Base UI needs to position
+  // multiple thumbs during SSR.
+  const valueShape = props.value ?? props.defaultValue;
+  const thumbCount = Array.isArray(valueShape) ? Math.max(valueShape.length, 1) : 1;
+
   return (
+    // `aria-labelledby` stays in `props`: Base UI's Root already hands it to
+    // every thumb. `aria-label` is not forwarded that way - on the Root it only
+    // named the wrapping group, leaving the focusable slider itself unnamed.
     <Base.Root ref={ref} className={cn("fj:w-full", className)} {...props}>
       {(label || showValue) && (
         <div className="fj:mb-1.5 fj:flex fj:items-center fj:justify-between fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground">
@@ -62,15 +99,21 @@ export const Slider = React.forwardRef<HTMLDivElement, SliderProps>(function Sli
           )}
         >
           <Base.Indicator className={cn("fj:rounded-full fj:select-none", TONE_CLASSES[tone])} />
-          <Base.Thumb
-            className={cn(
-              // `box-border`: same no-preflight reason as Checkbox - `size-*`
-              // plus a 1px border rendered the thumb 2px wider than declared,
-              // so it sat slightly proud of the track it rides in.
-              "fj:box-border fj:block fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:shadow-fuji-control fj:select-none fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-              THUMB_SIZE_CLASSES[size],
-            )}
-          />
+          {Array.from({ length: thumbCount }, (_, index) => (
+            <Base.Thumb
+              key={index}
+              index={thumbCount > 1 ? index : undefined}
+              aria-label={ariaLabel}
+              getAriaLabel={getAriaLabel}
+              className={cn(
+                // `box-border`: same no-preflight reason as Checkbox - `size-*`
+                // plus a 1px border rendered the thumb 2px wider than declared,
+                // so it sat slightly proud of the track it rides in.
+                "fj:box-border fj:block fj:rounded-full fj:border fj:border-fuji-border-strong fj:bg-fuji-surface fj:shadow-fuji-control fj:select-none fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
+                THUMB_SIZE_CLASSES[size],
+              )}
+            />
+          ))}
         </Base.Track>
       </Base.Control>
     </Base.Root>

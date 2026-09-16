@@ -37,3 +37,11 @@ Middle segments collapse to an ellipsis item on deep hierarchies.
   ]}
 />
 ```
+
+## With a router link
+
+renderLink is called for each linked ancestor with the item, the styled content, and the props Fuji's own anchor would get (href, className, children). The last item is the current page and is never a link.
+
+```tsx
+<Breadcrumb items={trail} renderLink={(item, children, linkProps) => <Link {...linkProps} />} />
+```

@@ -65,7 +65,10 @@ export const NumberInput = React.forwardRef<HTMLDivElement, NumberInputProps>(fu
         <NumberField.Input
           placeholder={placeholder}
           aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledBy}
+          // Spread only when set: Base UI already points this input's
+          // `aria-labelledby` at an enclosing FormField's label, and an explicit
+          // `undefined` occupies the key and erases it (see Input.tsx).
+          {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : null)}
           className={cn(
             NATIVE_CONTROL_RESET,
             "fj:h-full fj:w-full fj:min-w-0 fj:text-center fj:outline-none fj:placeholder:text-fuji-foreground-subtle",

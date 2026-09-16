@@ -2,6 +2,7 @@ import * as React from "react";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { axe } from "jest-axe";
 import { Tree, type TreeNode } from "./Tree";
 
 const data: TreeNode[] = [
@@ -88,5 +89,74 @@ describe("Tree", () => {
 
     await user.keyboard("{Home}");
     expect(srcItem).toHaveFocus();
+  });
+
+  it("toggles and selects together on a row click by default", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(<Tree data={data} onSelect={onSelect} />);
+    await user.click(screen.getByText("src"));
+    expect(onSelect).toHaveBeenCalledWith(data[0]);
+    expect(screen.getByText("index.ts")).toBeInTheDocument();
+  });
+
+  describe("expandOnSelect={false}", () => {
+    const item = (label: string) => screen.getByText(label).closest('[role="treeitem"]') as HTMLElement;
+
+    it("selects a parent on row click without toggling it", async () => {
+      const onSelect = vi.fn();
+      const user = userEvent.setup();
+      render(<Tree data={data} onSelect={onSelect} expandOnSelect={false} />);
+      await user.click(screen.getByText("src"));
+      expect(onSelect).toHaveBeenCalledWith(data[0]);
+      expect(item("src")).toHaveAttribute("aria-expanded", "false");
+      expect(screen.queryByText("index.ts")).not.toBeInTheDocument();
+    });
+
+    it("selects with Enter/Space without toggling", async () => {
+      const onSelect = vi.fn();
+      const user = userEvent.setup();
+      render(<Tree data={data} onSelect={onSelect} expandOnSelect={false} defaultExpandedIds={["src"]} />);
+      item("src").focus();
+      await user.keyboard("{Enter}");
+      await user.keyboard(" ");
+      expect(onSelect).toHaveBeenCalledTimes(2);
+      expect(item("src")).toHaveAttribute("aria-expanded", "true");
+    });
+
+    it("toggles from the chevron without selecting", async () => {
+      const onSelect = vi.fn();
+      const user = userEvent.setup();
+      const { container } = render(<Tree data={data} onSelect={onSelect} expandOnSelect={false} />);
+      const toggle = container.querySelector("[data-tree-toggle]") as HTMLElement;
+      await user.click(toggle);
+      expect(screen.getByText("index.ts")).toBeInTheDocument();
+      await user.click(toggle);
+      expect(screen.queryByText("index.ts")).not.toBeInTheDocument();
+      expect(onSelect).not.toHaveBeenCalled();
+    });
+
+    it("still expands and collapses with ArrowRight/ArrowLeft", async () => {
+      const user = userEvent.setup();
+      render(<Tree data={data} expandOnSelect={false} />);
+      item("src").focus();
+      await user.keyboard("{ArrowRight}");
+      expect(screen.getByText("index.ts")).toBeInTheDocument();
+      await user.keyboard("{ArrowLeft}");
+      expect(screen.queryByText("index.ts")).not.toBeInTheDocument();
+    });
+
+    it("has no obvious accessibility violations", async () => {
+      const { container } = render(
+        <Tree
+          data={data}
+          aria-label="Files"
+          selectedId="src"
+          expandOnSelect={false}
+          defaultExpandedIds={["src"]}
+        />,
+      );
+      expect(await axe(container)).toHaveNoViolations();
+    });
   });
 });

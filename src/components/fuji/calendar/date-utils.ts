@@ -2,6 +2,24 @@ export function startOfMonth(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
+/** Local midnight of `date` - drops the time of day so comparisons are by calendar day. */
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * Whether `date`'s calendar day falls before `minDate`'s or after `maxDate`'s.
+ * Compared by day, never by timestamp: `minDate={new Date()}` carries the
+ * current time of day, so a timestamp comparison put today's midnight grid
+ * cell "before" it and disabled today itself.
+ */
+export function isDayOutOfRange(date: Date, minDate?: Date, maxDate?: Date): boolean {
+  const day = startOfDay(date).getTime();
+  if (minDate && day < startOfDay(minDate).getTime()) return true;
+  if (maxDate && day > startOfDay(maxDate).getTime()) return true;
+  return false;
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
@@ -42,9 +60,11 @@ export function getHydrationSafeToday(): Date {
   return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
 }
 
+/** Clamps `date` into the `minDate`/`maxDate` calendar days (compared by day - see `isDayOutOfRange`). */
 export function clampDate(date: Date, minDate?: Date, maxDate?: Date): Date {
-  if (minDate && date < minDate) return minDate;
-  if (maxDate && date > maxDate) return maxDate;
+  const day = startOfDay(date).getTime();
+  if (minDate && day < startOfDay(minDate).getTime()) return startOfDay(minDate);
+  if (maxDate && day > startOfDay(maxDate).getTime()) return startOfDay(maxDate);
   return date;
 }
 

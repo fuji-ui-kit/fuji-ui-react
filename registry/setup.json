@@ -12,7 +12,8 @@
       "code": "// app/layout.tsx\nimport \"@fujiui/react/styles.css\";\nimport { FujiProvider } from \"@fujiui/react\";\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>\n        <FujiProvider defaultTheme=\"light\" defaultRadius=\"cornered\">\n          {children}\n        </FujiProvider>\n      </body>\n    </html>\n  );\n}",
       "gotchas": [
         "A Server Component may render a compound root, but must not read a sub-part off it (Dialog.Content) - import the named sub-export (DialogContent) instead.",
-        "Presentational components (Icon, Typography, Card, Timeline) are Server Components; check `clientComponent` on a component before passing it a handler."
+        "Presentational components (Icon, Typography, Card, Timeline) are Server Components; check `clientComponent` on a component before passing it a handler.",
+        "With Tailwind v4 in the app, put `@layer properties, theme, base, fuji, components, utilities;` first in the global CSS, above every @import. Without it, a className utility such as p-0 or w-full on a Fuji component can silently lose to the component's own styling. Do not put `fuji` first - that lets preflight strip the components. See docs/theming.md."
       ],
       "guide": "docs/nextjs.md"
     },
@@ -28,7 +29,8 @@
       "code": "// src/main.tsx\nimport \"@fujiui/react/styles.css\";\nimport { FujiProvider } from \"@fujiui/react\";\nimport { createRoot } from \"react-dom/client\";\nimport App from \"./App\";\n\ncreateRoot(document.getElementById(\"root\")!).render(\n  <FujiProvider defaultTheme=\"light\" defaultRadius=\"cornered\">\n    <App />\n  </FujiProvider>,\n);",
       "gotchas": [
         "The stylesheet ships no Tailwind preflight, so it will not reset the host app's styles - and the host app must not rely on Fuji to provide one.",
-        "A consuming app with its own Tailwind build does not need to scan Fuji's source; the utilities are already compiled."
+        "A consuming app with its own Tailwind build does not need to scan Fuji's source; the utilities are already compiled.",
+        "With Tailwind v4 in the app, put `@layer properties, theme, base, fuji, components, utilities;` first in the global CSS, above every @import. Without it, a className utility such as p-0 or w-full on a Fuji component can silently lose to the component's own styling. Do not put `fuji` first - that lets preflight strip the components. See docs/theming.md."
       ],
       "guide": "docs/vite.md"
     }

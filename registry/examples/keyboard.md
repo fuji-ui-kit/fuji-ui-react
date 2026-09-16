@@ -25,6 +25,41 @@ layouts. `phone` mirrors iOS's own ten-column keyboard instead.
 <Keyboard floating open layout="phone" triggerRef={field} onKeyPress={type} />
 ```
 
+## Filling its container
+
+In flow, a board draws at its `size`'s cap scale and shrinks to fit a narrower
+container. Give it a `width` to grow it instead: an explicit width lifts the
+size's cap ceiling, and a percentage is a share of the box the board sits in -
+so `width="100%"` spans its parent. It still never overflows that box.
+
+```tsx
+<Card>
+  <Keyboard layout="numpad" width="100%" />
+</Card>
+```
+
+## A PIN or OTP keypad
+
+`numpad` carries a `⌫` Backspace in its top-left corner (where a physical pad
+has Num Lock). Presses never move focus off the field being typed into, in flow
+as well as docked, so the keypad needs no mousedown wrapper.
+
+```tsx
+const [pin, setPin] = React.useState("");
+
+<>
+  <Input readOnly value={pin} aria-label="PIN" />
+  <Keyboard
+    layout="numpad"
+    width="100%"
+    onKeyPress={(key) => {
+      if (key.code === "Backspace") setPin((value) => value.slice(0, -1));
+      else if (key.value && /\d/.test(key.value)) setPin((value) => value + key.value);
+    }}
+  />
+</>;
+```
+
 ## Driving an input
 
 ```tsx

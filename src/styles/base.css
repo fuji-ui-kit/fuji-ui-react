@@ -998,13 +998,20 @@ html[data-fuji-boot] [data-fuji-theme] * {
        always resolves to the ceiling, so the two sizing routes are one
        expression instead of a second class toggling the first off. */
     --fuji-key-target: 100000px;
+    /* The deck's own 1px border (`fj:border`), both sides. Left out of the
+       sums below, a container-bound board's tracks overran its content box by
+       2px - no scrollbar (the caps' margins absorbed it), but the right-hand
+       inset came out 2px thinner than the left. */
+    --fuji-key-frame: 2px;
     --fuji-key-max: min(
       var(--fuji-key-ceiling),
-      calc((var(--fuji-key-target) - var(--fuji-key-pad) * 2) / var(--fuji-key-columns))
+      calc(
+        (var(--fuji-key-target) - var(--fuji-key-pad) * 2 - var(--fuji-key-frame)) / var(--fuji-key-columns)
+      )
     );
     --fuji-key-unit: min(
       var(--fuji-key-max),
-      calc((100cqi - var(--fuji-key-pad) * 2) / var(--fuji-key-columns))
+      calc((100cqi - var(--fuji-key-pad) * 2 - var(--fuji-key-frame)) / var(--fuji-key-columns))
     );
     display: grid;
     width: max-content;

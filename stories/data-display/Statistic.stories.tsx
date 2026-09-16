@@ -53,3 +53,20 @@ export const AsCard: Story = {
     </div>
   ),
 };
+
+export const LocaleAndFormat: Story = {
+  name: "Locale and custom formatting",
+  render: () => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
+      <Statistic label="Default (en-US)" value={1234567.8} decimals={1} />
+      <Statistic label='locale="de-DE"' value={1234567.8} decimals={1} locale="de-DE" />
+      <Statistic
+        label="formatValue (compact)"
+        value={1234567}
+        formatValue={(value) =>
+          new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(value)
+        }
+      />
+    </div>
+  ),
+};

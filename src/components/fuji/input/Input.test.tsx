@@ -120,4 +120,32 @@ describe("Input", () => {
     await user.click(screen.getByRole("button", { name: "Clear" }));
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveValue("");
   });
+
+  it.each(["sm", "md", "lg"] as const)(
+    "floors the %s field root at its control height, on both render branches",
+    (size) => {
+      // Inside an overflowing flex column (a Sidebar) the root's automatic
+      // minimum height is one line of text, and the field collapsed to a 19px
+      // sliver. The floor is a min-height rather than `shrink-0`: every field
+      // is `w-full`, and `shrink-0` in a flex row pushed its neighbours out.
+      const floor = `fj:min-h-[var(--fuji-control-h-${size})]`;
+      const { unmount } = render(<Input aria-label="Plain" size={size} />);
+      const plain = screen.getByRole("textbox", { name: "Plain" });
+      expect(plain).toHaveClass(floor);
+      expect(plain).not.toHaveClass("fj:shrink-0");
+      unmount();
+
+      render(<Input aria-label="Slotted" size={size} startSlot="$" />);
+      const root = screen.getByRole("textbox", { name: "Slotted" }).parentElement!;
+      expect(root).toHaveClass(floor);
+      expect(root).not.toHaveClass("fj:shrink-0");
+    },
+  );
+
+  it("lets a consumer min-height override the floor", () => {
+    render(<Input aria-label="Name" className="fj:min-h-0" />);
+    const input = screen.getByRole("textbox", { name: "Name" });
+    expect(input).toHaveClass("fj:min-h-0");
+    expect(input).not.toHaveClass("fj:min-h-[var(--fuji-control-h-md)]");
+  });
 });

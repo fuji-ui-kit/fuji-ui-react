@@ -19,12 +19,28 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
    * either way.
    */
   clearable?: boolean;
+  /**
+   * Visible text lines. Without it, `size` sets a minimum height (5rem / 6rem
+   * / 8rem for `sm` / `md` / `lg`). With it, that minimum is dropped and the
+   * box is exactly `rows` lines tall - so `rows={1}` gives a one-line composer
+   * that a consumer can grow with its content.
+   */
+  rows?: number;
 }
 
 const SIZE_CLASSES: Record<ComponentSize, string> = {
-  sm: "fj:min-h-20 fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-sm)]",
-  md: "fj:min-h-24 fj:px-3 fj:py-2.5 fj:text-[length:var(--fuji-text-base)]",
-  lg: "fj:min-h-32 fj:px-3.5 fj:py-3 fj:text-[length:var(--fuji-text-md)]",
+  sm: "fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-sm)]",
+  md: "fj:px-3 fj:py-2.5 fj:text-[length:var(--fuji-text-base)]",
+  lg: "fj:px-3.5 fj:py-3 fj:text-[length:var(--fuji-text-md)]",
+};
+
+// Only applied when `rows` is absent. `min-height` beats `height`, so with it
+// always on, `rows={1}` still rendered a 96px box and a one-line auto-growing
+// composer was impossible without a `min-h-0` override.
+const MIN_HEIGHT_CLASSES: Record<ComponentSize, string> = {
+  sm: "fj:min-h-20",
+  md: "fj:min-h-24",
+  lg: "fj:min-h-32",
 };
 
 /**
@@ -33,7 +49,7 @@ const SIZE_CLASSES: Record<ComponentSize, string> = {
  * `<textarea>` here would leave `FormField.Label` with no control to point `htmlFor` at.
  */
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
-  { size = "md", invalid, clearable = false, value, defaultValue, onChange, className, ...props },
+  { size = "md", invalid, clearable = false, rows, value, defaultValue, onChange, className, ...props },
   ref,
 ) {
   const [hasValue, setHasValue] = React.useState(Boolean(value ?? defaultValue));
@@ -71,10 +87,11 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
           "fj:data-[invalid]:border-fuji-fire fj:data-[invalid]:focus-visible:border-fuji-fire",
           "fj:read-only:bg-fuji-surface-subtle",
           SIZE_CLASSES[size],
+          rows === undefined && MIN_HEIGHT_CLASSES[size],
           clearable && "fj:pr-8",
           className,
         )}
-        {...(props as React.ComponentPropsWithRef<"input">)}
+        {...({ ...props, rows } as React.ComponentPropsWithRef<"input">)}
       />
       {clearable && hasValue && (
         <button

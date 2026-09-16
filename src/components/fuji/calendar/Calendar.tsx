@@ -18,9 +18,11 @@ import {
   getMonthGrid,
   getMonthNames,
   getWeekdayLabels,
+  isDayOutOfRange,
   isMonthOutOfRange,
   isSameDay,
   isSameMonth,
+  startOfDay,
 } from "./date-utils";
 
 export interface CalendarProps {
@@ -30,10 +32,35 @@ export interface CalendarProps {
   defaultValue?: Date | null;
   /** Called with the picked date. */
   onChange?: (date: Date) => void;
-  /** Earliest selectable date; anything before it renders disabled. */
+  /**
+   * Earliest selectable date; days before it render disabled. Compared by
+   * calendar day, so the time of day is ignored - `minDate={new Date()}`
+   * keeps today selectable.
+   */
   minDate?: Date;
-  /** Latest selectable date; anything after it renders disabled. */
+  /** Latest selectable date; days after it render disabled. Compared by calendar day, like `minDate`. */
   maxDate?: Date;
+  /**
+   * The date treated as "today": the highlighted cell, its
+   * `aria-current="date"`, and the month shown when nothing is selected. Only
+   * its calendar day is used. Defaults to the visitor's local date, resolved
+   * after mount (the server render and hydration use a UTC-based placeholder
+   * so they match). Pass it for deterministic output - a server-known date, a
+   * fixed demo, or a test.
+   */
+  today?: Date;
+  /**
+   * Days to mark with a small dot - for example, days that have tasks or
+   * events. Either a list of dates (matched by calendar day) or a predicate
+   * called for every visible day. Marked days also get `markedDateLabel`
+   * appended to their accessible name, so the mark is not visual-only.
+   */
+  markedDates?: Date[] | ((date: Date) => boolean);
+  /**
+   * Text appended to a marked day's accessible name, as in "Monday, May 20,
+   * 2024, has tasks". Default "marked". Describe what the mark means.
+   */
+  markedDateLabel?: string;
   /** BCP 47 tag driving the weekday and month names, via `Intl`. */
   locale?: string;
   /**
@@ -55,6 +82,9 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     onChange,
     minDate,
     maxDate,
+    today: todayProp,
+    markedDates,
+    markedDateLabel = "marked",
     locale = "en-US",
     interactiveHeader = false,
     className,
@@ -67,8 +97,14 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     onChange: onChange as (v: Date | null) => void,
   });
   // SSR-safe stand-in for "today" - see getHydrationSafeToday. Corrected to
-  // the visitor's real local date after mount, below.
-  const [today, setToday] = React.useState(getHydrationSafeToday);
+  // the visitor's real local date after mount, below. An explicit `today`
+  // prop replaces both: it is the same on server and client by construction.
+  const [clockToday, setClockToday] = React.useState(getHydrationSafeToday);
+  const todayTime = todayProp ? startOfDay(todayProp).getTime() : undefined;
+  const today = React.useMemo(
+    () => (todayTime === undefined ? clockToday : new Date(todayTime)),
+    [todayTime, clockToday],
+  );
   // Both start from the same clamped date so the grid never mounts showing a
   // month that doesn't contain its own roving tab stop (e.g. today falling
   // outside `minDate`/`maxDate`).
@@ -109,13 +145,16 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
       previous === value || (!previous && !value) || (!!previous && !!value && isSameDay(previous, value));
     if (unchanged) return;
 
-    const next = clampDate(value ?? new Date(), minDate, maxDate);
+    const next = clampDate(value ?? today, minDate, maxDate);
     // Only follow focus into the grid if it was already there - an external
     // value change must not steal focus from wherever the user actually is.
     const hadFocusInGrid = !!gridRef.current?.contains(document.activeElement);
     setActiveDate(next);
     setVisibleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     if (hadFocusInGrid) shouldFocusActiveRef.current = true;
+    // `today` is read only as the fallback for a cleared value; a new "today"
+    // on its own must not move the grid.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, minDate, maxDate]);
 
   // The SSR-safe "today" above matches the server's render exactly, but it's
@@ -123,10 +162,11 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
   // mount - if the uncontrolled grid was still showing that default position
   // (no value/defaultValue, never navigated), bring it along too.
   React.useEffect(() => {
-    const now = new Date();
-    const localToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (isSameDay(localToday, today)) return;
-    setToday(localToday);
+    // An explicit `today` prop is already correct on both passes.
+    if (todayProp) return;
+    const localToday = startOfDay(new Date());
+    if (isSameDay(localToday, clockToday)) return;
+    setClockToday(localToday);
     if (!userMovedRef.current && selected == null) {
       const next = clampDate(localToday, minDate, maxDate);
       setActiveDate(next);
@@ -144,7 +184,14 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
   );
   const monthNames = React.useMemo(() => getMonthNames(locale), [locale]);
 
-  const isDisabled = (day: Date) => (minDate && day < minDate) || (maxDate && day > maxDate);
+  const isDisabled = (day: Date) => isDayOutOfRange(day, minDate, maxDate);
+
+  const isMarked = React.useMemo(() => {
+    if (!markedDates) return () => false;
+    if (typeof markedDates === "function") return markedDates;
+    const stamps = new Set(markedDates.map((date) => startOfDay(date).getTime()));
+    return (day: Date) => stamps.has(startOfDay(day).getTime());
+  }, [markedDates]);
 
   React.useEffect(() => {
     if (shouldFocusActiveRef.current) {
@@ -403,6 +450,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
               const isToday = isSameDay(day, today);
               const disabled = isDisabled(day);
               const isActive = isSameDay(day, activeDate);
+              const marked = isMarked(day);
               return (
                 <button
                   key={day.toISOString()}
@@ -413,7 +461,11 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   // The visible label is the day number alone, which announces
                   // as a bare "14" - no month, no year, no weekday. The full
                   // date is the accessible name; the number stays the visual.
-                  aria-label={formatFullDate(day, locale)}
+                  aria-label={
+                    marked
+                      ? `${formatFullDate(day, locale)}, ${markedDateLabel}`
+                      : formatFullDate(day, locale)
+                  }
                   // The standard way to say "this one is today". Previously
                   // today was conveyed by an accent color and a bolder weight
                   // and nothing else.
@@ -445,11 +497,25 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                     a lighter weight. The dot inherits `currentColor` so it
                     stays legible on the selected fill too.
                   */}
-                  {isToday && (
-                    <span
-                      aria-hidden="true"
-                      className="fj:absolute fj:bottom-1 fj:size-1 fj:rounded-full fj:bg-current"
-                    />
+                  {/*
+                    Marked days (`markedDates`) get their own dot in the same
+                    row, so a day that is both today and marked shows two. The
+                    mark is announced through the cell's accessible name above,
+                    which is why both dots stay aria-hidden.
+                  */}
+                  {(isToday || marked) && (
+                    <span aria-hidden="true" className="fj:absolute fj:bottom-1 fj:flex fj:gap-0.5">
+                      {isToday && <span className="fj:size-1 fj:rounded-full fj:bg-current" />}
+                      {marked && (
+                        <span
+                          data-marked=""
+                          className={cn(
+                            "fj:size-1 fj:rounded-full",
+                            isSelected || isToday ? "fj:bg-current" : "fj:bg-fuji-water",
+                          )}
+                        />
+                      )}
+                    </span>
                   )}
                 </button>
               );

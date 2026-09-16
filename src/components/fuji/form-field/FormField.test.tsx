@@ -5,6 +5,15 @@ import { axe } from "jest-axe";
 import { FormField } from "./index";
 import { Input } from "../input";
 import { NativeSelect } from "../native-select";
+import { Select } from "../select";
+import { Combobox } from "../combobox";
+import { MultiSelect } from "../multi-select";
+import { NumberInput } from "../number-input";
+import { Slider } from "../slider";
+import { DatePicker } from "../date-picker";
+import { TimePicker } from "../time-picker";
+
+const options = [{ value: "a", label: "Alpha" }];
 
 /**
  * Input's slotted-branch wrapper (startSlot/endSlot/clearable) is a plain
@@ -138,5 +147,49 @@ describe("FormField", () => {
       </FormField>,
     );
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  // Every Fuji field must take its accessible name from `FormField.Label`
+  // with no `aria-label` of its own. DatePicker and TimePicker never did
+  // (their triggers were not Field-aware), and Combobox/MultiSelect/
+  // NumberInput passed an explicit `aria-labelledby={undefined}` that erased
+  // the label id Base UI sets - they only stayed named through `label[for]`.
+  it.each([
+    ["Select", <Select key="c" items={options} />, "combobox"],
+    ["Combobox", <Combobox key="c" items={options} />, "combobox"],
+    ["MultiSelect", <MultiSelect key="c" items={options} />, "combobox"],
+    ["NumberInput", <NumberInput key="c" />, "textbox"],
+    ["Slider", <Slider key="c" defaultValue={10} />, "slider"],
+    ["DatePicker", <DatePicker key="c" />, "button"],
+    ["TimePicker", <TimePicker key="c" />, "button"],
+  ] as const)("names a %s from FormField.Label", (_name, control, role) => {
+    render(
+      <FormField>
+        <FormField.Label>Field label</FormField.Label>
+        {control}
+      </FormField>,
+    );
+    const element = screen.getByRole(role, { name: "Field label" });
+    const label = screen.getByText("Field label");
+    expect(label).toHaveAttribute("for", element.id);
+  });
+
+  it.each([
+    ["Combobox", <Combobox key="c" items={options} />, "combobox"],
+    ["MultiSelect", <MultiSelect key="c" items={options} />, "combobox"],
+    ["NumberInput", <NumberInput key="c" />, "textbox"],
+    ["DatePicker", <DatePicker key="c" />, "button"],
+    ["TimePicker", <TimePicker key="c" />, "button"],
+  ] as const)("keeps aria-labelledby pointing at the label on a %s", (_name, control, role) => {
+    render(
+      <FormField>
+        <FormField.Label>Field label</FormField.Label>
+        {control}
+      </FormField>,
+    );
+    expect(screen.getByRole(role, { name: "Field label" })).toHaveAttribute(
+      "aria-labelledby",
+      screen.getByText("Field label").id,
+    );
   });
 });
