@@ -32,3 +32,16 @@ selectedId plus onSelect drives the selected node from your own state - onSelect
 const [selectedId, setSelectedId] = useState("button.tsx");
 <Tree data={fileTree} selectedId={selectedId} onSelect={(node) => setSelectedId(node.id)} />;
 ```
+
+## Select without toggling
+
+By default, selecting a parent also expands or collapses it. expandOnSelect={false} decouples them per the WAI-ARIA tree pattern: a row click and Enter/Space only select, the chevron toggles, and ArrowRight/ArrowLeft expand and collapse.
+
+```tsx
+<Tree
+  data={fileTree}
+  expandOnSelect={false}
+  selectedId={selectedId}
+  onSelect={(node) => setSelectedId(node.id)}
+/>
+```

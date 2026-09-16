@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Clock } from "lucide-react";
+import { Field } from "@base-ui/react/field";
 import { cn } from "../../../lib/cn";
 import { useControllableState } from "../../../hooks/useControllableState";
 import { Popover } from "../popover";
@@ -23,7 +24,10 @@ export interface TimePickerProps {
   minuteStep?: number;
   /** Disables the trigger, so the list cannot be opened. */
   disabled?: boolean;
-  /** Paints the error state. Pair with `FormField`'s `error` for the message. */
+  /**
+   * Manually flags the invalid visual/aria state for standalone use. Inside a
+   * `FormField`, the field's own invalid state is picked up automatically.
+   */
   invalid?: boolean;
   /** Show a clear control when a value is set. Default true. */
   clearable?: boolean;
@@ -35,8 +39,14 @@ export interface TimePickerProps {
   name?: string;
   /** Extra classes merged onto the trigger. */
   className?: string;
-  /** Accessible name for the trigger. Required when there is no visible `<label>` for this field. */
+  /**
+   * Accessible name for the trigger. Default `"Select time"`. Inside a
+   * `FormField`, the field's label names the trigger instead (its
+   * `aria-labelledby` takes precedence over this).
+   */
   "aria-label"?: string;
+  /** Points at an existing visible label's id, as an alternative to `aria-label`. */
+  "aria-labelledby"?: string;
 }
 
 function pad(n: number): string {
@@ -79,6 +89,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(f
     name,
     className,
     "aria-label": ariaLabel = "Select time",
+    "aria-labelledby": ariaLabelledBy,
   },
   ref,
 ) {
@@ -119,10 +130,21 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(f
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <div className={cn("fj:relative fj:inline-flex fj:w-full fj:max-w-[12rem] fj:items-center", className)}>
-        <Popover.Trigger
+        {/*
+          Rendered through `Field.Control` so a surrounding `<FormField>`
+          labels, describes, disables and invalidates it like any other Fuji
+          field - see the same wiring (and why) in DatePicker.tsx. `value` is
+          the "HH:mm" string a FormField `validate` function receives.
+        */}
+        <Field.Control
           ref={ref}
+          render={<Popover.Trigger />}
+          value={current ?? ""}
           disabled={disabled}
-          data-invalid={invalid ? "" : undefined}
+          // Spread-when-set: an `undefined`-valued key would erase the value
+          // Field computes from an ancestor FormField (see Input.tsx).
+          {...(invalid ? { "data-invalid": "" } : null)}
+          {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : null)}
           aria-invalid={invalid || undefined}
           aria-label={ariaLabel}
           className={cn(
@@ -135,7 +157,7 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(f
           <span className={cn("fj:flex-1 fj:truncate", !display && "fj:text-fuji-foreground-subtle")}>
             {display ?? placeholder}
           </span>
-        </Popover.Trigger>
+        </Field.Control>
         {clearable && current && !disabled && (
           <DismissButton
             aria-label="Clear time"

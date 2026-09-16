@@ -175,37 +175,128 @@ package) and its `--fuji-*` design tokens are unaffected by any of this -
 they were already uniquely namespaced and never collided with anything to
 begin with.
 
-### Overriding a property a Fuji component also sets
+### Overriding a component's styles with `className`
 
-The "no collisions" guarantee above is about identical class _names_ - it
-does not mean a plain utility of yours can always override a Fuji component's
-own styling for the same CSS _property_. If you put, say, a plain `hidden`
-or `border-transparent` class on a Fuji component instance, and that
-component's own `fj:`-prefixed classes already set `display` or
-`border-color`, the two rules are still in separate, independently-ordered
-stylesheets - whichever one happens to register later in your page's
-cascade wins, regardless of source order in your JSX or which class looks
-more specific. In practice this usually means the Fuji-authored rule wins,
-so your override can silently no-op.
+Every Fuji component merges the `className` you pass. A plain utility on the
+instance - `<Card className="p-0">`, `<Sidebar className="w-full">`,
+`<Drawer className="w-[28rem]">`, `<Typography className="mt-8">` - wins over
+the component's own `fj:`-prefixed styling for the same property, **provided
+your page ranks Fuji's cascade layers between your `base` and `components`
+layers.** Declare that order once, as the very first line of your global
+stylesheet:
 
-Two options both reliably win regardless of cascade-layer order:
+```css
+@layer properties, theme, base, fuji, components, utilities;
+```
 
-- **An inline `style` prop** for a one-off property override (e.g.
-  `style={{ borderColor: "transparent" }}` instead of a `border-transparent`
-  className).
-- **A wrapper element** with no `fj:`-prefixed classes of its own, for
-  layout-affecting properties like `display`/`position` (e.g. wrap an
-  `<IconButton>` in `<div className="lg:hidden">` rather than putting
-  `lg:hidden` on the `IconButton` itself, which also carries its own
-  `fj:inline-flex`).
+That one line is the whole setup. `fuji` stands for all of Fuji's own layers
+(`fuji.theme`, `fuji.base`, `fuji.utilities`, `fuji.components`) as one
+group, so the result is:
 
-On top of the prefix, the compiled stylesheet declares its own explicit,
-uniquely-named cascade layers (`fuji.theme`, `fuji.base`, `fuji.utilities`,
-`fuji.components`) rather than Tailwind's bare `theme`/`base`/`utilities`
-names. CSS merges same-named layers across different stylesheets on a page,
-so a bare name would let your own Tailwind build's `utilities` layer merge
-with Fuji's - namespacing the layer, like the class prefix, keeps Fuji's
-rules in a layer of their own with a stable, predictable priority.
+| Layer (lowest to highest) | Contains                            | Consequence                                                                            |
+| ------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------- |
+| your `theme`, `base`      | Tailwind theme variables, preflight | A reset like `button { background-color: transparent }` can't flatten a Fuji component |
+| `fuji`                    | every Fuji component style          |                                                                                        |
+| your `components`         | your own component classes          | Beat Fuji                                                                              |
+| your `utilities`          | `p-0`, `w-full`, `mt-8`, ...        | Beat Fuji - this is what makes `className` overrides work                              |
+
+#### Tailwind v4 with Next.js
+
+```css
+/* app/globals.css */
+@layer properties, theme, base, fuji, components, utilities;
+
+@import "tailwindcss";
+@import "@fujiui/react/styles.css";
+```
+
+```tsx
+// app/layout.tsx
+import "./globals.css";
+```
+
+Import the stylesheet from `globals.css` as above, _or_ keep
+`import "@fujiui/react/styles.css"` in `layout.tsx` - once the `@layer` line
+is in place, which file loads first no longer matters. Keep `properties` in
+the list: Tailwind v4 already declares that layer ahead of everything else,
+and listing it first matches what it does.
+
+#### Tailwind v4 with Vite
+
+The same line, at the top of the CSS file your entry point imports:
+
+```css
+/* src/index.css */
+@layer properties, theme, base, fuji, components, utilities;
+
+@import "tailwindcss";
+@import "@fujiui/react/styles.css";
+```
+
+```tsx
+// src/main.tsx
+import "./index.css";
+```
+
+#### Why the line is needed
+
+A cascade layer's priority is fixed by the first time its name appears on the
+page, and between layers that order is compared _before_ specificity. Without
+the declaration, the ranking depends on which stylesheet the bundler happens
+to emit first:
+
+- **Your Tailwind CSS first** - your `utilities` layer is named before
+  `fuji`, so Fuji ranks above it and `<Card className="p-0">` silently keeps
+  its padding.
+- **Fuji's stylesheet first** - Fuji's stylesheet itself declares
+  `properties, theme, base, fuji, components, utilities`, so this order
+  already works. You still want the explicit line: it stops a later import
+  reorder from flipping you into the case above.
+
+The line has to be the first rule that names any of these layers - above
+every `@import` (CSS allows `@layer` statements there). Declaring `fuji`
+_first_ instead (`@layer fuji, theme, base, ...`) is a trap: it puts your
+preflight above Fuji, so `* { padding: 0; margin: 0; border: 0 solid }` and
+`button { background-color: transparent }` strip every component.
+
+If you already declare your own layers, insert `fuji` right after the layer
+holding your reset and before the ones holding classes you want to win.
+
+#### Tailwind v3, plain CSS, and other frameworks
+
+CSS that isn't in any cascade layer outranks every layer. Tailwind v3 emits
+its utilities unlayered, as does ordinary hand-written CSS, so a class of
+yours already beats Fuji's styling with no setup. The flip side: an
+**unlayered reset** (Tailwind v3's preflight, a normalize/reset stylesheet)
+also outranks Fuji and will strip component backgrounds, borders, and
+padding. Either put the reset in a layer below Fuji
+(`@import "./reset.css" layer(base);` with the `@layer` line above), or turn
+it off (`corePlugins: { preflight: false }` in Tailwind v3).
+
+#### What still doesn't override
+
+- **A few glass-material rules are unlayered.** Under `material="glass"`,
+  Fuji clears the background of surfaces that use the page background and
+  sets the keyboard-shortcut surface fill outside any layer, so a background
+  utility on those elements loses under glass. Use an inline `style` there.
+- **`!important` inside Fuji's print and boot-transition rules** beats any
+  className. Both are narrow by design: print output and the single
+  appearance swap during page load.
+- **Parts you can't reach with `className`.** A utility only overrides the
+  element it is placed on. For an inner part, use that part's own
+  sub-component, a wrapper element, or an inline `style`.
+
+### Layer names
+
+Fuji's rules live only in its own `fuji.*` layers (`fuji.theme`,
+`fuji.base`, `fuji.utilities`, `fuji.components`), never in Tailwind's bare
+`theme`/`base`/`utilities`. CSS merges same-named layers across different
+stylesheets on a page, so a bare name would put Fuji's rules into your own
+`utilities` layer and decide conflicts by file order. The package stylesheet
+does _name_ the bare `theme`/`base`/`components`/`utilities` layers once, in
+the position statement above, but puts no rules in them. (The one bare layer
+it does write to is `properties`, where Tailwind v4 puts `@property` fallback
+initial values - the same thing your own Tailwind v4 build puts there.)
 
 ## Glass
 

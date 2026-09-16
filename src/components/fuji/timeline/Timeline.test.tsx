@@ -48,4 +48,50 @@ describe("Timeline", () => {
     const { container } = render(<Timeline items={items} />);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  describe("groups", () => {
+    const groups = [
+      {
+        label: "2026",
+        items: [
+          { title: "Launch", timestamp: "Sep 14" },
+          { title: "Beta", timestamp: "9:41 AM" },
+          { title: "Kickoff" },
+        ],
+      },
+      { label: "2025", items: [{ title: "Idea" }] },
+    ];
+
+    // A fixed `w-8` truncated/overflowed anything wider than a two-digit year.
+    it("sizes the timestamp column to its content instead of a fixed width", () => {
+      render(<Timeline groups={groups} />);
+      const stamp = screen.getByText("9:41 AM");
+      expect(stamp.className).not.toMatch(/(^|\s)fj:w-8(\s|$)/);
+      expect(stamp).toHaveClass("fj:min-w-8", "fj:whitespace-nowrap");
+      // Rows share one auto-sized column through subgrid, so titles stay aligned.
+      const list = stamp.closest("li")!.parentElement!;
+      expect(list.className).toContain("fj:grid-cols-[auto_minmax(0,1fr)]");
+      expect(stamp.closest("li")).toHaveClass("fj:grid-cols-subgrid");
+    });
+
+    it("keeps an item without a timestamp aligned with its group's titles", () => {
+      render(<Timeline groups={groups} />);
+      const row = screen.getByText("Kickoff").closest("li")!;
+      // An empty column cell holds the title in the second column.
+      expect(row.children).toHaveLength(2);
+      expect(row.children[0]).toBeEmptyDOMElement();
+    });
+
+    it("skips the timestamp column for a group with no timestamps", () => {
+      render(<Timeline groups={groups} />);
+      const row = screen.getByText("Idea").closest("li")!;
+      expect(row.children).toHaveLength(1);
+      expect(row.parentElement!.className).not.toContain("fj:grid");
+    });
+
+    it("has no obvious accessibility violations", async () => {
+      const { container } = render(<Timeline groups={groups} />);
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
 });

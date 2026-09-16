@@ -49,9 +49,18 @@ export interface ChartBaseProps extends React.HTMLAttributes<HTMLDivElement> {
   legend?: boolean;
   /**
    * Formats every printed figure - axis ticks, tooltips, the data table.
-   * Defaults to `toLocaleString()`. Use it for currency, units or precision.
+   * When omitted, figures are formatted with `toLocaleString` in `locale`. Use it for currency, units or
+   * precision. Must return the same string on server and client.
    */
   formatValue?: (value: number) => string;
+  /**
+   * BCP 47 locale for the default number formatting. Default `"en-US"` - a
+   * fixed locale rather than the runtime's own, because a server and a
+   * browser in different locales would otherwise print different figures
+   * ("1,234" vs "1.234") and fail hydration. Pass the user's locale
+   * explicitly to localize. Ignored when `formatValue` is given.
+   */
+  locale?: string;
   /** Forces the "no data" message even when `series` has content. */
   empty?: boolean;
   /** Shows pulsing placeholder bars instead of the plot, for an async load. */
@@ -69,7 +78,17 @@ const SERIES_COLORS = [
   "var(--fuji-fire)",
 ];
 
-const DEFAULT_FORMAT = (value: number) => value.toLocaleString();
+const DEFAULT_LOCALE = "en-US";
+
+const formatWithDefaultLocale = (value: number) => value.toLocaleString(DEFAULT_LOCALE);
+
+/** `formatValue` if given, else a fixed-locale `toLocaleString` - never the runtime default (see `locale`). */
+function useFormatValue(formatValue: ((value: number) => string) | undefined, locale: string) {
+  return React.useMemo(
+    () => formatValue ?? ((value: number) => value.toLocaleString(locale)),
+    [formatValue, locale],
+  );
+}
 const VIEWBOX_WIDTH = 640;
 const VIEWBOX_HEIGHT = 280;
 const PLOT = { left: 52, right: 16, top: 18, bottom: 42 };
@@ -133,7 +152,8 @@ function ChartFrame({
   loading,
   children,
   className,
-  formatValue = DEFAULT_FORMAT,
+  formatValue = formatWithDefaultLocale,
+  locale: _locale,
   ...props
 }: ChartBaseProps & { series: ChartSeries[]; children: React.ReactNode }) {
   return (
@@ -333,9 +353,18 @@ function usePlotKeyboard(series: ChartSeries[], setCursor: (cursor: PlotCursor) 
   );
 }
 
-/** Shared by both plots: one tab stop, visible focus, no native outline drift. */
+/**
+ * Shared by both plots: one tab stop, visible focus, no native outline drift.
+ *
+ * `min-w-0`, not a fixed minimum. This carried `min-w-[380px]`, which made
+ * every line/bar plot at least 380px wide: in a card on a 320-375px phone the
+ * plot overran the card's content box and could only be scrolled sideways
+ * inside it. The SVG scales with its `viewBox`, so it now shrinks with its
+ * container like any other image (figures get proportionally smaller; the
+ * `sr-only` data table carries the exact values).
+ */
 const PLOT_SVG_CLASS =
-  "fj:h-auto fj:min-h-52 fj:w-full fj:min-w-[380px] fj:rounded-fuji-panel fj:outline-none fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
+  "fj:h-auto fj:min-h-52 fj:w-full fj:min-w-0 fj:rounded-fuji-panel fj:outline-none fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
 
 /**
  * How long a data change takes to travel to its new shape.
@@ -619,9 +648,11 @@ export function LineChart({
   area = false,
   curve = "smooth",
   strokeWidth = 3.5,
-  formatValue = DEFAULT_FORMAT,
+  formatValue: formatValueProp,
+  locale = DEFAULT_LOCALE,
   ...props
 }: LineChartProps) {
+  const formatValue = useFormatValue(formatValueProp, locale);
   // What is drawn: the same data, interpolated while it changes. `series`
   // itself still goes to `ChartFrame`, whose `sr-only` table must read the
   // real values rather than whatever frame the animation is on.
@@ -853,12 +884,14 @@ function BarValueTag({ x, y, text }: { x: number; y: number; text: string }) {
 
 export function BarChart({
   series,
-  formatValue = DEFAULT_FORMAT,
+  formatValue: formatValueProp,
+  locale = DEFAULT_LOCALE,
   highlight,
   average,
   averageLabel = "Avg",
   ...props
 }: BarChartProps) {
+  const formatValue = useFormatValue(formatValueProp, locale);
   // See `useAnimatedSeries`: what is drawn is the data mid-move, while
   // `ChartFrame` below still receives the real values for its `sr-only` table.
   const plotted = useAnimatedSeries(series);
@@ -1022,10 +1055,12 @@ export interface DonutChartProps extends ChartBaseProps {
 export function DonutChart({
   data,
   centerLabel,
-  formatValue = DEFAULT_FORMAT,
+  formatValue: formatValueProp,
+  locale = DEFAULT_LOCALE,
   legend: _legend,
   ...props
 }: DonutChartProps) {
+  const formatValue = useFormatValue(formatValueProp, locale);
   const series = React.useMemo(() => [{ name: "Values", data }], [data]);
   // See `useAnimatedSeries`: the ring, its legend figures and the centre total
   // all travel to new data. `ChartFrame` still gets `series` - the real values.

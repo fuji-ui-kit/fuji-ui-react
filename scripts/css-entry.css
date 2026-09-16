@@ -51,7 +51,38 @@
  *    order (i.e. no real isolation at all). `fuji.utilities` is a distinct
  *    layer from the consumer's `utilities`, so Fuji's rules never merge with
  *    - and can never be silently reordered by - the consumer's own layer.
+ * 4. Where the `fuji` group sits relative to the CONSUMER's layers is the
+ *    other half, and it decides whether a consumer's `className` can override
+ *    a Fuji component. A layer's priority is fixed by the first time its name
+ *    is seen on the page, and all four `fuji.*` sublayers rank together as
+ *    the single `fuji` group. The only order that works is
+ *    `theme, base, fuji, components, utilities`:
+ *    - `fuji` first (below the consumer's `base`) lets a Tailwind v4 app's
+ *      preflight - `* { padding: 0; margin: 0; border: 0 solid }`,
+ *      `button { background-color: transparent }` - beat every Fuji utility,
+ *      because layer order is compared before specificity. That is exactly
+ *      what happened when this stylesheet loaded before the app's Tailwind
+ *      CSS with no declaration of its own: Fuji's `fuji` group was declared
+ *      first and the app's preflight flattened every component.
+ *    - `fuji` last (above the consumer's `utilities`) - what happens when the
+ *      consumer's Tailwind CSS is seen first - makes `<Card className="p-0">`
+ *      silently lose to Fuji's own `fj:p-4`.
+ *    So the first statement below positions the group between the
+ *    consumer's `base` and `components`. It creates the bare
+ *    `theme`/`base`/`components`/`utilities` names as EMPTY layers - Fuji
+ *    never puts a rule in them (Tailwind's own `properties` layer, which it
+ *    hoists above everything, is the one pre-existing exception and only
+ *    holds `@property` fallback initial values) - so it only takes effect
+ *    when this stylesheet is the first to name those layers. When the
+ *    consumer's CSS names them first, `fuji` is appended after `utilities`
+ *    instead; docs/theming.md tells consumers to put this same statement at
+ *    the top of their own global CSS so the order holds regardless of which
+ *    file loads first. Keep the two strings identical, and verify any change
+ *    in a real browser (jsdom does not evaluate cascade layers).
+ *    Unlayered consumer CSS (plain CSS apps, Tailwind v3) outranks every
+ *    layer, so none of this changes anything for them.
  */
+@layer properties, theme, base, fuji, components, utilities;
 @layer fuji.theme, fuji.base, fuji.utilities, fuji.components;
 
 @import "tailwindcss/theme.css" layer(fuji.theme) prefix(fj) source(none);

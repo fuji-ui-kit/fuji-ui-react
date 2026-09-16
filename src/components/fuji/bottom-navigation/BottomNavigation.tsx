@@ -2,22 +2,83 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 import { safeHref } from "../lib/safe-href";
 import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
+import { applyLinkProps, type NavigationLinkProps } from "../lib/link-props";
 
 export interface BottomNavigationItem {
   label: string;
   icon: React.ReactNode;
   href?: string;
   active?: boolean;
+  /**
+   * A count or short marker pinned to the icon's corner - unread messages,
+   * pending requests.
+   *
+   * - A **number** renders as a count pill (`99+` above 99) and is hidden at
+   *   `0`. It is announced as part of the item's name - "Chats, 3 unread" -
+   *   through visually hidden text, since the pill itself means nothing out
+   *   of context.
+   * - Any other **node** (a short string, an icon) renders in the same pill
+   *   as given. Pair it with `badgeLabel` so it is announced meaningfully.
+   */
+  badge?: React.ReactNode;
+  /**
+   * What a screen reader hears for `badge`, appended to the label after a
+   * comma. Defaults to `"{count} unread"` for a numeric badge; for a
+   * non-numeric badge, without this, the badge's own content is read as-is.
+   * Pass a translated string ("3 non lus") or a different noun ("2 requests").
+   */
+  badgeLabel?: string;
+}
+
+/** The props Fuji's own anchor receives, passed to `renderLink` as its third argument. */
+export type BottomNavigationLinkProps = NavigationLinkProps;
+
+const LINK_CLASSNAME =
+  "fj:flex fj:flex-1 fj:cursor-pointer fj:text-inherit fj:no-underline fj:focus-visible:outline-2 fj:focus-visible:-outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
+
+/** Whether `badge` renders at all, and the hidden text announced for it (if any). */
+function resolveBadge({ badge, badgeLabel }: Pick<BottomNavigationItem, "badge" | "badgeLabel">) {
+  if (badge === undefined || badge === null || badge === false || badge === true || badge === "") {
+    return { shown: false, announced: undefined };
+  }
+  const numeric = typeof badge === "number";
+  if (numeric && !(badge > 0)) return { shown: false, announced: undefined };
+  return { shown: true, announced: badgeLabel ?? (numeric ? `${badge} unread` : undefined) };
+}
+
+function BottomNavigationBadge({ badge, announced }: { badge: React.ReactNode; announced?: string }) {
+  const numeric = typeof badge === "number";
+  return (
+    <span
+      // Hidden only when there is replacement text below; a bare node badge
+      // with no `badgeLabel` is read as-is rather than silently dropped.
+      aria-hidden={announced !== undefined ? true : undefined}
+      className="fj:pointer-events-none fj:absolute fj:-top-1.5 fj:left-[calc(100%-0.5rem)] fj:box-border fj:flex fj:h-4 fj:min-w-4 fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-fire fj:px-1 fj:text-[length:var(--fuji-text-2xs)] fj:leading-none fj:font-semibold fj:tabular-nums fj:text-fuji-fire-foreground fj:ring-2 fj:ring-fuji-surface-overlay"
+    >
+      {numeric ? (badge > 99 ? "99+" : badge) : badge}
+    </span>
+  );
 }
 
 export interface BottomNavigationProps extends React.HTMLAttributes<HTMLElement> {
   /** The tabs, in display order. */
   items: BottomNavigationItem[];
   /**
-   * Wraps each item in a router link - `next/link`, a TanStack `Link` - while
-   * keeping Fuji's styling on the content it is handed.
+   * Wraps each item that has an `href` in a router link - `next/link`, a
+   * TanStack `Link` - while keeping Fuji's styling on the content it is handed.
+   *
+   * The third argument carries what Fuji's own anchor gets: `href`,
+   * `aria-current`, the link `className`, `onClick` (which reports
+   * `onItemSelect`) and `children`, so `(item, children, props) => <Link {...props} />`
+   * is a complete link. Returning a single element without spreading them is
+   * also fine - they are applied to it for you, filling in only what it does
+   * not set itself.
    */
-  renderLink?: (item: BottomNavigationItem, children: React.ReactNode) => React.ReactNode;
+  renderLink?: (
+    item: BottomNavigationItem,
+    children: React.ReactNode,
+    linkProps: BottomNavigationLinkProps,
+  ) => React.ReactNode;
   /**
    * Called when an item is chosen. Without this, an item with no `href` was
    * inert markup - the bar could only be driven by navigation, so a tab bar
@@ -100,6 +161,7 @@ export const BottomNavigation = React.forwardRef<HTMLElement, BottomNavigationPr
     // With an action, the items split around it so it sits on the centre.
     const half = Math.ceil(items.length / 2);
     const renderItem = (item: BottomNavigationItem, index: number) => {
+      const badge = resolveBadge(item);
       const pill = indicator === "pill" && item.active;
       const circle = indicator === "circle" && item.active;
       const content = (
@@ -124,14 +186,18 @@ export const BottomNavigation = React.forwardRef<HTMLElement, BottomNavigationPr
         >
           <span
             className={cn(
-              "fj:flex fj:size-[18px] fj:items-center fj:justify-center fj:[&_svg]:size-[18px]",
+              "fj:relative fj:flex fj:size-[18px] fj:items-center fj:justify-center fj:[&_svg]:size-[18px]",
               circle &&
                 "fj:box-border fj:size-7 fj:rounded-full fj:bg-fuji-default fj:text-fuji-default-foreground",
             )}
           >
             {item.icon}
+            {badge.shown && <BottomNavigationBadge badge={item.badge} announced={badge.announced} />}
           </span>
           {item.label}
+          {/* After the label, so the name reads "Chats, 3 unread" rather than
+              leading with the count. */}
+          {badge.announced !== undefined && <span className="fj:sr-only">, {badge.announced}</span>}
           {indicator === "dot" && (
             <span
               aria-hidden="true"
@@ -171,27 +237,39 @@ export const BottomNavigation = React.forwardRef<HTMLElement, BottomNavigationPr
         }
         return <React.Fragment key={key}>{content}</React.Fragment>;
       }
+      if (renderLink) {
+        // A router link gets exactly what the default anchor below gets -
+        // it used to receive only the content, so `aria-current` and the
+        // link reset/focus ring silently disappeared with a custom link.
+        const linkProps: BottomNavigationLinkProps = {
+          href: item.href,
+          "aria-current": item.active ? "page" : undefined,
+          className: LINK_CLASSNAME,
+          onClick: onItemSelect ? () => onItemSelect(item, index) : undefined,
+          children: content,
+        };
+        return (
+          <React.Fragment key={key}>
+            {applyLinkProps(renderLink(item, content, linkProps), linkProps)}
+          </React.Fragment>
+        );
+      }
       return (
-        <React.Fragment key={key}>
-          {renderLink ? (
-            renderLink(item, content)
-          ) : (
-            <a
-              href={safeHref(item.href)}
-              // `active` was purely a color change, which no screen reader
-              // and no one with a color vision deficiency can perceive.
-              // `aria-current="page"` is the announced equivalent.
-              aria-current={item.active ? "page" : undefined}
-              onClick={() => onItemSelect?.(item, index)}
-              // No preflight ships with this package (see SPEC.md §8), so
-              // a bare <a> keeps the browser's default underline and link
-              // color unless reset explicitly here.
-              className="fj:flex fj:flex-1 fj:cursor-pointer fj:text-inherit fj:no-underline fj:focus-visible:outline-2 fj:focus-visible:-outline-offset-2 fj:focus-visible:outline-fuji-focus-ring"
-            >
-              {content}
-            </a>
-          )}
-        </React.Fragment>
+        <a
+          key={key}
+          href={safeHref(item.href)}
+          // `active` was purely a color change, which no screen reader
+          // and no one with a color vision deficiency can perceive.
+          // `aria-current="page"` is the announced equivalent.
+          aria-current={item.active ? "page" : undefined}
+          onClick={() => onItemSelect?.(item, index)}
+          // No preflight ships with this package (see SPEC.md §8), so
+          // a bare <a> keeps the browser's default underline and link
+          // color unless reset explicitly here.
+          className={LINK_CLASSNAME}
+        >
+          {content}
+        </a>
       );
     };
 

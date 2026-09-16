@@ -43,3 +43,21 @@ variant (StatusTone: default | success | warning | danger | info) colors each en
   ]}
 />
 ```
+
+## Grouped history
+
+groups renders a history timeline: each group's label sits on a centred axis, its media on the left and its items on the right. Timestamps share one column sized to the widest stamp in the group, so dates and times ("Sep 14", "9:41 AM") fit without truncating and titles stay aligned.
+
+```tsx
+<Timeline
+  groups={[
+    {
+      label: "This week",
+      items: [
+        { timestamp: "Sep 14", title: "Glass material shipped" },
+        { timestamp: "9:41 AM", title: "Release candidate tagged" },
+      ],
+    },
+  ]}
+/>
+```

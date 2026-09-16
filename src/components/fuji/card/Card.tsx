@@ -5,6 +5,23 @@ import { CardTilt } from "./CardTilt";
 /** Hover treatments a Card can opt into. */
 export type CardEffect = "none" | "lift" | "tilt";
 
+/** Inner padding of a Card. */
+export type CardPadding = "none" | "sm" | "md" | "lg";
+
+/**
+ * Padding is carried by `--fuji-card-padding` rather than a `p-*` class so
+ * `Card.Media` can cancel exactly the padding its card has (its negative
+ * margins read the same variable). Full class strings, never templated -
+ * Tailwind's scanner is static. `md` is the original `p-5` (1.25rem on the
+ * 0.25rem spacing scale); `sm` is `p-3`, `lg` is `p-6`.
+ */
+const PADDING_CLASSES: Record<CardPadding, string> = {
+  none: "fj:[--fuji-card-padding:0px]",
+  sm: "fj:[--fuji-card-padding:0.75rem]",
+  md: "fj:[--fuji-card-padding:1.25rem]",
+  lg: "fj:[--fuji-card-padding:1.5rem]",
+};
+
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
    * Hover treatment for a clickable card. Defaults to `"none"`.
@@ -27,10 +44,22 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
    * set - so `effect="none"` opts a card back out.
    */
   interactive?: boolean;
+  /**
+   * Inner padding. Default `"md"` (20px, unchanged from before this prop).
+   *
+   * `"none"` is for flush content - an edge-to-edge image, a table or list
+   * with its own row padding. A `className="p-0"` only wins when the app's
+   * cascade layers rank Fuji's below its utilities (see
+   * `docs/theming.md`), and even then leaves `Card.Media` cancelling 20px
+   * that is no longer there; this prop works regardless of stylesheet order,
+   * and `Card.Media` follows it, so media still bleeds to the edge at any
+   * padding.
+   */
+  padding?: CardPadding;
 }
 
 export const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function CardRoot(
-  { effect, interactive = false, className, ...props },
+  { effect, interactive = false, padding = "md", className, ...props },
   ref,
 ) {
   const resolved: CardEffect = effect ?? (interactive ? "lift" : "none");
@@ -43,7 +72,8 @@ export const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function Car
         // e.g. `className="w-80"`) combines with this border+padding; without
         // preflight's universal box-sizing:border-box, that width would be
         // exceeded by the border+padding instead of including them.
-        "fj:box-border fuji-glass-surface fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-5 fj:shadow-fuji-card",
+        "fj:box-border fuji-glass-surface fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-[var(--fuji-card-padding)] fj:shadow-fuji-card",
+        PADDING_CLASSES[padding],
         // `scale` and `rotate` are named explicitly: Tailwind v4 emits those
         // as their own CSS properties, NOT as the `transform` shorthand, so
         // listing `transform` alone left the hover tilt un-transitioned - the
@@ -88,7 +118,8 @@ export interface CardMediaProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 /**
- * Full-bleed media area - cancels `CardRoot`'s own padding on the relevant
+ * Full-bleed media area - cancels `CardRoot`'s own padding (whatever its
+ * `padding` prop is, through `--fuji-card-padding`) on the relevant
  * edge and clips its content to match the card's own corner radius, so an
  * `<Image>` (or any media) reaches the card's outer edge instead of sitting
  * inset inside the padded body. `position: relative` so `Card.Overlay` (or
@@ -104,9 +135,13 @@ export const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(functi
       ref={ref}
       className={cn(
         "fj:relative fj:overflow-hidden",
-        position === "full" && "fj:-m-5 fj:rounded-fuji-panel",
-        position === "top" && "fj:-mx-5 fj:-mt-5 fj:mb-4 fj:rounded-t-fuji-panel",
-        position === "bottom" && "fj:-mx-5 fj:-mb-5 fj:mt-4 fj:rounded-b-fuji-panel",
+        // The fallback keeps the original 20px bleed for a Card.Media placed
+        // outside a Card (or inside a custom surface) that sets no variable.
+        position === "full" && "fj:-m-[var(--fuji-card-padding,1.25rem)] fj:rounded-fuji-panel",
+        position === "top" &&
+          "fj:-mx-[var(--fuji-card-padding,1.25rem)] fj:-mt-[var(--fuji-card-padding,1.25rem)] fj:mb-4 fj:rounded-t-fuji-panel",
+        position === "bottom" &&
+          "fj:-mx-[var(--fuji-card-padding,1.25rem)] fj:-mb-[var(--fuji-card-padding,1.25rem)] fj:mt-4 fj:rounded-b-fuji-panel",
         className,
       )}
       {...props}

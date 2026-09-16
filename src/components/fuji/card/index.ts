@@ -9,4 +9,4 @@ export {
   CardContent,
   CardFooter,
 } from "./Card";
-export type { CardProps, CardEffect, CardTitleProps, CardMediaProps } from "./Card";
+export type { CardProps, CardEffect, CardPadding, CardTitleProps, CardMediaProps } from "./Card";

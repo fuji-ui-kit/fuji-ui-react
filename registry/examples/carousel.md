@@ -72,7 +72,7 @@ Use continuous mode for a smooth, always-moving image track with responsive card
 
 ## Coverflow effect
 
-effect='coverflow' centers the active slide with neighbours rotated away in 3D and scaled by distance; the fan follows the pointer while dragging and snaps on release. Arrow keys and controls work as in the default preset; slidesPerView is ignored.
+effect='coverflow' centers the active slide with neighbours rotated away in 3D and scaled by distance; the fan follows the pointer while dragging and snaps on release. Arrow keys and controls work as in the default preset. slidesPerView sets the centre slide's width as a fraction of the viewport (default 1.6, a ~62% slide); raise it to show more of the fan.
 
 ```tsx
 <Carousel effect="coverflow" controls>

@@ -92,4 +92,65 @@ describe("FloatingActionBar", () => {
     const { container } = render(<FloatingActionBar actions={ACTIONS} defaultOpen />);
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  // A root `relative` fought `className="fixed bottom-6 right-6"` - which
+  // `position` won depended on stylesheet order.
+  it("leaves the root unpositioned so a consumer's positioning class applies", () => {
+    const ref = React.createRef<HTMLDivElement>();
+    render(<FloatingActionBar ref={ref} actions={ACTIONS} className="fixed right-6 bottom-6" />);
+    const root = ref.current!;
+    expect(root).toHaveClass("fixed", "right-6", "bottom-6");
+    expect(root.className).not.toMatch(/fj:(relative|absolute|fixed|sticky|static)\b/);
+    // The column still has a positioned anchor - an inner wrapper around the trigger.
+    const trigger = screen.getByRole("button", { name: "Actions" });
+    expect(trigger.parentElement).not.toBe(root);
+    expect(trigger.parentElement).toHaveClass("fj:relative");
+  });
+
+  it("marks the column's parent open, which the open animation keys off", () => {
+    render(<FloatingActionBar actions={ACTIONS} defaultOpen />);
+    const trigger = screen.getByRole("button", { name: "Actions" });
+    const action = trigger.nextElementSibling!.firstElementChild!;
+    expect(action).toHaveClass("fuji-fab-action");
+    // base.css: `[data-open] > * > .fuji-fab-action`.
+    expect(action.parentElement!.parentElement).toHaveAttribute("data-open");
+  });
+
+  it("renders actions that share a label without React key warnings", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const user = userEvent.setup();
+    const onFirst = vi.fn();
+    const onSecond = vi.fn();
+    render(
+      <FloatingActionBar
+        actions={[
+          { icon: <span />, label: "Share", onSelect: onFirst },
+          { icon: <span />, label: "Share", onSelect: onSecond },
+        ]}
+        defaultOpen
+      />,
+    );
+    expect(error.mock.calls.some((call) => String(call[0]).includes("same key"))).toBe(false);
+    const buttons = screen.getAllByRole("button", { name: "Share" });
+    expect(buttons).toHaveLength(2);
+    await user.click(buttons[1]);
+    expect(onSecond).toHaveBeenCalledTimes(1);
+    expect(onFirst).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
+
+  it("uses an action's id as its key when given", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(
+      <FloatingActionBar
+        actions={[
+          { id: "a", icon: <span />, label: "Share" },
+          { id: "b", icon: <span />, label: "Share" },
+        ]}
+        defaultOpen
+      />,
+    );
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
 });

@@ -64,6 +64,13 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         {...portalAttrs}
         className={cn(
           "fuji-glass-surface-overlay fuji-motion-modal fj:fixed fj:z-50 fj:flex fj:flex-col fj:gap-4 fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
+          // Every mobile behavior caps the popup at the viewport (85vh, or the
+          // full height when fullscreen), but nothing let it scroll - content
+          // taller than the cap spilled out past the rounded edge, and with the
+          // page scroll-locked behind it the bottom was unreachable. The popup
+          // itself scrolls; `overscroll-contain` keeps a flick at either end
+          // from chaining into the locked page.
+          "fuji-scrollbar fj:overflow-y-auto fj:overscroll-contain",
           MOBILE_BEHAVIOR_CLASSES[mobileBehavior],
           className,
         )}

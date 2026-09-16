@@ -67,4 +67,71 @@ describe("Drawer", () => {
     expect(panel.className).toContain("fj:mb-3");
     expect(panel).toHaveAttribute("data-variant", "sheet");
   });
+
+  async function openPanel(content: React.ReactElement) {
+    const user = userEvent.setup();
+    render(
+      <Drawer>
+        <Drawer.Trigger>Open</Drawer.Trigger>
+        {content}
+      </Drawer>,
+    );
+    await user.click(screen.getByRole("button", { name: "Open" }));
+    return screen.findByRole("dialog", { name: "Panel" });
+  }
+
+  it.each(["left", "right", "top", "bottom"] as const)("scrolls its own content on side=%s", async (side) => {
+    const panel = await openPanel(
+      <Drawer.Content side={side}>
+        <Drawer.Title>Panel</Drawer.Title>
+      </Drawer.Content>,
+    );
+    expect(panel).toHaveClass("fj:overflow-y-auto", "fj:overscroll-contain");
+  });
+
+  it("keeps the 20rem side panel by default", async () => {
+    const panel = await openPanel(
+      <Drawer.Content side="right">
+        <Drawer.Title>Panel</Drawer.Title>
+      </Drawer.Content>,
+    );
+    expect(panel).toHaveClass("fj:w-80", "fj:max-w-[calc(100vw-3rem)]");
+  });
+
+  it.each([
+    ["sm", "fj:w-64"],
+    ["lg", "fj:w-[28rem]"],
+    ["full", "fj:w-full"],
+  ] as const)(
+    "takes width=%s on a side panel, still capped short of the viewport",
+    async (width, expected) => {
+      const panel = await openPanel(
+        <Drawer.Content side="left" variant="sheet" width={width}>
+          <Drawer.Title>Panel</Drawer.Title>
+        </Drawer.Content>,
+      );
+      expect(panel).toHaveClass(expected, "fj:max-w-[calc(100vw-3rem)]");
+      expect(panel).not.toHaveClass("fj:w-80");
+    },
+  );
+
+  it("ignores width on a top or bottom panel, which spans its edge", async () => {
+    const panel = await openPanel(
+      <Drawer.Content side="bottom" width="sm">
+        <Drawer.Title>Panel</Drawer.Title>
+      </Drawer.Content>,
+    );
+    expect(panel).toHaveClass("fj:w-full");
+    expect(panel).not.toHaveClass("fj:w-64");
+  });
+
+  it("lets className override the width for a one-off panel", async () => {
+    const panel = await openPanel(
+      <Drawer.Content side="right" className="fj:w-[30rem]">
+        <Drawer.Title>Panel</Drawer.Title>
+      </Drawer.Content>,
+    );
+    expect(panel).toHaveClass("fj:w-[30rem]");
+    expect(panel).not.toHaveClass("fj:w-80");
+  });
 });

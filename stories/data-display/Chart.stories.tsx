@@ -295,3 +295,25 @@ function AnimatedUpdateDemo() {
 export const AnimatedUpdate: Story = {
   render: () => <AnimatedUpdateDemo />,
 };
+
+export const NarrowContainer: Story = {
+  name: "Narrow container (288px) with a locale",
+  render: () => (
+    <div className="w-72">
+      <BarChart
+        title="Umsatz"
+        locale="de-DE"
+        series={[
+          {
+            name: "Umsatz",
+            data: [
+              { label: "Q1", value: 12400 },
+              { label: "Q2", value: 18250 },
+              { label: "Q3", value: 15900 },
+            ],
+          },
+        ]}
+      />
+    </div>
+  ),
+};

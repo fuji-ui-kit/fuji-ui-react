@@ -68,3 +68,37 @@ export const OpensOnClick: Story = {
     await expect(trigger).toBeInTheDocument();
   },
 };
+
+/** `width` sizes a left/right panel: `sm` 16rem, `md` 20rem (default), `lg` 28rem, `full`. */
+export const Widths: Story = {
+  render: () => (
+    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+      {(["sm", "md", "lg", "full"] as const).map((width) => (
+        <Drawer key={width} swipeDirection="right">
+          <Drawer.Trigger render={<Button appearance="bordered">width=&quot;{width}&quot;</Button>} />
+          <Drawer.Content side="right" width={width}>
+            <Drawer.Title>Details</Drawer.Title>
+            <Drawer.Description>A right-side panel at width=&quot;{width}&quot;.</Drawer.Description>
+          </Drawer.Content>
+        </Drawer>
+      ))}
+    </div>
+  ),
+};
+
+/** Content taller than the viewport scrolls inside the panel. */
+export const LongContent: Story = {
+  render: () => (
+    <Drawer swipeDirection="down">
+      <Drawer.Trigger render={<Button>Open long sheet</Button>} />
+      <Drawer.Content side="bottom">
+        <Drawer.Title>Terms of service</Drawer.Title>
+        {Array.from({ length: 40 }, (_, index) => (
+          <p key={index} style={{ margin: 0 }}>
+            Clause {index + 1}. The panel caps at 85vh and scrolls its own content.
+          </p>
+        ))}
+      </Drawer.Content>
+    </Drawer>
+  ),
+};

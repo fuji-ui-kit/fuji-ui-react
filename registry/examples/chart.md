@@ -54,3 +54,12 @@ A composition summary with a center total and compact legend.
 <LineChart loading series={[]} />
 <LineChart empty series={[]} />
 ```
+
+## Locale
+
+Figures format with a fixed en-US locale by default, never the runtime's, so server-rendered charts hydrate cleanly. Pass locale to localize, or formatValue for full control.
+
+```tsx
+<BarChart title="Umsatz" locale="de-DE" series={series} />
+<LineChart title="Revenue" series={series} formatValue={(value) => `$${value.toLocaleString("en-US")}`} />
+```

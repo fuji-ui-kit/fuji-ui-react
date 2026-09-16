@@ -267,9 +267,15 @@ const PHONE_ROWS: KeyboardKeyDef[][] = [
   ],
 ];
 
+// The standalone numpad is what a PIN or OTP keypad is built from, and a
+// keypad with no way to delete is unusable - so its top-left cap is Backspace
+// rather than the Num Lock of a physical pad, which on a drawn board types
+// nothing and toggles nothing. Same glyph and name as the phone board's
+// Backspace. `full` keeps its Num Lock: there the main block already has a
+// Backspace, and the board is a picture of the real hardware.
 const NUMPAD_ROWS: KeyboardKeyDef[][] = [
   [
-    m("NumLock", "Num"),
+    m("Backspace", "⌫", 1, { name: "Backspace" }),
     m("NumpadDivide", "/", 1, { name: "Numpad divide", value: "/" }),
     m("NumpadMultiply", "*", 1, { name: "Numpad multiply", value: "*" }),
     m("NumpadSubtract", "−", 1, { name: "Numpad minus", value: "-" }),

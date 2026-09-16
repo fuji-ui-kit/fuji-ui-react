@@ -46,3 +46,25 @@ A right-side drawer used as a full record view alongside the page it was opened 
   <Drawer.Content side="right">…</Drawer.Content>
 </Drawer>
 ```
+
+## Panel width
+
+`width` sizes a `left` or `right` panel: `sm` 16rem, `md` 20rem (default), `lg`
+28rem, `full` the viewport. Every width stops 3rem short of the viewport so the
+dimmed page stays visible. Top and bottom panels span their edge and ignore it.
+
+```tsx
+<Drawer swipeDirection="right">
+  <Drawer.Trigger render={<Button />}>Open record</Drawer.Trigger>
+  <Drawer.Content side="right" width="lg">
+    <Drawer.Title>Invoice #1042</Drawer.Title>
+  </Drawer.Content>
+</Drawer>
+```
+
+## Long content
+
+Every panel scrolls its own content once it reaches the viewport cap (full
+height for a side panel, 85vh for top and bottom), so a long form needs no
+scroll wrapper. The built-in close button scrolls with the content; Escape and
+a press on the backdrop still dismiss.

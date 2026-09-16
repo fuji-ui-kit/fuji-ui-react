@@ -25,7 +25,10 @@ export interface MultiSelectProps extends Omit<
   items: MultiSelectItem[];
   /** Text shown while nothing is selected. */
   placeholder?: string;
-  /** Control height, matching `Input` and `Button` at the same size. */
+  /**
+   * Minimum control height, matching `Input`, `Select` and `Button` at the
+   * same size. Default "md".
+   */
   size?: ComponentSize;
   /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
@@ -36,6 +39,32 @@ export interface MultiSelectProps extends Omit<
   /** Points at an existing visible label's id, as an alternative to `aria-label`. */
   "aria-labelledby"?: string;
 }
+
+/**
+ * Per-size geometry for the chip row. The group grows with its chips
+ * (`h-auto`), so the field recipe's fixed `h-[--fuji-control-h-*]` can't set
+ * the height here - this used to hard-code `min-h-[--fuji-control-h-md]` and
+ * a 24px input/chip row, so `size="sm"` and `size="lg"` rendered exactly as
+ * tall as `md` next to a `Select`/`Input` of the same size. Written out in
+ * full for the Tailwind scanner.
+ */
+const GROUP_SIZE_CLASSES: Record<ComponentSize, string> = {
+  sm: "fj:min-h-[var(--fuji-control-h-sm)] fj:py-0.5",
+  md: "fj:min-h-[var(--fuji-control-h-md)] fj:py-1.5",
+  lg: "fj:min-h-[var(--fuji-control-h-lg)] fj:py-1.5",
+};
+
+const INPUT_SIZE_CLASSES: Record<ComponentSize, string> = {
+  sm: "fj:h-5",
+  md: "fj:h-6",
+  lg: "fj:h-7",
+};
+
+const CHIP_SIZE_CLASSES: Record<ComponentSize, string> = {
+  sm: "fj:py-0.5",
+  md: "fj:py-1",
+  lg: "fj:py-1",
+};
 
 /** Multi-selection combobox with removable chips (wraps Base UI Combobox `multiple`). */
 export function MultiSelect({
@@ -66,7 +95,8 @@ export function MultiSelect({
           fieldSurface({ size }),
           // Reserve fixed space on the right (pr-9) so chips/input never push the
           // chevron down or out of view; the chevron is pinned and centered.
-          "fj:relative fj:flex fj:h-auto fj:min-h-[var(--fuji-control-h-md)] fj:items-center fj:py-1.5 fj:pr-9 fj:pl-2",
+          "fj:relative fj:flex fj:h-auto fj:items-center fj:pr-9 fj:pl-2",
+          GROUP_SIZE_CLASSES[size],
           className,
         )}
       >
@@ -86,7 +116,8 @@ export function MultiSelect({
                     key={item.value}
                     aria-label={item.label}
                     className={cn(
-                      "fj:box-border fj:flex fj:max-w-[10rem] fj:shrink-0 fj:items-center fj:gap-1.5 fj:rounded-full fj:px-2.5 fj:py-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:outline-none",
+                      "fj:box-border fj:flex fj:max-w-[10rem] fj:shrink-0 fj:items-center fj:gap-1.5 fj:rounded-full fj:px-2.5 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:outline-none",
+                      CHIP_SIZE_CLASSES[size],
                       softClasses("default"),
                       "fj:data-[highlighted]:bg-fuji-default fj:data-[highlighted]:text-fuji-default-foreground",
                     )}
@@ -106,11 +137,15 @@ export function MultiSelect({
                 <Base.Input
                   placeholder={value.length > 0 ? "" : placeholder}
                   aria-label={ariaLabel}
-                  aria-labelledby={ariaLabelledBy}
+                  // Spread only when set: Base UI already points this input's
+                  // `aria-labelledby` at an enclosing FormField's label, and an explicit
+                  // `undefined` occupies the key and erases it (see Input.tsx).
+                  {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : null)}
                   aria-invalid={invalid || undefined}
                   className={cn(
                     NATIVE_CONTROL_RESET,
-                    "fj:h-6 fj:min-w-16 fj:flex-1 fj:outline-none fj:placeholder:text-fuji-foreground-subtle",
+                    "fj:min-w-16 fj:flex-1 fj:outline-none fj:placeholder:text-fuji-foreground-subtle",
+                    INPUT_SIZE_CLASSES[size],
                   )}
                 />
               </>

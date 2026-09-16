@@ -14,8 +14,23 @@ export interface StatisticProps extends Omit<React.HTMLAttributes<HTMLDivElement
   prefix?: React.ReactNode;
   /** Rendered immediately after the figure - a unit or a percent sign. */
   suffix?: React.ReactNode;
-  /** Decimal places used when animating a numeric value. Defaults to 0. */
+  /** Decimal places used when animating a numeric value. Defaults to 0. Ignored when `formatValue` is given. */
   decimals?: number;
+  /**
+   * BCP 47 locale for a numeric `value`'s grouping and decimal separators.
+   * Default `"en-US"` - a fixed locale rather than the runtime's own, because
+   * a server and a browser in different locales would otherwise render
+   * different digits ("1,234.5" vs "1.234,5") and fail hydration. Pass the
+   * user's locale explicitly (the same value on server and client) to localize.
+   */
+  locale?: string;
+  /**
+   * Formats a numeric `value` yourself - currency, compact notation, units.
+   * Replaces the built-in `locale`/`decimals` formatting. Must return the same
+   * string on server and client. Digits in the result still roll; any other
+   * characters render as static cells.
+   */
+  formatValue?: (value: number) => string;
   /** Positive shows an up arrow in success color, negative a down arrow in danger. */
   trend?: number;
   /** What the trend is measured against, printed after it ("MoM", "vs last week"). */
@@ -123,14 +138,29 @@ function useNumberTrend(target: number) {
 
 /** Label + big value + optional trend indicator - for dashboard KPI tiles. */
 export const Statistic = React.forwardRef<HTMLDivElement, StatisticProps>(function Statistic(
-  { label, value, prefix, suffix, decimals = 0, trend, trendLabel, card = false, className, ...props },
+  {
+    label,
+    value,
+    prefix,
+    suffix,
+    decimals = 0,
+    locale = "en-US",
+    formatValue,
+    trend,
+    trendLabel,
+    card = false,
+    className,
+    ...props
+  },
   ref,
 ) {
   const isNumeric = typeof value === "number";
   const numberRef = useNumberTrend(isNumeric ? value : 0);
   const Wrapper = card ? Card : "div";
   const formatted = isNumeric
-    ? value.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
+    ? formatValue
+      ? formatValue(value)
+      : value.toLocaleString(locale, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })
     : null;
   // String prefix/suffix ride inside the roller so they share its baseline;
   // a ReactNode prefix (an icon) is rendered beside it instead.

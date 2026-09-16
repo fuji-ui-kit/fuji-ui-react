@@ -7,4 +7,4 @@ export {
   DrawerDescription,
   DrawerContent,
 } from "./Drawer";
-export type { DrawerContentProps, DrawerSide, DrawerVariant } from "./Drawer";
+export type { DrawerContentProps, DrawerSide, DrawerVariant, DrawerWidth } from "./Drawer";

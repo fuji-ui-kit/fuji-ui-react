@@ -51,4 +51,25 @@ describe("Dialog", () => {
     });
     expect(onOpenChange.mock.lastCall?.[0]).toBe(false);
   });
+
+  it.each(["dialog", "sheet", "fullscreen"] as const)(
+    "caps the popup at the viewport and lets it scroll under mobileBehavior=%s",
+    async (mobileBehavior) => {
+      const user = userEvent.setup();
+      render(
+        <Dialog>
+          <Dialog.Trigger>Open dialog</Dialog.Trigger>
+          <Dialog.Content mobileBehavior={mobileBehavior}>
+            <Dialog.Title>Terms</Dialog.Title>
+          </Dialog.Content>
+        </Dialog>,
+      );
+      await user.click(screen.getByRole("button", { name: "Open dialog" }));
+      const dialog = await screen.findByRole("dialog", { name: "Terms" });
+      // jsdom does no layout, so this pins the recipe: a height cap with no
+      // overflow rule is exactly how tall content used to spill off-screen.
+      expect(dialog.className).toContain("fj:max-h-[85vh]");
+      expect(dialog).toHaveClass("fj:overflow-y-auto", "fj:overscroll-contain");
+    },
+  );
 });

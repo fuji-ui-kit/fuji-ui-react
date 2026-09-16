@@ -43,4 +43,32 @@ describe("MultiSelect", () => {
     );
     expect(screen.getByRole("group")).toHaveAttribute("data-invalid", "");
   });
+
+  // Regression: the group hard-coded `min-h-[--fuji-control-h-md]` (and a
+  // fixed 24px row), so `size="sm"`/`"lg"` rendered as tall as `md`.
+  it.each([
+    ["sm", "fj:min-h-[var(--fuji-control-h-sm)]"],
+    ["md", "fj:min-h-[var(--fuji-control-h-md)]"],
+    ["lg", "fj:min-h-[var(--fuji-control-h-lg)]"],
+  ] as const)("sizes the field to the shared control height for size=%s", (size, minHeight) => {
+    render(<MultiSelect items={items} aria-label="Letters" size={size} />);
+    const classes = screen.getByRole("group").className.split(/\s+/);
+    expect(classes).toContain(minHeight);
+    expect(classes.filter((c) => c.startsWith("fj:min-h-"))).toHaveLength(1);
+    // The fixed field height from the shared recipe must not survive the merge.
+    expect(classes.filter((c) => c.startsWith("fj:h-["))).toHaveLength(0);
+  });
+
+  it("is labelled by an ancestor FormField, via both label[for] and aria-labelledby", () => {
+    render(
+      <FormField>
+        <FormField.Label>Tags</FormField.Label>
+        <MultiSelect items={items} defaultValue={[items[0]]} />
+      </FormField>,
+    );
+    const input = screen.getByRole("combobox", { name: "Tags" });
+    const label = screen.getByText("Tags");
+    expect(label).toHaveAttribute("for", input.id);
+    expect(input).toHaveAttribute("aria-labelledby", label.id);
+  });
 });

@@ -25,4 +25,11 @@ describe("SearchInput", () => {
     await user.type(screen.getByRole("searchbox", { name: "Search" }), "fuji");
     expect(screen.queryByRole("button", { name: "Clear search" })).not.toBeInTheDocument();
   });
+
+  it("keeps its control height in an overflowing flex column", () => {
+    render(<SearchInput aria-label="Search" size="sm" />);
+    // The visible box is Input's slotted wrapper, one level above the field.
+    const root = screen.getByRole("searchbox", { name: "Search" }).parentElement!;
+    expect(root).toHaveClass("fj:min-h-[var(--fuji-control-h-sm)]");
+  });
 });

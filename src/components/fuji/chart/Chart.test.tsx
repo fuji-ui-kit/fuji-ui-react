@@ -1,5 +1,5 @@
 import * as React from "react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BarChart, DonutChart, LineChart } from "./Chart";
 
@@ -116,5 +116,44 @@ describe("Chart data updates", () => {
       expect(seen).toContain("80");
     });
     expect(seen.filter((text) => text.includes("."))).toEqual([]);
+  });
+});
+
+describe("Chart formatting and sizing", () => {
+  const big = [{ name: "Revenue", data: [{ label: "Q1", value: 1234567 }] }];
+
+  it("formats figures with a fixed en-US locale by default, not the runtime's", () => {
+    const spy = vi.spyOn(Number.prototype, "toLocaleString");
+    render(<BarChart title="Revenue" series={big} />);
+    expect(spy).toHaveBeenCalled();
+    for (const call of spy.mock.calls) expect(call[0]).toBe("en-US");
+    spy.mockRestore();
+    expect(screen.getAllByText("1,234,567").length).toBeGreaterThan(0);
+  });
+
+  it("formats with an explicit locale", () => {
+    render(<LineChart title="Umsatz" series={big} locale="de-DE" />);
+    expect(screen.getAllByText("1.234.567").length).toBeGreaterThan(0);
+  });
+
+  it("prefers formatValue over locale", () => {
+    render(<DonutChart title="Split" data={big[0].data} locale="de-DE" formatValue={(v) => `$${v}`} />);
+    expect(screen.getAllByText("$1234567").length).toBeGreaterThan(0);
+  });
+
+  it("does not leak locale onto the DOM", () => {
+    const { container } = render(<LineChart title="Revenue" series={big} locale="de-DE" />);
+    expect(container.querySelector("[locale]")).toBeNull();
+  });
+
+  // A fixed 380px minimum overran cards on 320-375px screens.
+  it("lets line and bar plots shrink below 380px", () => {
+    for (const Chart of [LineChart, BarChart]) {
+      const { container, unmount } = render(<Chart title="Revenue" series={big} />);
+      const svg = container.querySelector("svg[role='img']")!;
+      expect(svg.getAttribute("class")).not.toMatch(/min-w-\[/);
+      expect(svg.getAttribute("class")).toContain("fj:min-w-0");
+      unmount();
+    }
   });
 });

@@ -29,7 +29,17 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Range: Story = {
-  args: { label: "Price range", defaultValue: [20, 80] },
+  args: {
+    label: "Price range",
+    defaultValue: [20, 80],
+    getAriaLabel: (index: number) => (index === 0 ? "Minimum price" : "Maximum price"),
+  },
+};
+
+/** No visible label - `aria-label` names the focusable thumb. */
+export const AriaLabelOnly: Story = {
+  name: "aria-label only",
+  args: { label: undefined, showValue: false, "aria-label": "Volume" },
 };
 
 export const SteppedMinMax: Story = {

@@ -67,3 +67,14 @@ function ControlledDemo(args: React.ComponentProps<typeof FloatingActionBar>) {
 export const Controlled: Story = {
   render: (args) => <ControlledDemo {...args} />,
 };
+
+export const PositionedByClassName: Story = {
+  name: "Positioned with className",
+  render: (args) => (
+    // `transform` makes this box the containing block for the `fixed` dial,
+    // so the demo stays inside the preview frame.
+    <div className="relative h-80 w-full max-w-md translate-x-0 overflow-hidden rounded-fuji-panel border border-fuji-border">
+      <FloatingActionBar {...args} className="fixed right-6 bottom-6" direction="up" />
+    </div>
+  ),
+};

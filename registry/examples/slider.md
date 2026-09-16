@@ -6,10 +6,23 @@
 
 ## Range
 
-Pass a two-number defaultValue for a dual-thumb range.
+Pass a two-number defaultValue for a dual-thumb range. getAriaLabel gives each thumb its own accessible name.
 
 ```tsx
-<Slider defaultValue={[20, 80]} label="Price range" showValue />
+<Slider
+  defaultValue={[20, 80]}
+  label="Price range"
+  showValue
+  getAriaLabel={(index) => (index === 0 ? "Minimum price" : "Maximum price")}
+/>
+```
+
+## Without a visible label
+
+aria-label (or aria-labelledby) names the focusable slider thumb itself.
+
+```tsx
+<Slider aria-label="Volume" defaultValue={40} />
 ```
 
 ## Min / max / step

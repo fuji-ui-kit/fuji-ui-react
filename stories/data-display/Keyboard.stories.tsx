@@ -336,8 +336,8 @@ export const FloatingInAParent: Story = {
           size="sm"
           sound
           onKeyPress={(key) => {
-            // A numpad has no Backspace; `Enter` is what it offers to act on.
-            if (key.code === "NumpadEnter") setPin("");
+            if (key.code === "Backspace") setPin((value) => value.slice(0, -1));
+            else if (key.code === "NumpadEnter") setPin("");
             else if (key.value) setPin((value) => value + key.value);
           }}
         />

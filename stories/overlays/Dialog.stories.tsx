@@ -42,3 +42,23 @@ export const OpensOnClick: Story = {
     await expect(trigger).toBeInTheDocument();
   },
 };
+
+/** Content taller than the viewport scrolls inside the dialog, which caps at 85vh. */
+export const LongContent: Story = {
+  render: () => (
+    <Dialog>
+      <Dialog.Trigger render={<Button>Open long dialog</Button>} />
+      <Dialog.Content>
+        <Dialog.Title>Terms of service</Dialog.Title>
+        {Array.from({ length: 40 }, (_, index) => (
+          <p key={index} className="m-0">
+            Clause {index + 1}. The popup caps at the viewport and scrolls its own content.
+          </p>
+        ))}
+        <div className="flex justify-end gap-2">
+          <Dialog.Close render={<Button>Accept</Button>} />
+        </div>
+      </Dialog.Content>
+    </Dialog>
+  ),
+};

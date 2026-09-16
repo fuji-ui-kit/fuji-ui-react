@@ -121,4 +121,53 @@ describe("Card", () => {
     );
     expect(await axe(container)).toHaveNoViolations();
   });
+
+  describe("padding", () => {
+    it("defaults to md - the original 20px", () => {
+      render(<Card data-testid="card">Body</Card>);
+      const card = screen.getByTestId("card");
+      expect(card).toHaveClass("fj:p-[var(--fuji-card-padding)]", "fj:[--fuji-card-padding:1.25rem]");
+    });
+
+    it.each([
+      ["none", "fj:[--fuji-card-padding:0px]"],
+      ["sm", "fj:[--fuji-card-padding:0.75rem]"],
+      ["lg", "fj:[--fuji-card-padding:1.5rem]"],
+    ] as const)("sets padding=%s", (padding, expected) => {
+      render(
+        <Card data-testid="card" padding={padding}>
+          Body
+        </Card>,
+      );
+      const card = screen.getByTestId("card");
+      expect(card).toHaveClass(expected);
+      // Exactly one padding value - tailwind-merge drops nothing it shouldn't.
+      expect(card.className.match(/--fuji-card-padding:/g)).toHaveLength(1);
+    });
+
+    it("keeps Card.Media flush by cancelling the card's own padding variable", () => {
+      render(
+        <Card padding="sm">
+          <Card.Media data-testid="media">
+            <img src="photo.jpg" alt="" />
+          </Card.Media>
+        </Card>,
+      );
+      const media = screen.getByTestId("media");
+      expect(media).toHaveClass(
+        "fj:-mx-[var(--fuji-card-padding,1.25rem)]",
+        "fj:-mt-[var(--fuji-card-padding,1.25rem)]",
+      );
+    });
+
+    it("keeps the padding prop off the DOM, including with effect=tilt", () => {
+      render(
+        <Card data-testid="card" padding="none" effect="tilt">
+          Body
+        </Card>,
+      );
+      expect(screen.getByTestId("card")).not.toHaveAttribute("padding");
+      expect(screen.getByTestId("card")).toHaveClass("fj:[--fuji-card-padding:0px]");
+    });
+  });
 });

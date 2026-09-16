@@ -43,3 +43,16 @@ Pass card to wrap each statistic in its own bordered surface - a ready-made KPI 
 ```tsx
 <Statistic card label="Revenue" value={92400} prefix="$" trend={4.2} trendLabel="MoM" />
 ```
+
+## Locale and custom formatting
+
+Numbers format with a fixed en-US locale by default so server and client render identical digits. Pass locale to localize (use the same value on both sides), or formatValue for currency, compact notation or units.
+
+```tsx
+<Statistic label="Umsatz" value={1234567.8} decimals={1} locale="de-DE" />
+<Statistic
+  label="Followers"
+  value={1234567}
+  formatValue={(value) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(value)}
+/>
+```

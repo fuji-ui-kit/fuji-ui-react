@@ -70,7 +70,10 @@ export function Combobox({
         <Base.Input
           placeholder={placeholder}
           aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledBy}
+          // Spread only when set: Base UI already points this input's
+          // `aria-labelledby` at an enclosing FormField's label, and an explicit
+          // `undefined` occupies the key and erases it (see Input.tsx).
+          {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : null)}
           aria-invalid={invalid || undefined}
           className={cn(
             NATIVE_CONTROL_RESET,

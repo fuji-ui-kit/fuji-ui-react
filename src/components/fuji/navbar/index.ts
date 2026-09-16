@@ -1,2 +1,2 @@
 export { Navbar } from "./Navbar";
-export type { NavbarProps, NavbarItem } from "./Navbar";
+export type { NavbarProps, NavbarItem, NavbarLinkProps } from "./Navbar";

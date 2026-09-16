@@ -25,3 +25,24 @@ const [tags, setTags] = useState<MultiSelectItem[]>([]);
 
 <MultiSelect aria-label="Tags" items={items} value={tags} onValueChange={setTags} />;
 ```
+
+## Sizes
+
+sm / md / lg match the height of Select, Input, and Button at the same size.
+
+```tsx
+<MultiSelect aria-label="Tags" size="sm" items={items} />
+<MultiSelect aria-label="Tags" size="md" items={items} />
+<MultiSelect aria-label="Tags" size="lg" items={items} />
+```
+
+## In a FormField
+
+FormField.Label names the input; no aria-label needed.
+
+```tsx
+<FormField>
+  <FormField.Label>Tags</FormField.Label>
+  <MultiSelect items={items} />
+</FormField>
+```

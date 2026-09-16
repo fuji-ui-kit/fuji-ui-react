@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { ChatBubble } from "./ChatBubble";
+import { ChatBubble, ChatBubbleTyping } from "./ChatBubble";
 import { Avatar } from "../avatar/Avatar";
 
 describe("ChatBubble", () => {
@@ -139,6 +139,82 @@ describe("ChatBubble", () => {
       expect(button).toHaveAttribute("type", "button");
       await userEvent.click(button);
       expect(onClick).toHaveBeenCalledTimes(1);
+    });
+
+    it("renders a preview slot in place of the icon", () => {
+      const { container } = render(
+        <ChatBubble.Attachment preview={<img src="thumb.png" alt="" />} name="photo.jpg" meta="2 MB" />,
+      );
+      expect(container.querySelector("img")).toHaveAttribute("src", "thumb.png");
+      // The default paperclip glyph is replaced, not rendered alongside.
+      expect(container.querySelectorAll("svg")).toHaveLength(0);
+    });
+
+    it("keeps the default icon when no preview is given", () => {
+      const { container } = render(<ChatBubble.Attachment name="notes.txt" />);
+      expect(container.querySelectorAll("svg")).toHaveLength(1);
+    });
+
+    it("applies classNames.preview to the preview box", () => {
+      const { container } = render(
+        <ChatBubble.Attachment
+          preview={<img src="thumb.png" alt="" />}
+          name="photo.jpg"
+          classNames={{ preview: "custom-preview" }}
+        />,
+      );
+      expect(container.querySelector("img")?.parentElement).toHaveClass("custom-preview");
+    });
+
+    it("stays a non-interactive element without onClick, so it can sit inside a link", async () => {
+      const { container } = render(
+        <a href="/download">
+          <ChatBubble.Attachment preview={<img src="thumb.png" alt="" />} name="photo.jpg" />
+        </a>,
+      );
+      expect(screen.queryByRole("button")).not.toBeInTheDocument();
+      expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe("ChatBubble.Typing", () => {
+    it("announces a default 'Typing' label through a status region", () => {
+      render(<ChatBubble.Typing />);
+      expect(screen.getByRole("status")).toHaveTextContent("Typing");
+    });
+
+    it("accepts a custom label", () => {
+      render(<ChatBubble.Typing label="Priya is typing" />);
+      expect(screen.getByRole("status")).toHaveTextContent("Priya is typing");
+    });
+
+    it("hides the decorative dots from assistive tech and stops them under reduced motion", () => {
+      const { container } = render(<ChatBubble.Typing />);
+      const dots = container.querySelector('[aria-hidden="true"]');
+      expect(dots?.children).toHaveLength(3);
+      for (const dot of Array.from(dots!.children)) {
+        expect(dot.className).toEqual(expect.stringContaining("motion-reduce:animate-none"));
+      }
+    });
+
+    it("forwards its ref and spreads native props", () => {
+      const ref = React.createRef<HTMLSpanElement>();
+      render(<ChatBubble.Typing ref={ref} data-testid="typing" className="custom" />);
+      expect(ref.current).toBe(screen.getByTestId("typing"));
+      expect(ref.current).toHaveClass("custom");
+    });
+
+    it("is exported by name for Server Component consumers", () => {
+      expect(ChatBubbleTyping).toBe(ChatBubble.Typing);
+    });
+
+    it("has no obvious accessibility violations inside a bubble", async () => {
+      const { container } = render(
+        <ChatBubble sender="Priya Natarajan">
+          <ChatBubble.Typing label="Priya Natarajan is typing" />
+        </ChatBubble>,
+      );
+      expect(await axe(container)).toHaveNoViolations();
     });
   });
 });

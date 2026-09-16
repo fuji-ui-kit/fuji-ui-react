@@ -60,21 +60,33 @@ export const DropdownMenuItem = React.forwardRef<
 });
 
 export interface DropdownMenuContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
-  /** Gap in px between the trigger and the menu. */
+  /**
+   * Which side of the trigger the menu opens on. Forwarded to Base UI's
+   * Positioner, which flips it when there is no room. Default "bottom".
+   */
+  side?: "top" | "right" | "bottom" | "left" | "inline-start" | "inline-end";
+  /** Gap in px between the trigger and the menu. Default 6. */
   sideOffset?: number;
-  /** How the menu lines up against the trigger along its cross axis. */
+  /** How the menu lines up against the trigger along its cross axis. Default "start". */
   align?: "start" | "center" | "end";
+  /** Shift in px along the cross axis, away from the `align` edge. Default 0. */
+  alignOffset?: number;
 }
 
 export const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContentProps>(
-  function DropdownMenuContent({ className, sideOffset = 6, align = "start", children, ...props }, ref) {
+  function DropdownMenuContent(
+    { className, side, sideOffset = 6, align = "start", alignOffset, children, ...props },
+    ref,
+  ) {
     const portalAttrs = usePortalThemeAttrs();
     return (
       <Base.Portal>
         <Base.Positioner
           {...portalAttrs}
+          side={side}
           sideOffset={sideOffset}
           align={align}
+          alignOffset={alignOffset}
           className="fj:z-50 fj:outline-none"
         >
           <Base.Popup

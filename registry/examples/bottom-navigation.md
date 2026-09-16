@@ -32,13 +32,22 @@ indicator picks how the active tab is marked, beyond the label and icon colour. 
 
 ## With a badge
 
-Pass a composed icon element to show unread counts or alerts.
+badge pins a count pill to an item's icon - hidden at 0, capped at 99+. A numeric badge is announced as part of the item's name ("Chats, 3 unread"); pass badgeLabel to change that wording, or to give a non-numeric badge a meaningful announcement.
 
 ```tsx
-{ label: "Alerts", icon: (
-  <span className="relative">
-    <Bell />
-    <span className="absolute -top-0.5 -right-0.5 size-1.5 rounded-full bg-fuji-fire" />
-  </span>
-) }
+<BottomNavigation
+  items={[
+    { label: "Home", icon: <Home />, href: "/", active: true },
+    { label: "Chats", icon: <MessageCircle />, href: "/chats", badge: 3 },
+    { label: "Requests", icon: <Users />, href: "/requests", badge: 2, badgeLabel: "2 pending requests" },
+  ]}
+/>
+```
+
+## With a router link
+
+renderLink receives the item, the styled content, and the props Fuji's own anchor would get (href, aria-current, className, onClick, children). Spread them onto your router's link; if you don't, they are applied to the element you return.
+
+```tsx
+<BottomNavigation items={items} renderLink={(item, children, linkProps) => <Link {...linkProps} />} />
 ```

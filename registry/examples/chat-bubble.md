@@ -42,3 +42,29 @@ ChatBubble.Attachment is a small file/media chip for use inside children - pass 
   <ChatBubble.Attachment name="contract-v2.pdf" meta="1.2 MB" onClick={openFile} />
 </ChatBubble>
 ```
+
+## Image attachment with a preview
+
+preview replaces the icon with artwork - an image thumbnail, a video poster - cropped into a small rounded square. Without onClick the chip is a plain element, so it can sit inside your own link.
+
+```tsx
+<ChatBubble align="outgoing" status="read">
+  Photos from the site visit
+  <ChatBubble.Attachment
+    preview={<img src={thumbnailUrl} alt="" />}
+    name="IMG_2041.jpg"
+    meta="3.1 MB"
+    onClick={openPhoto}
+  />
+</ChatBubble>
+```
+
+## Typing indicator
+
+ChatBubble.Typing renders three pulsing dots with a visually hidden status label (default "Typing"). The pulse stops under prefers-reduced-motion.
+
+```tsx
+<ChatBubble avatar={<Avatar fallback="PN" size="sm" />} sender="Priya Nair">
+  <ChatBubble.Typing label="Priya is typing" />
+</ChatBubble>
+```

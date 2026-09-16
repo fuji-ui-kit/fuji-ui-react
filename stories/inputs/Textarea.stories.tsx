@@ -40,3 +40,12 @@ export const Disabled: Story = {
 export const ReadOnly: Story = {
   args: { readOnly: true, defaultValue: "This ticket was closed as resolved on 2026-07-14." },
 };
+
+/**
+ * `rows` drops the size's minimum height, so `rows={1}` is a one-line
+ * composer. Pair it with `field-sizing: content` (or your own auto-grow) to
+ * let it grow as the message does.
+ */
+export const OneLine: Story = {
+  args: { rows: 1, placeholder: "Message…", style: { fieldSizing: "content", maxHeight: "10rem" } },
+};

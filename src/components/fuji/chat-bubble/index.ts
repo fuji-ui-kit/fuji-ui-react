@@ -1,2 +1,7 @@
-export { ChatBubble, ChatBubbleAttachment, ChatBubbleRoot } from "./ChatBubble";
-export type { ChatBubbleProps, ChatBubbleAttachmentProps, ChatBubbleStatus } from "./ChatBubble";
+export { ChatBubble, ChatBubbleAttachment, ChatBubbleRoot, ChatBubbleTyping } from "./ChatBubble";
+export type {
+  ChatBubbleProps,
+  ChatBubbleAttachmentProps,
+  ChatBubbleStatus,
+  ChatBubbleTypingProps,
+} from "./ChatBubble";

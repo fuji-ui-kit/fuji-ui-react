@@ -135,4 +135,50 @@ describe("Carousel", () => {
 
     window.matchMedia = originalMatchMedia;
   });
+
+  describe('effect="coverflow"', () => {
+    const viewport = (container: HTMLElement) => container.querySelector<HTMLElement>(".fuji-carousel")!;
+
+    it("keeps its 1.6 centre-slide width when slidesPerView is not given", () => {
+      const { container } = render(
+        <Carousel aria-label="Demo" effect="coverflow">
+          {slides(4)}
+        </Carousel>,
+      );
+      expect(viewport(container).style.getPropertyValue("--fuji-cv-per-base")).toBe("1.6");
+      expect(viewport(container).style.getPropertyValue("--fuji-cv-per-lg")).toBe("1.6");
+    });
+
+    it("honours slidesPerView, including a responsive map", () => {
+      const { container } = render(
+        <Carousel aria-label="Demo" effect="coverflow" slidesPerView={{ base: 1.2, md: 2.5 }}>
+          {slides(5)}
+        </Carousel>,
+      );
+      const style = viewport(container).style;
+      expect(style.getPropertyValue("--fuji-cv-per-base")).toBe("1.2");
+      expect(style.getPropertyValue("--fuji-cv-per-sm")).toBe("1.2");
+      expect(style.getPropertyValue("--fuji-cv-per-md")).toBe("2.5");
+      expect(style.getPropertyValue("--fuji-cv-per-lg")).toBe("2.5");
+    });
+
+    it("clamps a slidesPerView below 1 to 1", () => {
+      const { container } = render(
+        <Carousel aria-label="Demo" effect="coverflow" slidesPerView={0.5}>
+          {slides(3)}
+        </Carousel>,
+      );
+      expect(viewport(container).style.getPropertyValue("--fuji-cv-per-base")).toBe("1");
+    });
+
+    it("lets every slide become active without loop, whatever slidesPerView is", () => {
+      render(
+        <Carousel aria-label="Demo" effect="coverflow" loop={false} slidesPerView={3} controls>
+          {slides(4)}
+        </Carousel>,
+      );
+      // The centred layout has no "final full page", so all four slides get a dot.
+      expect(screen.getAllByRole("button", { name: /slide \d/i })).toHaveLength(4);
+    });
+  });
 });

@@ -81,6 +81,19 @@ describe("Keyboard layouts", () => {
     expect(six.column + six.span).toBeLessThanOrEqual(plus.column);
   });
 
+  it("gives the standalone numpad a Backspace, so a PIN or OTP keypad can delete", () => {
+    const { keys } = resolveLayout(KEYBOARD_LAYOUT_ROWS.numpad);
+    const backspace = keys.find((key) => key.code === "Backspace");
+    expect(backspace).toMatchObject({ label: "⌫", name: "Backspace", row: 1, column: 1 });
+    // Types nothing itself, like every other layout's Backspace - the
+    // consumer acts on the code.
+    expect(backspace?.value).toBeUndefined();
+    const phoneBackspace = resolveLayout(KEYBOARD_LAYOUT_ROWS.phone).keys.find(
+      (key) => key.code === "Backspace",
+    );
+    expect(backspace?.label).toBe(phoneBackspace?.label);
+  });
+
   it("keeps the phone layout at most ten units wide, so an interactive cap clears the 24x24 target floor", () => {
     // Column count is the whole story here: the sizing already takes min()
     // against the container, so a narrower board is the only lever that moves
@@ -164,16 +177,16 @@ describe("Keyboard", () => {
     const user = userEvent.setup();
     render(<Keyboard layout="numpad" />);
 
-    expect(cap("NumLock")).toHaveAttribute("tabindex", "0");
+    expect(cap("Backspace")).toHaveAttribute("tabindex", "0");
     expect(cap("Numpad7")).toHaveAttribute("tabindex", "-1");
 
     await user.tab();
-    expect(cap("NumLock")).toHaveFocus();
+    expect(cap("Backspace")).toHaveFocus();
 
     await user.keyboard("{ArrowRight}");
     expect(cap("NumpadDivide")).toHaveFocus();
     expect(cap("NumpadDivide")).toHaveAttribute("tabindex", "0");
-    expect(cap("NumLock")).toHaveAttribute("tabindex", "-1");
+    expect(cap("Backspace")).toHaveAttribute("tabindex", "-1");
 
     await user.keyboard("{ArrowDown}");
     expect(cap("Numpad8")).toHaveFocus();
@@ -200,16 +213,16 @@ describe("Keyboard", () => {
     await user.keyboard("{End}");
     expect(cap("NumpadDecimal")).toHaveFocus();
     await user.keyboard("{Home}");
-    expect(cap("NumLock")).toHaveFocus();
+    expect(cap("Backspace")).toHaveFocus();
   });
 
   it("stays put at the edge of the board", async () => {
     const user = userEvent.setup();
     render(<Keyboard layout="numpad" />);
 
-    act(() => cap("NumLock").focus());
+    act(() => cap("Backspace").focus());
     await user.keyboard("{ArrowLeft}{ArrowUp}");
-    expect(cap("NumLock")).toHaveFocus();
+    expect(cap("Backspace")).toHaveFocus();
   });
 
   it("disables every cap and reports nothing when disabled", async () => {
@@ -411,6 +424,47 @@ describe("Keyboard", () => {
 
     const interactive = render(<Keyboard layout="compact" />);
     expect(await axe(interactive.container)).toHaveNoViolations();
+  });
+});
+
+describe("Keyboard focus", () => {
+  it("does not blur the field it types into when laid out in flow", async () => {
+    // Only a floating board used to keep focus, so an inline keypad beside an
+    // input took focus off it on every press.
+    const user = userEvent.setup();
+    const onKeyPress = vi.fn();
+    render(
+      <>
+        <input data-testid="field" />
+        <Keyboard layout="numpad" onKeyPress={onKeyPress} />
+      </>,
+    );
+    const field = screen.getByTestId("field");
+    field.focus();
+
+    await user.click(cap("Numpad7"));
+    expect(document.activeElement).toBe(field);
+    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7" }));
+  });
+
+  it("cancels the mousedown on an in-flow board and a floating one alike", () => {
+    const { rerender } = render(<Keyboard layout="numpad" />);
+    const press = () => {
+      const event = new MouseEvent("mousedown", { bubbles: true, cancelable: true });
+      cap("Numpad7").dispatchEvent(event);
+      return event.defaultPrevented;
+    };
+    expect(press()).toBe(true);
+
+    rerender(<Keyboard floating open layout="numpad" />);
+    expect(press()).toBe(true);
+  });
+
+  it("stays reachable from the keyboard - a cap still takes focus from Tab", async () => {
+    const user = userEvent.setup();
+    render(<Keyboard layout="numpad" />);
+    await user.tab();
+    expect(cap("Backspace")).toHaveFocus();
   });
 });
 
@@ -668,10 +722,32 @@ describe("Keyboard sizing", () => {
     expect(deck.style.getPropertyValue("--fuji-key-target")).toBe("640px");
   });
 
+  it("lifts the size's cap ceiling when a width is given, so width can grow a board", () => {
+    // With the ceiling left on, an in-flow `width="900px"` drew a 630px board.
+    render(<Keyboard layout="compact" width="900px" />);
+    const deck = cap("KeyA").closest(".fuji-keyboard-deck") as HTMLElement;
+    expect(deck.style.getPropertyValue("--fuji-key-ceiling")).toBe("100000px");
+  });
+
+  it("reads a percentage width as a share of the board's container", () => {
+    // A bare `%` inside the unit's calc() resolves against the grid itself, not
+    // the space it was given - `width="100%"` collapsed a numpad to a sliver.
+    render(<Keyboard layout="numpad" width="100%" />);
+    const deck = cap("Numpad7").closest(".fuji-keyboard-deck") as HTMLElement;
+    expect(deck.style.getPropertyValue("--fuji-key-target")).toBe("100cqi");
+  });
+
+  it("subtracts the deck's own border from the container-bound unit", () => {
+    const deck = /\.fuji-keyboard-deck\s*\{([^}]*)\}/.exec(BASE_CSS)?.[1];
+    expect(deck).toContain("--fuji-key-frame: 2px");
+    expect(deck).toMatch(/100cqi - var\(--fuji-key-pad\) \* 2 - var\(--fuji-key-frame\)/);
+  });
+
   it("leaves an in-flow board on the px cap scale when no width is given", () => {
     render(<Keyboard layout="numpad" />);
     const deck = cap("Numpad7").closest(".fuji-keyboard-deck") as HTMLElement;
     expect(deck.style.getPropertyValue("--fuji-key-target")).toBe("");
+    expect(deck.style.getPropertyValue("--fuji-key-ceiling")).toBe("");
   });
 
   it("renders the sm and lg deck size classes, not only the md default", () => {

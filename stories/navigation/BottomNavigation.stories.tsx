@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { BottomNavigation } from "@fujiui/react";
-import { Bell, Home, Plus, Search, User } from "lucide-react";
+import { Bell, Home, MessageCircle, Plus, Search, User } from "lucide-react";
 
 const ITEMS = [
   { label: "Home", icon: <Home className="size-5" />, href: "#home", active: true },
@@ -95,6 +95,30 @@ export const ActiveIndicators: Story = {
           </div>
         </div>
       ))}
+    </div>
+  ),
+};
+
+export const WithBadges: Story = {
+  name: "With badges",
+  render: (args) => (
+    <div className="relative h-[28rem] w-full max-w-sm overflow-hidden rounded-fuji-panel border border-fuji-border">
+      <BottomNavigation
+        {...args}
+        position="absolute"
+        items={[
+          { label: "Home", icon: <Home className="size-5" />, href: "#home", active: true },
+          { label: "Chats", icon: <MessageCircle className="size-5" />, href: "#chats", badge: 3 },
+          { label: "Alerts", icon: <Bell className="size-5" />, href: "#alerts", badge: 128 },
+          {
+            label: "Profile",
+            icon: <User className="size-5" />,
+            href: "#profile",
+            badge: "!",
+            badgeLabel: "action needed",
+          },
+        ]}
+      />
     </div>
   ),
 };

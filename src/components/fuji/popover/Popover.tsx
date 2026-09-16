@@ -40,14 +40,23 @@ export const PopoverDescription = React.forwardRef<
 });
 
 export interface PopoverContentProps extends React.ComponentPropsWithoutRef<typeof Base.Popup> {
-  /** Gap in px between the trigger and the panel. */
+  /**
+   * Which side of the trigger the panel opens on. Forwarded to Base UI's
+   * Positioner, which flips it when there is no room. Default "bottom".
+   */
+  side?: "top" | "right" | "bottom" | "left" | "inline-start" | "inline-end";
+  /** How the panel lines up against the trigger along its cross axis. Default "center". */
+  align?: "start" | "center" | "end";
+  /** Gap in px between the trigger and the panel. Default 8. */
   sideOffset?: number;
+  /** Shift in px along the cross axis, away from the `align` edge. Default 0. */
+  alignOffset?: number;
   /** Draws the triangle pointing back at the trigger. */
   showArrow?: boolean;
 }
 
 export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(function PopoverContent(
-  { className, children, sideOffset = 8, showArrow = true, ...props },
+  { className, children, side, align, sideOffset = 8, alignOffset, showArrow = true, ...props },
   ref,
 ) {
   const portalAttrs = usePortalThemeAttrs();
@@ -59,7 +68,13 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentPro
       <Base.Positioner
         ref={positionerRef}
         {...portalAttrs}
+        // Positioning props belong to the Positioner, not the Popup - spread
+        // onto the popup (where `...props` goes) they were silently dropped,
+        // so only `sideOffset` could ever be set.
+        side={side}
+        align={align}
         sideOffset={sideOffset}
+        alignOffset={alignOffset}
         className="fj:z-50 fj:outline-none"
       >
         <Base.Popup

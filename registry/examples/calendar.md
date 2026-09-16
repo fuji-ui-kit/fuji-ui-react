@@ -16,8 +16,29 @@ Set interactiveHeader to open a compact month and year chooser anchored inside t
 
 ## Min and max range
 
-Days outside the allowed range are disabled.
+Days outside the allowed range are disabled. Bounds compare by calendar day, so minDate={new Date()} disables the past but keeps today selectable.
 
 ```tsx
-<Calendar minDate={minDate} maxDate={maxDate} />
+<Calendar minDate={new Date()} maxDate={maxDate} />
+```
+
+## Marked dates
+
+markedDates puts a small dot under days that have something on them - a list of dates (matched by calendar day) or a predicate. markedDateLabel is appended to each marked day's accessible name, so say what the dot means.
+
+```tsx
+<Calendar
+  value={date}
+  onChange={setDate}
+  markedDates={tasks.map((task) => task.dueDate)}
+  markedDateLabel="has tasks"
+/>
+```
+
+## Fixed today
+
+today overrides the date treated as today (highlight, aria-current, initial month). Without it, today is the visitor's local date resolved after mount; pass one for deterministic server rendering, demos, and tests.
+
+```tsx
+<Calendar today={new Date(2024, 4, 15)} />
 ```

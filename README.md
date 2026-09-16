@@ -48,6 +48,18 @@ components use, and the shared base rules (focus styles, glass surfaces,
 portal theming). See [docs/nextjs.md](docs/nextjs.md) and
 [docs/vite.md](docs/vite.md) for exactly where to put this per framework.
 
+If your app runs its own **Tailwind v4** build, add one line at the very top
+of your global CSS so a utility you pass through `className`
+(`<Card className="p-0">`) overrides the component's own styling, while your
+preflight stays below Fuji:
+
+```css
+@layer properties, theme, base, fuji, components, utilities;
+```
+
+See [docs/theming.md](docs/theming.md#overriding-a-components-styles-with-classname)
+for the full snippet and for Tailwind v3/plain-CSS apps.
+
 If you only want the raw `--fuji-*` custom properties (e.g. to build your own
 utility layer against them), import `@fujiui/react/tokens.css` instead - it's
 already included inside `styles.css`, so only reach for it standalone if you

@@ -24,6 +24,19 @@ export interface TreeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "o
   onSelect?: (node: TreeNode) => void;
   /** `id`s expanded on first render. Expansion is uncontrolled from then on. */
   defaultExpandedIds?: string[];
+  /**
+   * Whether selecting a parent node also toggles it. Default `true` - clicking
+   * a folder row, or pressing Enter/Space on it, both selects it and
+   * expands/collapses it, as before.
+   *
+   * Set `false` to decouple the two, per the WAI-ARIA tree pattern: a row
+   * click and Enter/Space only select, the chevron toggles on click, and
+   * ArrowRight/ArrowLeft expand and collapse from the keyboard (they always
+   * do, in both modes). Use it when a folder is itself something to select -
+   * a file browser that shows a folder's details - without it opening or
+   * closing every time.
+   */
+  expandOnSelect?: boolean;
 }
 
 interface FlatNode {
@@ -45,7 +58,7 @@ function flattenVisible(nodes: TreeNode[], expandedIds: Set<string>, depth = 0):
 
 /** Recursive expandable tree - for file browsers and nested navigation. */
 export const Tree = React.forwardRef<HTMLDivElement, TreeProps>(function Tree(
-  { data, selectedId, onSelect, defaultExpandedIds = [], className, ...props },
+  { data, selectedId, onSelect, defaultExpandedIds = [], expandOnSelect = true, className, ...props },
   ref,
 ) {
   const [expandedIds, setExpandedIds] = React.useState<Set<string>>(() => new Set(defaultExpandedIds));
@@ -127,7 +140,7 @@ export const Tree = React.forwardRef<HTMLDivElement, TreeProps>(function Tree(
         // Native <button> gave this for free; the treeitem row is a plain
         // element (see TreeItem), so activation is wired explicitly here.
         event.preventDefault();
-        if (hasChildren) toggleExpand(node.id);
+        if (hasChildren && expandOnSelect) toggleExpand(node.id);
         onSelect?.(node);
         break;
       }
@@ -147,6 +160,7 @@ export const Tree = React.forwardRef<HTMLDivElement, TreeProps>(function Tree(
           onSelect={onSelect}
           expandedIds={expandedIds}
           onToggleExpand={toggleExpand}
+          expandOnSelect={expandOnSelect}
           activeId={activeVisibleId}
           onFocusItem={setActiveId}
           registerRef={(id, el) => {
@@ -170,6 +184,7 @@ function TreeItem({
   onSelect,
   expandedIds,
   onToggleExpand,
+  expandOnSelect,
   activeId,
   onFocusItem,
   registerRef,
@@ -184,6 +199,7 @@ function TreeItem({
   onSelect?: (node: TreeNode) => void;
   expandedIds: Set<string>;
   onToggleExpand: (id: string) => void;
+  expandOnSelect: boolean;
   activeId: string | undefined;
   onFocusItem: (id: string) => void;
   registerRef: (id: string, el: HTMLDivElement | null) => void;
@@ -219,7 +235,7 @@ function TreeItem({
         onFocus={() => onFocusItem(node.id)}
         onKeyDown={(event) => onItemKeyDown(event, node, index)}
         onClick={() => {
-          if (hasChildren) onToggleExpand(node.id);
+          if (hasChildren && expandOnSelect) onToggleExpand(node.id);
           onSelect?.(node);
         }}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
@@ -231,12 +247,35 @@ function TreeItem({
         )}
       >
         {hasChildren ? (
-          <ChevronRight
+          // With `expandOnSelect={false}` the chevron is the pointer's toggle.
+          // Deliberately not a <button>: a focusable control nested in the
+          // treeitem would split focus from the tree semantics (see above),
+          // and keyboard users already have ArrowRight/ArrowLeft. It stops
+          // propagation so the toggle does not also select the row.
+          <span
+            aria-hidden="true"
+            data-tree-toggle=""
+            onClick={
+              expandOnSelect
+                ? undefined
+                : (event) => {
+                    event.stopPropagation();
+                    onToggleExpand(node.id);
+                  }
+            }
             className={cn(
-              "fj:size-3.5 fj:shrink-0 fj:transition-transform fj:duration-[var(--fuji-duration-fast)]",
-              expanded && "fj:rotate-90",
+              "fj:flex fj:shrink-0 fj:items-center fj:justify-center",
+              // A larger hit area than the 14px glyph, without moving it.
+              !expandOnSelect && "fj:-m-1 fj:rounded-fuji-item fj:p-1 fj:hover:bg-fuji-surface-strong",
             )}
-          />
+          >
+            <ChevronRight
+              className={cn(
+                "fj:size-3.5 fj:shrink-0 fj:transition-transform fj:duration-[var(--fuji-duration-fast)]",
+                expanded && "fj:rotate-90",
+              )}
+            />
+          </span>
         ) : (
           <span className="fj:size-3.5 fj:shrink-0" />
         )}
@@ -263,6 +302,7 @@ function TreeItem({
               onSelect={onSelect}
               expandedIds={expandedIds}
               onToggleExpand={onToggleExpand}
+              expandOnSelect={expandOnSelect}
               activeId={activeId}
               onFocusItem={onFocusItem}
               registerRef={registerRef}

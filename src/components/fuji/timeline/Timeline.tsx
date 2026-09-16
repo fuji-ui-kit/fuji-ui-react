@@ -102,6 +102,7 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
         {...props}
       >
         {groups.map((group, groupIndex) => {
+          const hasTimestamps = group.items.some((item) => item.timestamp !== undefined);
           const heading = (
             <h3 className="fj:m-0 fj:text-[length:var(--fuji-text-2xl)] fj:leading-none fj:font-semibold fj:tracking-tight fj:text-fuji-foreground">
               {group.label}
@@ -133,18 +134,38 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
               {group.media && (
                 <div className="fj:flex fj:flex-col fj:sm:items-end fj:sm:text-right">{group.media}</div>
               )}
+              {/*
+                Timestamps sit in a shared `auto` grid column sized to the
+                widest one in the group, and each row joins that grid through
+                `subgrid`, so every title still starts on one line. This was a
+                fixed `w-8` (32px) per row, which only fit a two-digit year:
+                "Sep 14" or "9:41 AM" overflowed into the title or wrapped.
+                `min-w-8` keeps the old width as the floor, so short stamps
+                align exactly as before. A group with no timestamps at all
+                skips the column (and its gap) entirely.
+              */}
               <ol
                 className={cn(
-                  "fj:m-0 fj:flex fj:list-none fj:flex-col fj:gap-2.5 fj:p-0",
+                  "fj:m-0 fj:list-none fj:gap-2.5 fj:p-0",
+                  hasTimestamps
+                    ? "fj:grid fj:grid-cols-[auto_minmax(0,1fr)] fj:gap-x-3"
+                    : "fj:flex fj:flex-col",
                   !group.media && "fj:sm:col-start-2",
                 )}
               >
                 {group.items.map((item, itemIndex) => {
                   const status = item.statusLabel ?? STATUS_LABELS[item.variant ?? "default"];
                   return (
-                    <li key={itemIndex} className="fj:flex fj:items-baseline fj:gap-3">
-                      {item.timestamp !== undefined && (
-                        <span className="fj:w-8 fj:shrink-0 fj:text-[length:var(--fuji-text-sm)] fj:font-semibold fj:tabular-nums fj:text-fuji-foreground-muted">
+                    <li
+                      key={itemIndex}
+                      className={cn(
+                        hasTimestamps
+                          ? "fj:col-span-2 fj:grid fj:grid-cols-subgrid fj:items-baseline"
+                          : "fj:flex fj:items-baseline fj:gap-3",
+                      )}
+                    >
+                      {hasTimestamps && (
+                        <span className="fj:min-w-8 fj:text-[length:var(--fuji-text-sm)] fj:font-semibold fj:whitespace-nowrap fj:tabular-nums fj:text-fuji-foreground-muted">
                           {item.timestamp}
                         </span>
                       )}

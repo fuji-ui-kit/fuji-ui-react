@@ -49,3 +49,19 @@ export const OpensOnClick: Story = {
     await expect(trigger).toHaveAttribute("aria-expanded", "true");
   },
 };
+
+/** `side`, `align`, `sideOffset` and `alignOffset` are forwarded to Base UI's Positioner. */
+export const Placement: Story = {
+  render: () => (
+    <div className="flex flex-wrap gap-3 p-24">
+      {(["top", "right", "bottom", "left"] as const).map((side) => (
+        <Popover key={side}>
+          <Popover.Trigger render={<Button appearance="bordered">{side}, align end</Button>} />
+          <Popover.Content side={side} align="end" alignOffset={4}>
+            <Popover.Description>Opens on the {side} side, end-aligned.</Popover.Description>
+          </Popover.Content>
+        </Popover>
+      ))}
+    </div>
+  ),
+};

@@ -28,6 +28,32 @@ export const WithBounds: Story = {
   },
 };
 
+/** `minDate={new Date()}` disables the past but keeps today selectable - bounds compare by calendar day. */
+export const NoPastDates: Story = {
+  name: "No past dates",
+  render: () => <Calendar minDate={new Date()} />,
+};
+
+/** `markedDates` dots the days that have something on them; `markedDateLabel` is announced with each marked day. */
+export const MarkedDates: Story = {
+  render: () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    return (
+      <Calendar
+        markedDates={[new Date(year, month, 3), new Date(year, month, 12), today, new Date(year, month, 24)]}
+        markedDateLabel="has tasks"
+      />
+    );
+  },
+};
+
+/** `today` pins the date treated as today - deterministic for SSR, demos, and visual tests. */
+export const FixedToday: Story = {
+  args: { today: new Date(2024, 4, 15), markedDates: (date: Date) => date.getDay() === 1 },
+};
+
 function ControlledCalendar() {
   const [date, setDate] = React.useState<Date | null>(null);
   return (
