@@ -16,15 +16,8 @@ import { TimePicker } from "../time-picker";
 const options = [{ value: "a", label: "Alpha" }];
 
 /**
- * Input's slotted-branch wrapper (startSlot/endSlot/clearable) is a plain
- * `<div>`, not a Base UI element, so it can never carry `data-invalid`
- * itself - it can only react to the real `<input>` inside it via `:has()`
- * (see Input.tsx). Pull the `has-[...]:border-fuji-fire` utility actually
- * shipped on `el` (there should be exactly one) and ask the DOM whether the
- * selector it compiles to - `:has(<the bracketed inner selector>)` -
- * matches `el` as currently rendered, instead of merely checking that a
- * class string is present, or that `:has([data-invalid])` matches
- * regardless of whether that class ships at all.
+ * Whether the `has-[...]:border-fuji-fire` class shipped on `el` actually matches it in the DOM.
+ * Input's slotted wrapper is a plain `<div>` that can only react to its `<input>` via `:has()`.
  */
 function invalidStylingApplies(el: Element): boolean {
   const relevant = el.className.split(/\s+/).filter((c) => /^fj:has-\[.+\]:border-fuji-fire$/.test(c));
@@ -64,18 +57,9 @@ describe("FormField", () => {
     expect(screen.getByRole("textbox")).toHaveAttribute("aria-invalid", "true");
   });
 
-  // Regression (Defect 2): `Input` used to write
-  // `data-invalid={invalid ? "" : undefined}` on the same element that
-  // carries `data-[invalid]:border-fuji-fire`. Passing an explicit
-  // `undefined` still occupies the prop key, so it won the merge in Base
-  // UI's `useRenderElement` over the `data-invalid` that `Field.Control`
-  // already computes automatically from this ancestor `<FormField invalid>`
-  // - erasing it whenever the plain `<Input/>` below (matching the real
-  // `forms-formfield--invalid` story) had no `invalid` prop of its own.
-  // `aria-invalid` was unaffected because Base UI recomputes it later in a
-  // separate merge step, which is why the border regressed silently while
-  // assistive tech still announced the field correctly. Fails before the
-  // fix (no `data-invalid`, so the red border never painted); passes after.
+  // Regression: an explicit `data-invalid={undefined}` on Input won Base UI's merge and erased
+  // the value `Field.Control` computes from `<FormField invalid>`. `aria-invalid` is recomputed
+  // later, so the border regressed silently while assistive tech still announced it.
   it("propagates its own invalid state to a plain Input's data-invalid, not just aria-invalid", () => {
     render(
       <FormField invalid>
@@ -86,18 +70,8 @@ describe("FormField", () => {
     expect(screen.getByRole("textbox")).toHaveAttribute("data-invalid", "");
   });
 
-  // Gap 1: Input's *slotted* branch (startSlot/endSlot/clearable) renders a
-  // plain `<div>` as the visible bordered box, with the real `<input>`
-  // nested unstyled inside it. Unlike the unslotted branch above, that div
-  // is not a Base UI element - it never participates in Field context, so
-  // nothing mirrors this ancestor's invalid state onto it, and the
-  // `data-[invalid]:border-fuji-fire` border on `fieldSurface()` never
-  // painted for a search-style input with a leading icon even though a bare
-  // `<Input/>` in the same `<FormField invalid>` showed it correctly. Fails
-  // before the fix (the wrapper has no rule that can react to anything
-  // outside itself); passes after Input.tsx adds
-  // `has-[[data-invalid]]:border-fuji-fire`, reacting to the real `<input>`
-  // inside, which already mirrors this ancestor's state correctly.
+  // Input's slotted branch draws its border on a plain `<div>` outside Field context, so only
+  // `has-[[data-invalid]]:border-fuji-fire` (reacting to the inner `<input>`) can paint it.
   it("visually flags a slotted Input's wrapper as invalid via an ancestor FormField", () => {
     render(
       <FormField invalid>
@@ -149,11 +123,9 @@ describe("FormField", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  // Every Fuji field must take its accessible name from `FormField.Label`
-  // with no `aria-label` of its own. DatePicker and TimePicker never did
-  // (their triggers were not Field-aware), and Combobox/MultiSelect/
-  // NumberInput passed an explicit `aria-labelledby={undefined}` that erased
-  // the label id Base UI sets - they only stayed named through `label[for]`.
+  // Every field must take its accessible name from `FormField.Label`. DatePicker/TimePicker
+  // weren't Field-aware, and Combobox/MultiSelect/NumberInput erased the label id with
+  // `aria-labelledby={undefined}`, staying named only through `label[for]`.
   it.each([
     ["Select", <Select key="c" items={options} />, "combobox"],
     ["Combobox", <Combobox key="c" items={options} />, "combobox"],

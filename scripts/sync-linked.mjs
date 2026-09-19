@@ -1,20 +1,6 @@
 /**
- * Mirrors this package's build output into a consumer's `node_modules` so the
- * website picks up component changes without a repack + reinstall.
- *
- * Why a copy instead of `npm link` / a `file:` directory dependency: both of
- * those install a SYMLINK, and the link target lives outside the website's
- * project root. Turbopack refuses to resolve through a symlink that escapes
- * its root ("Can't resolve '@fujiui/react'"), and the documented fix -
- * widening `turbopack.root` to the parent directory - makes it watch both
- * repos, the git worktree and every node_modules under them. Measured: the
- * dev server sat at 813% CPU and page compiles went from ~1.5s to 100s.
- *
- * Copying keeps `node_modules/@fujiui/react` a plain directory, so resolution
- * and file watching stay exactly as they are for a published package, and the
- * dev server only ever watches its own project.
- *
- * Usage: node scripts/sync-linked.mjs [targetNodeModulesPath]
+ * Copies build output into a consumer's node_modules (`node scripts/sync-linked.mjs [target]`).
+ * Not a symlink: Turbopack won't resolve outside its root; widening it hit 813% CPU, 100s compiles.
  */
 import { cp, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync, watch } from "node:fs";
@@ -48,8 +34,7 @@ async function sync() {
   try {
     await mkdir(join(TARGET, "dist"), { recursive: true });
     await cp(join(ROOT, "dist"), join(TARGET, "dist"), { recursive: true, force: true });
-    // Keep the manifest in step too - `exports` and `version` changes matter
-    // to the consumer's resolver, and a stale copy resolves to missing files.
+    // The manifest too: a stale `exports` resolves to missing files.
     const pkg = JSON.parse(await readFile(join(ROOT, "package.json"), "utf8"));
     await writeFile(join(TARGET, "package.json"), JSON.stringify(pkg, null, 2) + "\n");
     console.log(`synced dist -> consumer in ${Date.now() - started}ms`);
@@ -70,8 +55,7 @@ function schedule() {
 }
 
 watch(join(ROOT, "dist"), { recursive: true }, (_event, file) => {
-  // Source maps churn on every rebuild and the consumer never reads them
-  // during dev; skipping them halves the copies.
+  // Skip source maps: unused in dev, and skipping them halves the copies.
   if (file && file.endsWith(".map")) return;
   schedule();
 });

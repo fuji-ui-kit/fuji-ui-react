@@ -19,10 +19,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Rendered inside a bounded "phone screen" box. `position="absolute"` is the
-// prop for a contained parent; the previous `className="absolute"` override
-// never applied, because Fuji's own positioning class lives in its cascade
-// layer and won - the bar escaped the box and pinned to the preview's edge.
+// Inside a bounded "phone screen", use `position="absolute"`: a `className="absolute"` override
+// loses to Fuji's layered positioning class, so the bar escapes to the preview's edge.
 export const Default: Story = {
   render: (args) => (
     <div className="relative h-[28rem] w-full max-w-sm overflow-hidden rounded-fuji-panel border border-fuji-border">
@@ -77,9 +75,8 @@ export const FloatingWithAction: Story = {
 };
 
 /**
- * The four ways an active item can be marked. Colour alone is not a sufficient
- * indicator (WCAG 1.4.1) - `aria-current="page"` is always set, and these add
- * a visible non-colour cue on top of it.
+ * Four active-item markers. Colour alone fails WCAG 1.4.1, so `aria-current="page"` is always set
+ * and these add a visible non-colour cue.
  */
 export const ActiveIndicators: Story = {
   name: "Active indicators",

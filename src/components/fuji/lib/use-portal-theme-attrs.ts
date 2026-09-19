@@ -3,11 +3,8 @@
 import { useFujiConfig } from "../../../provider/FujiProvider";
 
 /**
- * Base UI's own overlay primitives (Select, Combobox, Menu, Dialog, Popover,
- * Tooltip, Drawer, Toast, NavigationMenu...) manage their own portal to
- * `document.body`, bypassing `FujiPortal`. Spread this onto each
- * primitive's outermost styled node (Popup/Positioner/Content) so theme and
- * radius CSS variables still resolve outside the provider's DOM subtree.
+ * Base UI overlays portal to `document.body`, bypassing `FujiPortal`; spread this on each one's
+ * outermost styled node so theme/radius variables resolve outside the provider's subtree.
  */
 export function usePortalThemeAttrs() {
   const { theme, material, radius, elevation } = useFujiConfig();

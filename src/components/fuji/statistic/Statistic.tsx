@@ -17,18 +17,13 @@ export interface StatisticProps extends Omit<React.HTMLAttributes<HTMLDivElement
   /** Decimal places used when animating a numeric value. Defaults to 0. Ignored when `formatValue` is given. */
   decimals?: number;
   /**
-   * BCP 47 locale for a numeric `value`'s grouping and decimal separators.
-   * Default `"en-US"` - a fixed locale rather than the runtime's own, because
-   * a server and a browser in different locales would otherwise render
-   * different digits ("1,234.5" vs "1.234,5") and fail hydration. Pass the
-   * user's locale explicitly (the same value on server and client) to localize.
+   * BCP 47 locale for numeric separators. Default `"en-US"`: fixed, since server/browser locales can
+   * differ ("1,234.5" vs "1.234,5") and fail hydration. Pass the same locale on both to localize.
    */
   locale?: string;
   /**
-   * Formats a numeric `value` yourself - currency, compact notation, units.
-   * Replaces the built-in `locale`/`decimals` formatting. Must return the same
-   * string on server and client. Digits in the result still roll; any other
-   * characters render as static cells.
+   * Custom formatter (currency, compact, units); replaces `locale`/`decimals`. Must return the
+   * same string on server and client. Digits still roll; other characters are static cells.
    */
   formatValue?: (value: number) => string;
   /** Positive shows an up arrow in success color, negative a down arrow in danger. */
@@ -42,15 +37,8 @@ export interface StatisticProps extends Omit<React.HTMLAttributes<HTMLDivElement
 const DIGITS = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 
 /**
- * The value as a row of characters. Each DIGIT is a fixed-height cell holding
- * a vertical strip of 0-9, translated so the current digit shows; changing
- * `--fuji-digit` rolls the strip on the shared spring (see `.fuji-digit` in
- * base.css). Separators, prefix and suffix are plain cells of the same height
- * so every glyph shares one baseline.
- *
- * The markup always carries the FINAL value (server render included); the
- * reveal-on-first-view roll below only rewinds the strips to 0 and releases
- * them, it never changes what the DOM says the number is.
+ * Digits are 0-9 strips rolled by `--fuji-digit` (base.css); other glyphs share the baseline. The
+ * markup always holds the FINAL value (SSR too); the first-view roll only rewinds strips to 0.
  */
 function RollingNumber({ text }: { text: string }) {
   return (

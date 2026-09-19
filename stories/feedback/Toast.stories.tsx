@@ -10,10 +10,8 @@ interface ToastConfig {
 }
 
 /**
- * Adds the given toasts once on mount, with `timeout: 0` (never
- * auto-dismisses) - so the story renders the toast's actual open state
- * directly in the canvas/Docs page, rather than requiring a click that then
- * disappears after Base UI's default 5s.
+ * Adds the toasts once on mount with `timeout: 0`, so the open state stays on the canvas instead
+ * of needing a click and vanishing after Base UI's default 5s.
  */
 function AutoToasts({ toasts }: { toasts: ToastConfig[] }) {
   const toast = useToast();
@@ -151,11 +149,8 @@ function AddToastButton() {
 }
 
 /**
- * The stack itself: press the button a few times. Each new toast springs in
- * from below and the ones behind it are pushed up, scaled down and faded
- * per step; hover the stack to fan it out and read every toast, and
- * dismiss any of them. The provider's `limit` (here 4) caps how many are
- * shown.
+ * Press the button a few times: toasts spring in and older ones step back. Hover to fan the stack
+ * out and dismiss any; the provider's `limit` (here 4) caps how many show.
  */
 export const Stack: Story = {
   name: "Stack (add toasts)",

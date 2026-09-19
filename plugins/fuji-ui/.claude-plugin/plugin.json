@@ -1,8 +1,8 @@
 {
   "name": "fuji-ui",
   "displayName": "Fuji UI",
-  "version": "0.1.0",
-  "description": "Build React UI with Fuji UI: the component API of the @fujiui/react version your project has installed, a checker for its conventions, and a skill that tells Claude when to use them.",
+  "version": "0.2.0",
+  "description": "Build React UI with Fuji UI: the component API of the @fujiui/react version your project has installed, dark mode and glass recipes, a checker for its conventions, and a skill that tells Claude when to use them.",
   "author": {
     "name": "Fuji UI",
     "url": "https://github.com/fuji-ui-kit"

@@ -6,9 +6,8 @@ export interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
   /** Type scale step. Sets the size and weight; pass `as` to change the element. */
   scale?: TypographyScale;
   /**
-   * The element to render. Each scale has a semantic default (`heading` is an
-   * `<h2>`, `body` a `<p>`); set this when the document outline needs a
-   * different tag than the size implies.
+   * The element to render. Each scale has a semantic default (`heading` is `<h2>`, `body` `<p>`);
+   * set this when the document outline needs a different tag than the size implies.
    */
   as?: keyof React.JSX.IntrinsicElements;
 }

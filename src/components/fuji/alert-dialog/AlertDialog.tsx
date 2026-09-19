@@ -72,14 +72,8 @@ export const AlertDialogFooter = React.forwardRef<HTMLDivElement, React.HTMLAttr
 );
 
 /**
- * `<AlertDialog><AlertDialog.Trigger/><AlertDialog.Content>
- *   <AlertDialog.Title/><AlertDialog.Description/>
- *   <AlertDialog.Footer><AlertDialog.Close render={<Button/>}/></AlertDialog.Footer>
- * </AlertDialog.Content></AlertDialog>`
- *
- * Use for destructive/blocking confirmations where the user must make an
- * explicit choice (matches the WAI-ARIA alertdialog pattern), as distinct
- * from `Dialog`'s general-purpose overlay.
+ * For destructive/blocking confirmations needing an explicit choice (WAI-ARIA alertdialog), unlike
+ * `Dialog`. `<AlertDialog><AlertDialog.Trigger/><AlertDialog.Content>...</AlertDialog.Content></AlertDialog>`
  */
 export const AlertDialog = Object.assign(AlertDialogRoot, {
   Trigger: AlertDialogTrigger,

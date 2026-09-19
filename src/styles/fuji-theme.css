@@ -1,9 +1,6 @@
 /*
- * Build-time only: maps Fuji's --fuji-* custom properties into Tailwind's
- * theme namespace so utilities like `bg-fuji-contained-default` or
- * `rounded-fuji-control` are generated. Consumed by scripts/build-css.mjs,
- * not shipped as its own file - the generated utilities land directly in
- * dist/styles.css so consumers never need their own Tailwind config.
+ * Build-time only: maps `--fuji-*` into Tailwind's theme so `bg-fuji-*`-style utilities generate
+ * straight into dist/styles.css (scripts/build-css.mjs) - consumers need no Tailwind config.
  */
 @theme inline {
   --color-fuji-background: var(--fuji-background);
@@ -59,11 +56,8 @@
   --shadow-fuji-panel: var(--fuji-shadow-panel);
   --shadow-fuji-overlay: var(--fuji-shadow-overlay);
 
-  /* Fuji-prefixed copies of Tailwind's spin/ping/pulse. Tailwind emits its
-     built-in keyframes under the bare names `spin`, `ping` and `pulse`, which
-     are global to the document and silently collide with a consumer's own
-     `@keyframes spin`. The `fj:` class prefix does not rename keyframes, so
-     these are declared explicitly instead. */
+  /* Fuji-prefixed spin/ping/pulse: Tailwind's bare-named keyframes are document-global and collide
+     with a consumer's own `@keyframes spin`, and the `fj:` prefix doesn't rename keyframes. */
   --animate-fuji-spin: fuji-spin 1s linear infinite;
   --animate-fuji-ping: fuji-ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
   --animate-fuji-pulse: fuji-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;

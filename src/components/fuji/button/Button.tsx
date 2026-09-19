@@ -24,21 +24,13 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   /** Icon rendered after the label. */
   endIcon?: React.ReactNode;
   /**
-   * Renders Button's visual styling onto its single child element instead of
-   * a `<button>` - e.g. `<Button asChild><Link href="/docs">Docs</Link></Button>`.
-   * The child must forward its ref and spread the props it receives.
-   *
-   * The rendered element is frequently a link, which has no native
-   * `disabled` attribute, so `disabled`/`loading` are enforced here via
-   * `aria-disabled` plus a click/keydown guard rather than relying on the
-   * HTML `disabled` attribute.
+   * Renders Button's styling onto its single child (ref- and prop-forwarding), e.g. a router link.
+   * Links lack native `disabled`, so `disabled`/`loading` use `aria-disabled` plus a click guard.
    */
   asChild?: boolean;
   /**
-   * Plays a pointer-origin ripple on press. On by default - the ripple is part
-   * of how a button is meant to feel, so it applies to every button rather
-   * than being opted into per control. Pass `false` to suppress it. Does
-   * nothing under `prefers-reduced-motion: reduce`.
+   * Plays a pointer-origin ripple on press. On by default, as part of how every button feels; pass
+   * `false` to suppress it. Does nothing under `prefers-reduced-motion: reduce`.
    */
   ripple?: boolean;
 }
@@ -85,9 +77,7 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
     ripple && "fuji-ripple",
     appearanceClasses(tone, appearance),
     "fj:hover:brightness-[1.04] fj:active:brightness-[0.97]",
-    // Focus-visible outline now lives in `buttonBase` (button.styles.ts) so
-    // IconButton, which shares that recipe module, can't drift out of sync
-    // with it again.
+    // Focus-visible outline lives in `buttonBase` (button.styles.ts), shared with IconButton.
     isDisabled && "fj:pointer-events-none fj:cursor-not-allowed fj:opacity-45",
     className,
   );
@@ -105,9 +95,7 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
     if (childNodes.length !== 1 || !React.isValidElement(child)) {
       throw new Error("Button with asChild requires exactly one React element child.");
     }
-    // The rendered element (often a link) may have no native `disabled`
-    // support, so a disabled/loading state is enforced here instead of
-    // relying on the `disabled` HTML attribute reaching the child.
+    // The child (often a link) may lack native `disabled`, so disabled/loading is enforced here.
     const guardActivation = (event: { preventDefault: () => void; stopPropagation: () => void }) => {
       if (!isDisabled) return false;
       event.preventDefault();
@@ -117,10 +105,8 @@ export const Button = React.forwardRef<HTMLButtonElement | HTMLElement, ButtonPr
     // `type="button"` only means something on an actual <button> - forcing it
     // onto an <a> or a custom component renders a meaningless/invalid attribute.
     const isButtonElement = child.type === "button";
-    // React 19 moved `ref` onto `props`; React 18 (still a supported peer)
-    // only ever exposed it as the element's own `ref` field. Reading
-    // `props.ref` first avoids React 19's "accessing element.ref" warning,
-    // falling back to the legacy field so React 18 children keep their ref too.
+    // React 19 moved `ref` onto `props`; React 18 (still supported) only has `element.ref`. Reading
+    // `props.ref` first avoids React 19's warning; the fallback keeps React 18 children's refs.
     const childRef = child.props.ref ?? (child as unknown as { ref?: React.Ref<HTMLElement> }).ref;
     return React.cloneElement(child, {
       ...props,

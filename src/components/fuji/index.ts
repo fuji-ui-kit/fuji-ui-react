@@ -1,6 +1,4 @@
-// Fuji component system - barrel export. FujiProvider and shared types are
-// re-exported from the package root (src/index.ts), not from here, so this
-// folder stays a pure component barrel.
+// Component barrel. FujiProvider and shared types are exported from the package root (src/index.ts).
 
 export * from "./portal";
 export { DismissButton } from "./lib/dismiss-button";

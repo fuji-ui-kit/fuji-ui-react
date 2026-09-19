@@ -7,25 +7,19 @@ const BUTTON_SIZES = {
 } as const;
 
 const BUTTON_BASE = [
-  // First so a variant's own border/background (added later via `cn()` in
-  // Button.tsx) still wins - see native-control-reset.ts for why this is
-  // needed without Tailwind preflight.
+  // First so a variant's border/background (added later via `cn()`) still wins; see
+  // native-control-reset.ts for why this is needed without preflight.
   NATIVE_CONTROL_RESET,
   "fj:inline-flex fj:cursor-pointer fj:select-none fj:items-center fj:justify-center fj:gap-2",
   "fj:rounded-fuji-control fj:font-medium fj:whitespace-nowrap",
-  // `asChild` renders these classes onto whatever the consumer passes - most
-  // often a router `<Link>`, i.e. an `<a>` - and without preflight that anchor
-  // keeps the UA underline under the button label.
+  // `asChild` often renders these onto a router `<a>`, which keeps the UA underline without preflight.
   "fj:no-underline",
   "fj:shadow-fuji-control fj:transition-[transform,box-shadow,background-color,color,border-color]",
   "fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease)]",
   "fj:active:scale-[var(--fuji-press-scale)]",
   "fj:disabled:cursor-not-allowed fj:disabled:opacity-45",
-  // Kept here rather than in Button.tsx's own JSX so every consumer of this
-  // recipe gets it for free - it used to live only in Button.tsx, which is
-  // exactly why IconButton (built from `iconButtonBase` below, not this
-  // constant) shipped with no focus-visible styling at all and fell back to
-  // the browser's native ring, measured at ~2:1 contrast against the page.
+  // Lives in the shared recipe, not Button.tsx's JSX, so every consumer gets it; IconButton once
+  // shipped without it and fell back to the native ring (~2:1 contrast).
   "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
 ].join(" ");
 
@@ -50,11 +44,8 @@ const ICON_BUTTON_BASE = [
   "fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease)]",
   "fj:active:scale-[var(--fuji-press-scale)]",
   "fj:disabled:cursor-not-allowed fj:disabled:opacity-45",
-  // See the matching comment in BUTTON_BASE above - every other focusable
-  // Fuji control (Button, Checkbox, and field-surface.ts behind
-  // Input/Select/Textarea/ComboBox) carries this outline; IconButton must
-  // too, and living here means a future consumer of `iconButtonBase` can't
-  // forget it the way Button.tsx's own JSX-only copy let IconButton do.
+  // Same focus outline as BUTTON_BASE and every other focusable Fuji control; kept in the recipe
+  // so no `iconButtonBase` consumer can forget it.
   "fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
 ].join(" ");
 

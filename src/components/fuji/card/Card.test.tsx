@@ -68,8 +68,7 @@ describe("Card", () => {
     );
     expect(screen.getByTestId("card").className).toContain("hover:scale-105");
 
-    // An explicit `effect` must override the legacy boolean rather than being
-    // OR-ed with it, so `effect="none"` can opt back out.
+    // An explicit `effect` overrides the legacy boolean, so `effect="none"` opts back out.
     rerender(
       <Card data-testid="card" interactive effect="none">
         Content
@@ -84,14 +83,10 @@ describe("Card", () => {
         Content
       </Card>,
     );
-    // Tailwind v4 emits `scale`/`rotate` as their own CSS properties, so
-    // naming only `transform` left the hover tilt un-transitioned, and
-    // `transform-none` failed to undo it under reduced motion.
+    // Tailwind v4 emits `scale`/`rotate` as their own properties, not `transform`.
     const classes = screen.getByTestId("card").className;
     expect(classes).toContain("transition-[background-color,border-color,box-shadow,transform,scale,rotate]");
-    // The moving half must be gated behind `motion-safe`, not undone by a
-    // `motion-reduce` override - the latter loses on specificity against the
-    // `:hover` rule, so reduced-motion visitors still got the full animation.
+    // Gated by `motion-safe`: a `motion-reduce` override loses on specificity to the `:hover` rule.
     expect(classes).toContain("motion-safe:hover:scale-105");
     expect(classes).toContain("motion-safe:hover:-rotate-1");
     expect(classes).not.toContain("motion-reduce:scale-100");

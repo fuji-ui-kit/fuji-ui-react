@@ -3,20 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * DropdownMenu, Select, Combobox and MultiSelect all mark the keyboard/pointer
- * row with Base UI's `data-highlighted`. That row used to paint
- * `bg-fuji-surface-strong`, which under dark glass is a translucent WHITE fill
- * - white on purpose, so bare textless tracks stay visible against a near-black
- * page - and white lightens toward whatever is behind it. The highlighted label
- * washed out over a bright backdrop: measured 3.35:1 on DropdownMenu. They now
- * use the fill/text inversion every other selection indicator in the library
- * uses, and that CommandMenu moved to for the same reason (13.48:1).
- *
- * Asserted against source rather than a rendered menu. Opening a Base UI popup
- * in jsdom does not reliably position or highlight a row - its roving highlight
- * ignores synthetic key events - so a render test here would be flaky, and a
- * flaky guard gets deleted. The class strings are static (Tailwind's scanner
- * requires it), so the source is the contract.
+ * Menu `data-highlighted` rows use the fill/text inversion (13.48:1), not `bg-fuji-surface-strong`
+ * (dark-glass WHITE, 3.35:1 on bright backdrops). Checked on source: jsdom highlighting is flaky.
  */
 const MENUS = {
   DropdownMenu: "dropdown-menu/DropdownMenu.tsx",

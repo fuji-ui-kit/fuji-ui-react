@@ -17,13 +17,9 @@ describe("Select", () => {
     expect(screen.getByLabelText("Letter")).not.toHaveAttribute("aria-invalid");
   });
 
-  // Regression (Defect 2): `Base.Trigger` is a real `<button>` (nativeButton
-  // defaults to true) that also reads ambient Field context, so it still
-  // suffered the same stomping bug as the Field.Control-based inputs: an
-  // explicit `data-invalid={invalid ? "" : undefined}` on the trigger won
-  // the merge over the `data-invalid` Base UI computes from an ancestor
-  // `<FormField invalid>`, erasing it whenever Select's own `invalid` prop
-  // was left unset. Fails before the fix; passes after.
+  // Regression (Defect 2): `Base.Trigger` is a real `<button>` that still reads Field context, so
+  // an explicit `data-invalid={undefined}` erased the value derived from an ancestor
+  // `<FormField invalid>` whenever Select's own `invalid` was unset.
   it("propagates data-invalid from an ancestor FormField without its own invalid prop", () => {
     render(
       <FormField invalid>

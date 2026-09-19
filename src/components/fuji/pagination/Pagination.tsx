@@ -12,9 +12,8 @@ export interface PaginationProps {
   /** Called with the requested 1-based page number. */
   onPageChange: (page: number) => void;
   /**
-   * How many pages to show either side of the current one before the range
-   * collapses to an ellipsis. The first and last page are always shown, so
-   * this controls the middle run only.
+   * Pages shown either side of the current one before collapsing to an ellipsis. First and last
+   * pages always show, so this only controls the middle run.
    */
   siblingCount?: number;
   /** Extra classes merged onto the `<nav>`. */

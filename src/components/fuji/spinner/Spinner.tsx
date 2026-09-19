@@ -33,14 +33,9 @@ export const Spinner = React.forwardRef<HTMLSpanElement, SpinnerProps>(function 
       className={cn("fj:inline-flex", TONE_CLASSES[tone], className)}
       {...props}
     >
-      {/* Three dots orbiting the center, fading and shrinking from a bright
-          "lead" dot to a faint trailing one - reads as a distinct orbit
-          rather than a conventional arc-spinner, while staying just as
-          light to paint (one <g> rotation, no per-dot animation). Reuses
-          `animate-spin` so it inherits the global `prefers-reduced-motion`
-          override (see tokens.css) for free - under reduced motion the three
-          dots simply stop spinning and sit still, which still reads as an
-          intentional static orbit rather than a broken shape. */}
+      {/* Three fading dots orbiting via one <g> rotation (no per-dot animation). `animate-spin`
+          inherits the global `prefers-reduced-motion` override (tokens.css): the dots sit still,
+          which still reads as an intentional static orbit. */}
       <svg
         viewBox="0 0 24 24"
         fill="none"

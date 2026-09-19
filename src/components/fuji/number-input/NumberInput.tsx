@@ -42,14 +42,9 @@ export const NumberInput = React.forwardRef<HTMLDivElement, NumberInputProps>(fu
   return (
     <NumberField.Root ref={ref} className={cn(fullWidth ? "fj:w-full" : "fj:w-32", className)} {...props}>
       <NumberField.Group
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `NumberField.Group` already mirrors an ancestor `<FormField
-        // invalid>` onto this same element as `data-invalid` automatically,
-        // and an explicit `undefined`-valued prop still occupies the key and
-        // wins the merge in `useRenderElement`, erasing that computed value
-        // whenever this `invalid` prop itself was left unset (see Input.tsx
-        // for the full mechanism, and FormField.tsx for the symptom).
-        // Omitting the key when falsy instead lets the ambient value through.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: an explicit `undefined` wins the
+        // merge and erases the `data-invalid` NumberField.Group mirrors from `<FormField invalid>`.
+        // Omitting the key lets it through (see Input.tsx / FormField.tsx).
         {...(invalid ? { "data-invalid": "" } : null)}
         className={cn(fieldSurface({ size }), "fj:flex fj:items-stretch fj:gap-0 fj:p-0")}
       >

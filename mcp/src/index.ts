@@ -1,29 +1,17 @@
 #!/usr/bin/env node
 /**
- * MCP server for `@fujiui/react`.
- *
- * Thin by design: every fact comes from the registry the library generates at
- * build time, so the answers match the version the caller actually builds
- * against and cannot drift from it. All the logic here is about SHAPE - what to
- * return, and how little of it - because a tool result is spent from the
- * caller's context window on every turn.
- *
- * Three tools, deliberately. Each schema costs context whether or not it is
- * called, and these three cover the questions that come up: what exists, how do
- * I use this one, and is what I wrote correct.
+ * MCP server for `@fujiui/react`. Every fact comes from the installed version's registry; the logic
+ * is about returning as little as possible, since results and each tool schema cost caller context.
  */
 import { createRequire } from "node:module";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { loadRegistry, type Component, type LoadedRegistry } from "./registry.js";
+import { loadRegistry, type AppearanceRecipe, type Component, type LoadedRegistry } from "./registry.js";
 import { reviewUsage, editDistance } from "./review.js";
 
-// Both spellings. `--registry=path` is the conventional form in an MCP client's
-// `args` array, and the index-plus-one reading ignored it silently - answering
-// every question from an auto-discovered registry while the caller believed
-// they had chosen one. A flag with no value, or one followed by another flag,
-// is an error for the same reason.
+// Accepts `--flag value` and `--flag=value` (conventional in MCP `args`). A missing value is an
+// error, never a silent fall-back to auto-discovery.
 function flag(name: string): string | undefined {
   const prefix = `--${name}=`;
   const equals = process.argv.find((arg) => arg.startsWith(prefix));
@@ -42,33 +30,15 @@ function fail(message: string): never {
 
 const options = { registryPath: flag("registry"), projectDir: flag("project") };
 
-// One source of truth for the version. npm always ships package.json, and this
-// file is `dist/index.js` inside the package, so `../package.json` is ours.
+// This file is `dist/index.js`, so `../package.json` is ours; npm always ships it.
 const { version } = createRequire(import.meta.url)("../package.json") as { version: string };
 
-/**
- * Where the rules `review_usage` cites are written down. Neither npm package
- * ships SPEC.md or ARCHITECTURE.md, so a bare "(SPEC.md §4)" named a file the
- * user does not have; the repository is public.
- */
+/** Where `review_usage`'s cited SPEC.md/ARCHITECTURE.md live - neither npm package ships them. */
 const RULES_URL = "https://github.com/fuji-ui-kit/fuji-ui-react";
 
 /**
- * The registry, or the reason there isn't one.
- *
- * The server starts either way. It used to exit when no registry could be
- * found - right for a misconfigured project, wrong for the most common install:
- * `claude mcp add --scope user` runs the server in EVERY project, most of which
- * do not use Fuji, and each of those showed a failed server whose only
- * explanation went to stderr, which the model never sees. Answering every call
- * with the reason puts it where the agent can act on it and tell the user.
- *
- * A failed lookup is retried on the next call, so installing `@fujiui/react` -
- * or upgrading it from a release that predates registry.json - starts working
- * without a restart. A successful lookup is kept for the life of the process:
- * re-resolving, re-scanning a workspace and re-parsing a ~350 KB registry on
- * every call would cost more than it saves, so after upgrading an install this
- * server has already read, the answers update in a new session.
+ * The registry, or the reason there isn't one, answered from every tool (stderr never reaches the
+ * model). Failures retry per call; success is cached (re-parsing ~350 KB per call isn't worth it).
  */
 let loaded: LoadedRegistry | undefined;
 function current(): LoadedRegistry | string {
@@ -84,10 +54,8 @@ function current(): LoadedRegistry | string {
 const initial = current();
 
 /**
- * Sent to the client on connect. Claude Code passes server instructions to the
- * model, so this is how an agent learns the intended workflow without the user
- * writing it into CLAUDE.md or AGENTS.md. Kept short: it is spent from the
- * caller's context in every session, used or not.
+ * Passed to the model on connect, teaching the workflow without CLAUDE.md edits. Kept short: it
+ * costs context in every session, used or not.
  */
 const INSTRUCTIONS = [
   "Answers questions about @fujiui/react from the version installed in this project.",
@@ -96,13 +64,10 @@ const INSTRUCTIONS = [
   "When adding Fuji to an app, call get_component for FujiProvider first: it includes the setup steps.",
   "After writing or editing code that imports @fujiui/react, call review_usage on it and fix every finding before finishing.",
   "theme, material, radius and elevation are set once on FujiProvider, never on individual components.",
+  "For dark mode, a theme toggle, following the OS, remembering the choice, glass, or styling your own markup so it follows the theme, call get_appearance before writing code.",
 ].join(" ");
 
-/**
- * All three tools only read the registry and the code they are handed. Declared
- * because the Claude Connectors Directory, and any client that decides what to
- * auto-approve from these hints, requires every tool to say so.
- */
+/** All tools are read-only; the Connectors Directory and auto-approving clients require the hint. */
 const READ_ONLY = { readOnlyHint: true, openWorldHint: false } as const;
 
 /** Findings past this point repeat themselves; the count still reports honestly. */
@@ -180,12 +145,8 @@ function isSetupGuide(value: unknown): value is SetupGuide {
 }
 
 /**
- * The per-framework setup the registry carries, attached to FujiProvider because
- * that is the component every adopting app starts from. No tool returned it
- * before, so an agent adding Fuji to an existing app could learn every prop on
- * the provider and still miss the stylesheet import - after which every
- * component renders unstyled, with no error. Not a fourth tool: a schema costs
- * context in every session, and this is needed once per app.
+ * Per-framework setup, attached to FujiProvider so agents don't miss the stylesheet import. Not a
+ * fourth tool: a schema costs context every session, and this is needed once per app.
  */
 function renderSetup(state: LoadedRegistry): string[] {
   const guides = Object.values(state.registry.setup ?? {}).filter(isSetupGuide);
@@ -225,9 +186,7 @@ function firstParagraph(text: string) {
 
 const text = (value: string) => ({ content: [{ type: "text" as const, text: value }] });
 
-// A registry found at startup puts the real category names in the schema, where
-// the agent sees them before calling. Without one the schema cannot name them,
-// so the handler checks instead.
+// With a registry at startup the schema names the real categories; otherwise the handler checks.
 const categorySchema: z.ZodType<string> =
   typeof initial === "string"
     ? z.string().max(64)
@@ -242,9 +201,7 @@ server.registerTool(
       "Filter by category or a search term - an unfiltered listing is the whole library and is rarely what you want.",
     inputSchema: {
       category: categorySchema.optional(),
-      // Bounded like the other two tools' inputs. The value is only ever used
-      // for a lowercased substring match (no regex), so an unbounded string was
-      // never a risk - this is consistency, not a fix.
+      // Bounded for consistency with the other tools; it's only a substring match.
       query: z.string().max(200).optional().describe("Matches name, summary and keywords."),
     },
     annotations: READ_ONLY,
@@ -256,8 +213,7 @@ server.registerTool(
     if (category && !registry.categories.includes(category)) {
       return text(`Unknown category "${category}". Categories: ${registry.categories.join(", ")}.`);
     }
-    // Reads `index`, never `components`: the full component array costs ~47k
-    // tokens against ~3.8k here, and answers the same question.
+    // Reads `index`, not `components`: ~3.8k tokens instead of ~47k for the same answer.
     let rows = registry.index;
     if (category) rows = rows.filter((row) => row.category === category);
     if (query) {
@@ -294,8 +250,7 @@ server.registerTool(
       "Everything needed to write correct code for one component: its import line, every prop with type, " +
       "allowed values and default, whether it is a Client Component, its compound parts in both access forms, and worked examples. " +
       "For FujiProvider it also returns the steps to set Fuji up in an app.",
-    // Capped: an unbounded name feeds `editDistance`, which allocates an
-    // n x m matrix against every component name in the registry.
+    // Capped: the name feeds `editDistance`, an n x m matrix per component name.
     inputSchema: {
       name: z.string().max(128).describe('Export name, e.g. "Button" or "DialogContent".'),
     },
@@ -318,8 +273,7 @@ server.registerTool(
       );
       if (part) return text(renderComponent(candidate, state));
     }
-    // Substring matching fails on the case that matters - a near-miss typo
-    // shares no run of four characters with the real name ("Buton"/"Button").
+    // Edit distance, not substrings, so typos like "Buton" still match.
     const near = registry.index
       .map((row) => ({ name: row.name, score: editDistance(name.toLowerCase(), row.name.toLowerCase()) }))
       .filter((row) => row.score <= Math.max(2, Math.round(name.length / 3)))
@@ -342,9 +296,7 @@ server.registerTool(
       "string icon names, runtime-built Tailwind classes, unnamed icon-only controls, dot-access sub-parts in a " +
       "Server Component, and invalid prop values. Run it on anything you write against this library.",
     inputSchema: {
-      // Capped. Findings are ~4 lines each and the input was unbounded, so one
-      // call on a large file could return more tokens than the caller's whole
-      // context window - the opposite of what this server is shaped for.
+      // Capped: findings are ~4 lines each, so a huge file could overflow the caller's context.
       code: z.string().max(64_000).describe("The TSX to check. A fragment is fine. Up to ~64k characters."),
     },
     annotations: READ_ONLY,
@@ -375,6 +327,82 @@ server.registerTool(
     }
     out.push("", `Cited files are in ${RULES_URL}.`);
     return text(out.join("\n"));
+  },
+);
+
+/** Recipe ids, for the schema and for "unknown topic" answers. */
+const TOPICS = ["page", "toggle", "system", "persist", "glass", "own-markup", "tokens"] as const;
+
+function renderRecipe(recipe: AppearanceRecipe, state: LoadedRegistry) {
+  const docs = state.packageRoot ?? "node_modules/@fujiui/react";
+  const out = [`# ${recipe.title}`, recipe.summary];
+  (recipe.steps ?? []).forEach((step, index) => out.push(`${index + 1}. ${step}`));
+  if (recipe.code) out.push("```tsx", recipe.code, "```");
+  for (const gotcha of recipe.gotchas ?? []) out.push(`- ${gotcha}`);
+  if (recipe.guide) out.push(`Full guide: ${docs}/${recipe.guide}`);
+  return out.join("\n");
+}
+
+/** One token group with each scope's value - the whole set is ~5k tokens, a group 90-2.2k. */
+function renderTokenGroup(group: string, state: LoadedRegistry) {
+  const { tokens } = state.registry;
+  const names = tokens.groups[group];
+  if (!names) return `Unknown token group "${group}". Groups: ${Object.keys(tokens.groups).join(", ")}.`;
+  const out = [`# ${group} tokens`, "Scope: root (defaults), then each theme/material the value changes in."];
+  for (const name of names) {
+    const entry = tokens.values[name] as { scopes?: Record<string, string> } | undefined;
+    const scopes = Object.entries(entry?.scopes ?? {})
+      .map(([scope, value]) => `${scope}: ${value}`)
+      .join(" | ");
+    out.push(`- \`${name}\`${scopes ? ` - ${scopes}` : ""}`);
+  }
+  return out.join("\n");
+}
+
+server.registerTool(
+  "get_appearance",
+  {
+    title: "Get Fuji appearance recipes",
+    description:
+      "How to do dark mode and glass right with @fujiui/react: fill the page (page), a light/dark toggle (toggle), " +
+      "follow the OS (system), remember the choice without a flash (persist), glass (glass), make your own " +
+      "markup follow the theme incl. Tailwind's dark: variant (own-markup), and design tokens (tokens, with an " +
+      "optional group). Omit topic for the list.",
+    inputSchema: {
+      topic: z.enum(TOPICS).optional(),
+      group: z
+        .string()
+        .max(32)
+        .optional()
+        .describe('With topic "tokens": one group, e.g. "color", "glass", "radius", "spacing".'),
+    },
+    annotations: READ_ONLY,
+  },
+  async ({ topic, group }) => {
+    const state = current();
+    if (typeof state === "string") return text(state);
+    const recipes = state.registry.appearance;
+    if (!recipes?.length) {
+      return text(
+        `${state.registry.package.name}@${state.registry.package.version} predates the appearance recipes. ` +
+          `Read ${state.packageRoot ?? "node_modules/@fujiui/react"}/docs/theming.md, or upgrade the package.`,
+      );
+    }
+    if (topic === "tokens" && group) return text(renderTokenGroup(group, state));
+    if (topic) {
+      const recipe = recipes.find((entry) => entry.id === topic);
+      if (recipe) {
+        const extra =
+          topic === "tokens" ? `\n\nGroups: ${Object.keys(state.registry.tokens.groups).join(", ")}.` : "";
+        return text(renderRecipe(recipe, state) + extra);
+      }
+    }
+    return text(
+      [
+        "Appearance recipes - call get_appearance with one topic:",
+        ...recipes.map((recipe) => `- **${recipe.id}** - ${recipe.summary}`),
+      ].join("\n"),
+    );
   },
 );
 

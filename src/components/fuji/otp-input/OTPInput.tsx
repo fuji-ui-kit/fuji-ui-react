@@ -53,29 +53,10 @@ export const OTPInput = React.forwardRef<HTMLDivElement, OTPInputProps>(function
         ref={ref}
         length={length}
         aria-labelledby={labelId}
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `OTPField.Root` calls Base UI's Field context hook itself and
-        // registers as the field control (confirmed by reading Base UI's
-        // source - `OTPFieldRoot` calls `useFieldRootContext()` and maps its
-        // `state.valid` to `data-invalid`/`data-valid` via
-        // `stateAttributesMapping`), so it already mirrors an ancestor
-        // `<FormField invalid>` onto this same `role="group"` element as
-        // `data-invalid` automatically - same mechanism as `Field.Control`
-        // (see Input.tsx). An explicit `undefined`-valued prop still
-        // occupies the key, and `useRenderElement` merges this component's
-        // own props over that computed value, so writing `undefined` here
-        // erased the FormField-driven attribute on the group whenever this
-        // `invalid` prop itself was left unset. This one has no visible
-        // consequence today - the group carries no `data-[invalid]:` style
-        // of its own, and each `<OTPField.Input>` slot below independently
-        // and correctly mirrors the same ambient state onto itself (that's
-        // what actually paints the red border per slot) - but it is the
-        // identical clobbering bug on the group's own DOM attribute, which
-        // a consumer styling or querying `[data-invalid]` on the group
-        // itself would still see erased. Omitting the key when `invalid` is
-        // falsy instead of asserting `undefined` lets that ambient value
-        // through, for consistency with every other Field-participating
-        // element Fuji wraps.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: `OTPField.Root` mirrors an
+        // ancestor `<FormField invalid>` as `data-invalid` (like Field.Control, see Input.tsx); an
+        // explicit `undefined` erases it. Slots paint the border themselves, but consumers
+        // querying `[data-invalid]` on the group would see it erased.
         {...(invalid ? { "data-invalid": "" } : null)}
         className={cn("fj:flex fj:gap-2", className)}
         {...props}

@@ -32,10 +32,8 @@ const HOVER_TONE_CLASSES: Record<LinkTone, string> = {
 };
 
 /**
- * Plain `<a>` by design - Fuji has no routing dependency. Website call sites
- * wrap this with Next's `<Link>` via composition (see `components/website`)
- * rather than this component importing Next. Configure the underline behavior
- * and color tone; `muted` remains as a shorthand for older call sites.
+ * Plain `<a>` by design - Fuji has no routing dependency; wrap it with Next's `<Link>` by
+ * composition. Configures underline and tone; `muted` remains as a shorthand for older call sites.
  */
 export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(function Link(
   { underline = "always", tone = "default", muted = false, hoverTone, className, children, href, ...props },
@@ -44,9 +42,7 @@ export const Link = React.forwardRef<HTMLAnchorElement, LinkProps>(function Link
   return (
     <a
       ref={ref}
-      // Dropped rather than passed through when unsafe - see safe-href.ts.
-      // Only the scheme is validated; relative paths, hashes, and query
-      // strings are always allowed, so this is a no-op for every ordinary use.
+      // Unsafe schemes are dropped (see safe-href.ts); relative paths, hashes and queries always pass.
       href={safeHref(href)}
       className={cn(
         "fj:cursor-pointer fj:underline-offset-4 fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",

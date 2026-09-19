@@ -55,11 +55,8 @@ const TONE_CLASSES: Record<ComponentTone, { complete: string; current: string; l
 };
 
 /**
- * Horizontal progress stepper: filled circles with a check for complete
- * steps, a ringed number for the current and pending ones, joined by thick
- * rounded connectors that fill all the way up to the current step. Every
- * state change animates - the fill grows along the line, the circle's
- * colour crosses over, and the check pops in.
+ * Horizontal stepper: checked circles for complete steps, ringed numbers for current/pending,
+ * connectors filled up to the current step. State changes animate (fill, colour, check pop).
  */
 export const Stepper = React.forwardRef<HTMLOListElement, StepperProps>(function Stepper(
   { steps, activeStep, onStepClick, tone = "default", className, ...props },

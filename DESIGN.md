@@ -8,7 +8,7 @@ Token values live only in `src/styles/tokens.css`. The recipes that consume
 them live in `src/styles/base.css`, `src/components/fuji/lib/appearance.ts`,
 `src/components/fuji/lib/field-surface.ts` and
 `src/components/fuji/lib/status-surface.ts`. Those five files restyle all
-88 components at once - which is the point, and also why every change to them
+86 components at once - which is the point, and also why every change to them
 must be checked with `node scripts/render-gallery.mjs` across all sixteen
 appearance combinations.
 
@@ -249,6 +249,18 @@ Two implementation notes that are easy to undo by accident:
   1 → 0 sweeps any path, with no `getTotalLength()` measurement - which would
   need a DOM read per series on every data change and is wrong on the server.
 
+### The tilt is a lean, not a swing
+
+`Card effect="tilt"` follows motion.dev's tilt-card for _feel_ - a spring on
+`requestAnimationFrame`, no transition chasing the pointer - but not for
+_amount_. The reference peaks around 7deg under a 500px perspective; on a
+large card that swung the corner under the pointer far out of plane and read
+as a toy, which is the opposite of calm. The shipped values are 3deg at the
+corners, a 1200px perspective (a short one exaggerates foreshortening, so
+even a small angle warps a big card) and a 4px push-back. They live as named
+constants at the top of `CardTilt.tsx`; a change there is a visual-identity
+change, not a tuning tweak.
+
 ### Exit is not entry reversed
 
 Overlays drop the spring on the way out and use the shorter base duration. An
@@ -379,7 +391,7 @@ defaults directly (`ua-underline`, `ua-link-color`, `ua-appearance`,
 `ua-margin`, `ua-list-style`, `ua-inline-media`).
 
 And some things only a person sees. A component-by-component visual pass over
-all 88 components (every story, as a contact sheet of real story iframes)
+all 86 components (every story, as a contact sheet of real story iframes)
 found: the 1px inset "edge light" on every raised object reading as a border
 
 - removed; `ghost` buttons casting a shadow and reading as faint boxes;

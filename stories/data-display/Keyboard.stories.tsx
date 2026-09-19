@@ -20,21 +20,16 @@ const meta = {
 } satisfies Meta<typeof Keyboard>;
 
 /**
- * Wires a board to a real field the way an app would: characters land at the
- * caret, Backspace/Delete work either side of it, and the arrow and Home/End
- * caps move it. Action caps report a `code` and no `value`, which is the hook
- * every one of these hangs off.
+ * Wires a board to a real field like an app would: characters land at the caret, and editing and
+ * navigation caps (which report a `code` and no `value`) act around it.
  */
 function useTypedField(initial = "") {
   const field = React.useRef<HTMLInputElement>(null);
   const [value, setValue] = React.useState(initial);
   const caret = React.useRef<number | null>(null);
 
-  // The field is controlled, so React rewrites its value on the next commit
-  // and the browser parks the caret at the end. Restoring it in a layout
-  // effect puts it back before the frame is painted; a `requestAnimationFrame`
-  // here loses the race with React's own write, and never runs at all in a
-  // backgrounded tab.
+  // A controlled value rewrite parks the caret at the end; a layout effect restores it before
+  // paint. `requestAnimationFrame` loses the race with React and never runs in background tabs.
   React.useLayoutEffect(() => {
     if (caret.current === null) return;
     field.current?.setSelectionRange(caret.current, caret.current);
@@ -120,10 +115,7 @@ export const Sizes: Story = {
   ),
 };
 
-/**
- * No cap is coloured until `accentKeys` names one. This is the reference-board
- * look: a coloured Esc and arrow cluster.
- */
+/** No cap is coloured until `accentKeys` names one - here the reference look: Esc and arrows. */
 export const Tones: Story = {
   name: "Accent keys",
   render: () => (
@@ -142,10 +134,7 @@ export const Tones: Story = {
   ),
 };
 
-/**
- * The same `accentKeys` prop used to document a binding: name the caps a
- * shortcut is made of and the board becomes a diagram of it.
- */
+/** `accentKeys` naming a shortcut's caps turns the board into a diagram of the binding. */
 export const Shortcut: Story = {
   name: "Highlighting a shortcut",
   render: () => (
@@ -159,10 +148,7 @@ export const Shortcut: Story = {
   ),
 };
 
-/**
- * Every cap is a button by default, and the board is a single tab stop - the
- * arrow keys, Home and End move between caps from there.
- */
+/** Every cap is a button; the board is one tab stop, and arrows/Home/End move between caps. */
 export const Interactive: Story = {
   name: "Driving an input",
   render: function InteractiveBoard() {
@@ -219,10 +205,8 @@ export const InACard: Story = {
 };
 
 /**
- * `floating` docks the board over the page instead of laying it out in flow.
- * It spans its `anchor` edge to edge, centres itself, and unmounts while
- * closed. Clicking a cap never blurs the field being typed into, and the
- * margins either side of the board stay click-through.
+ * `floating` docks the board over its `anchor`, centred, unmounting while closed. Clicking a cap
+ * never blurs the field being typed into, and the side margins stay click-through.
  */
 export const FloatingFromAnInput: Story = {
   name: "Floating - opened by an input",
@@ -262,10 +246,8 @@ export const FloatingFromAnInput: Story = {
 };
 
 /**
- * `layout="phone"` is the reason a phone-width dock works at all: `compact`'s
- * sixteen columns render a 16.7px cap at a 375px viewport, well under the
- * WCAG 2.5.8 24x24 target floor, while `phone`'s ten columns clear it at every
- * common phone width. Resize the canvas narrow to see why it exists.
+ * `layout="phone"` makes a phone-width dock work: `compact`'s 16 columns give 16.7px caps at
+ * 375px, under the WCAG 2.5.8 24x24 floor; `phone`'s ten clear it. Resize the canvas to compare.
  */
 export const FloatingPhone: Story = {
   name: "Floating - phone layout",
@@ -302,9 +284,8 @@ export const FloatingPhone: Story = {
 };
 
 /**
- * `anchor="parent"` positions the dock against the nearest positioned
- * ancestor instead of the viewport - a keypad that fills its own card rather
- * than the screen. The parent needs `position: relative`.
+ * `anchor="parent"` docks against the nearest positioned ancestor instead of the viewport - a keypad
+ * filling its own card. The parent needs `position: relative`.
  */
 export const FloatingInAParent: Story = {
   name: "Floating - filling its parent",
@@ -347,10 +328,8 @@ export const FloatingInAParent: Story = {
 };
 
 /**
- * A docked board sizes itself against the screen, not against the px cap
- * scale: `size` picks roughly 45vw / 60vw / 75vw, and `width` overrides that
- * with any CSS length. Only the cap unit is set - row height, legends and
- * gaps all follow it, so the board stays in proportion at any width.
+ * A docked board sizes against the screen: `size` picks ~45vw/60vw/75vw, `width` takes any CSS
+ * length. Only the cap unit is set; rows, legends and gaps follow, so proportions hold.
  */
 export const FloatingWidths: Story = {
   name: "Floating - sizing",

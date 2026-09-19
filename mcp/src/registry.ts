@@ -3,10 +3,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-/**
- * The shape of `@fujiui/react/registry.json`. Only the parts this server
- * reads are typed; the artifact carries more.
- */
+/** The shape of `@fujiui/react/registry.json` - only the parts this server reads. */
 export interface Prop {
   name: string;
   type: string;
@@ -59,17 +56,28 @@ export interface Rule {
   source: string;
 }
 
+/** An appearance recipe: dark mode, glass, persistence, tokens. Added after 0.3.0's first registry. */
+export interface AppearanceRecipe {
+  id: string;
+  title: string;
+  summary: string;
+  steps?: string[];
+  code?: string;
+  gotchas?: string[];
+  guide?: string;
+}
+
 export interface Registry {
   schemaVersion: number;
   package: { name: string; version: string; import: string; styles: string[] };
   conventions: Rule[];
   setup: Record<string, unknown>;
+  /** Optional: registries built before the recipes shipped don't have it. */
+  appearance?: AppearanceRecipe[];
   categories: string[];
   /**
-   * Exported type aliases and interfaces. An alias carries its `type` text and,
-   * for a union of string literals, its `values`. An interface carries
-   * `type: "interface"` plus its `fields` - which is how `SelectItem`,
-   * `DataTableColumn` and the other item shapes are described.
+   * Exported types. An alias has its `type` text (plus `values` for a literal union); an
+   * interface has `type: "interface"` and `fields`, e.g. `SelectItem`, `DataTableColumn`.
    */
   types: Record<
     string,
@@ -103,11 +111,7 @@ export interface LoadOptions {
   registryPath?: string;
   /** `--project <dir>`: the project whose installed `@fujiui/react` to read. */
   projectDir?: string;
-  /**
-   * Defaults to `process.env`. Injectable because the tests run inside Claude
-   * Code often enough that a real `CLAUDE_PROJECT_DIR` would make them pass for
-   * the wrong reason.
-   */
+  /** Defaults to `process.env`; injectable so a real `CLAUDE_PROJECT_DIR` can't leak into tests. */
   env?: Record<string, string | undefined>;
   /** Defaults to `process.cwd()`. */
   cwd?: string;
@@ -121,34 +125,8 @@ const SCHEMA_VERSION = 1;
 const FIRST_REGISTRY_RELEASE = "0.3.0";
 
 /**
- * Finds the registry of the `@fujiui/react` the caller's project has installed,
- * so every answer describes the version they actually build against.
- *
- * In order, stopping at the first install found:
- *
- * 1. `--registry <file>` - that file, and nothing else.
- * 2. `--project <dir>` - that project, and nothing else.
- * 3. `CLAUDE_PROJECT_DIR`. Claude Code sets it for every scope, and for its
- *    user scope it is the ONLY pointer to the project: those servers start in
- *    `~/.claude`, so a lookup from the working directory alone found nothing,
- *    in every project, for everyone who installed this server that way.
- * 4. The working directory - Claude Code's local and project scopes, and most
- *    other clients.
- * 5. Where this server is itself installed, for a project that has it as a
- *    devDependency but starts it from somewhere else.
- *
- * For 2-4, a directory that is a monorepo root with nothing installed at the
- * root is searched through its workspace packages - see `workspaceInstall`.
- *
- * Stopping at the first install matters. If that project is on a release from
- * before the registry shipped, the answer is "upgrade" - not a quiet fall-through
- * to some other install whose props do not match the code being written.
- *
- * `@fujiui/react` exports `./registry.json`, but resolving that entry directly
- * needs an import assertion and fails on a package version that predates it.
- * Resolving `./package.json` - exported since the beginning - and joining the
- * path works against every version, and lets the "this package is too old"
- * case be reported as a clear message rather than a resolver error.
+ * Finds the installed `@fujiui/react` registry; first install wins: `--registry`, `--project`,
+ * `CLAUDE_PROJECT_DIR` (user scope starts in `~/.claude`), cwd (2-4 search workspaces), own install.
  */
 export function loadRegistry(options: LoadOptions = {}): LoadedRegistry {
   const env = options.env ?? process.env;
@@ -156,9 +134,7 @@ export function loadRegistry(options: LoadOptions = {}): LoadedRegistry {
   const scanLimit = options.scanLimit ?? SCAN_LIMIT;
 
   if (options.registryPath) {
-    // An explicit path is an instruction, not a hint. Falling through to
-    // auto-discovery on a typo answers every question from a different registry
-    // than the one that was asked for, and says so only on stderr.
+    // An explicit path is an instruction: never fall through to auto-discovery on a typo.
     const path = resolve(cwd, options.registryPath);
     if (!existsSync(path)) {
       throw new Error(`--registry ${options.registryPath} does not exist (resolved to ${path}).`);
@@ -170,9 +146,7 @@ export function loadRegistry(options: LoadOptions = {}): LoadedRegistry {
   for (const place of placesToLook(options.projectDir, env, cwd)) {
     searched.push(place.dir);
     const direct = installedRoot(place.dir);
-    // Plug'n'Play first. A PnP workspace has no node_modules, so the workspace
-    // lookup below would report the package as listed but not installed - and
-    // running the install, which is what that message says to do, never fixes it.
+    // PnP first: it has no node_modules, so the workspace lookup would wrongly say "run install".
     if (!direct && place.project && usesPlugAndPlay(place.dir) && projectUsesFuji(place.dir, scanLimit)) {
       throw new Error(
         `${place.dir} uses Yarn Plug'n'Play, which keeps packages inside zip archives this server cannot read. ` +
@@ -242,16 +216,8 @@ function installedRoot(dir: string): string | undefined {
 }
 
 /**
- * A monorepo opened at its root, with `@fujiui/react` installed in a workspace
- * package rather than at the root. That is always the case under pnpm - and so
- * under Turborepo or Nx on pnpm - and under npm or Yarn whenever a package pins a
- * version the others do not share. Claude Code names the repository root as
- * the project, so resolving from there alone answered "Could not find
- * @fujiui/react" in exactly the kind of existing project most likely to adopt
- * a component library. Measured on a pnpm workspace before this existed.
- *
- * Answers must match the code being written, so two different versions across
- * the workspace is a question for the user, not a choice to make silently.
+ * A monorepo root with `@fujiui/react` only in workspace packages (always so under pnpm), since
+ * Claude Code names the repo root as the project. Mixed versions error rather than pick silently.
  */
 function workspaceInstall(
   root: string,
@@ -278,8 +244,7 @@ function workspaceInstall(
       );
     }
     if (truncated.length) {
-      // An explicit stop rather than "Could not find" for a package that may
-      // sit just past the limit.
+      // Say we stopped, not "Could not find" - the package may sit just past the limit.
       throw new Error(
         `Stopped scanning ${truncated.map((pattern) => `"${pattern}"`).join(", ")} in ${root} after ${scanLimit} ` +
           `directories without finding @fujiui/react. Open the agent in the package you are working in, or pass ` +
@@ -308,11 +273,8 @@ function workspaceInstall(
 }
 
 /**
- * Workspace package directories declared by `package.json` `workspaces` (npm,
- * Yarn, Bun - as an array, or Yarn classic's `{ packages: [...] }`) and by
- * `pnpm-workspace.yaml`. Patterns support what those files actually contain:
- * literal paths, `*` within one directory name, `**` for any depth, and a
- * leading `!` to exclude.
+ * Workspace dirs from `package.json` `workspaces` (array or Yarn classic `{ packages }`) and
+ * `pnpm-workspace.yaml`. Patterns: literal paths, `*`, `**` and leading `!` excludes.
  */
 function workspacePackages(root: string, scanLimit: number): { packages: string[]; truncated: string[] } {
   const include = new Set<string>();
@@ -322,9 +284,7 @@ function workspacePackages(root: string, scanLimit: number): { packages: string[
     const negated = raw.startsWith("!");
     const pattern = (negated ? raw.slice(1) : raw).replace(/^\.\//, "").replace(/\/+$/, "");
     if (!pattern) continue;
-    // A budget per pattern. One shared budget let a wide `packages/**` over a
-    // large source tree use it all, after which every later pattern - `apps/*`,
-    // say - silently expanded to nothing and its install was never found.
+    // Budget per pattern, so a wide `packages/**` can't starve later patterns like `apps/*`.
     const budget: Budget = { left: scanLimit, exhausted: false };
     for (const dir of expand(root, pattern.split("/"), budget)) (negated ? exclude : include).add(dir);
     if (budget.exhausted) truncated.push(raw);
@@ -346,11 +306,8 @@ function workspacePatterns(root: string): string[] {
 }
 
 /**
- * Only the `packages:` list of pnpm-workspace.yaml, in the shapes people write it:
- * a block sequence, indented under the key or level with it, with or without
- * trailing comments; or a flow sequence, on one line or several. A YAML parser
- * would be a new dependency installed for every user of this server, to read
- * one list of strings.
+ * The `packages:` list of pnpm-workspace.yaml, block or flow sequence. Hand-parsed: a YAML
+ * dependency for every user of this server to read one list of strings isn't worth it.
  */
 function pnpmPackages(source: string): string[] {
   const lines = source.split(/\r?\n/);
@@ -385,11 +342,7 @@ function yamlScalar(raw: string): string {
   return value.replace(/\s+#.*$/, "").trim();
 }
 
-/**
- * Directories one workspace pattern may scan. Only directories count - a file
- * cannot contain a package - so this bounds a `**` over a very large tree
- * without a package's source files using it up.
- */
+/** Directories one workspace pattern may scan; files don't count against it. */
 const SCAN_LIMIT = 20_000;
 
 interface Budget {
@@ -477,17 +430,11 @@ function readRegistry(path: string): Registry {
   try {
     registry = JSON.parse(readFileSync(path, "utf8")) as Registry;
   } catch (cause) {
-    // A build interrupted mid-write leaves a truncated file. Say which file,
-    // rather than surfacing a bare `SyntaxError` with no path in it.
+    // A truncated file from an interrupted build: name the path, not a bare `SyntaxError`.
     throw new Error(`Registry at ${path} is not valid JSON: ${(cause as Error).message}`);
   }
-  // Only a LOWER version is fatal - that registry predates fields this server
-  // reads. A higher one is additive by construction (the schema only ever
-  // gains fields within a major), so refusing it would brick every installed
-  // server the moment the library shipped one, which is the opposite of what
-  // a version check is for.
-  // `undefined < 1` and `"1" < 1` are both false, so a registry predating the
-  // field - exactly what this check exists to reject - used to sail through.
+  // Only a LOWER version is fatal; higher ones only add fields. Type-check first, since
+  // `undefined < 1` and `"1" < 1` are both false.
   if (typeof registry?.schemaVersion !== "number") {
     throw new Error(
       `Registry at ${path} has no numeric schemaVersion. It is either not a Fuji registry, or predates the field.`,
@@ -499,10 +446,8 @@ function readRegistry(path: string): Registry {
         `this server needs ${SCHEMA_VERSION} or later. Update @fujiui/react.`,
     );
   }
-  // Shape, not just version. Every tool reads these; without the check a JSON
-  // file that merely parses got past `loadRegistry` and then threw a raw zod
-  // stack at module scope, which the client reports only as "server failed to
-  // start" - the outcome the friendly errors here exist to avoid.
+  // Shape too: otherwise a merely-parseable file throws a raw zod stack at startup, which the
+  // client reports only as "server failed to start".
   for (const [field, ok] of [
     ["categories", Array.isArray(registry.categories)],
     ["components", Array.isArray(registry.components)],

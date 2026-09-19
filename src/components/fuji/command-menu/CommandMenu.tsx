@@ -23,12 +23,8 @@ export interface CommandMenuItem {
   searchText?: string;
   onSelect: () => void;
   /**
-   * Close the palette once `onSelect` has run. Default `true`.
-   *
-   * Set it to `false` for an item that opens a second step - swap `items` from
-   * its `onSelect` and the palette stays up to show them. The search query is
-   * cleared and focus goes back to the search field, so the next step starts
-   * from its full list.
+   * Close the palette once `onSelect` has run. Default `true`. Set `false` for an item that opens
+   * a second step: swap `items` from `onSelect`; the query clears and focus returns to search.
    */
   closeOnSelect?: boolean;
 }
@@ -45,12 +41,8 @@ export interface CommandMenuProps {
   /** Controlled open state. Omit to let the component own it. */
   open?: boolean;
   /**
-   * Uncontrolled initial open state. Default false.
-   *
-   * `open`/`onOpenChange` used to be required, which meant even a demo, a
-   * story, or a palette whose only trigger is its own ⌘K shortcut had to
-   * carry a `useState` for it - the one component in the package with no
-   * uncontrolled mode.
+   * Uncontrolled initial open state. Default false. Lets a demo or a ⌘K-only palette skip
+   * carrying its own `useState`.
    */
   defaultOpen?: boolean;
   /** Called whenever the palette opens or closes, including via ⌘K and Escape. */
@@ -60,16 +52,8 @@ export interface CommandMenuProps {
   /** Text in the search input while it is empty. */
   placeholder?: string;
   /**
-   * A key that toggles the palette when pressed with ⌘ or Ctrl - `"k"` binds
-   * ⌘K on macOS and Ctrl+K elsewhere (either modifier is accepted on every
-   * platform, so nothing sniffs the user agent). Off by default.
-   *
-   * The listener is on `document` and goes away on unmount. It ignores a
-   * keydown something else already called `preventDefault()` on, so an
-   * editor that owns the same chord keeps it, and it prevents the browser's
-   * own binding (Ctrl+K focuses the address bar in Chrome and Firefox).
-   * `item.shortcut` stays display-only; this is the one key the palette binds
-   * itself.
+   * Key toggling the palette with ⌘ or Ctrl (`"k"` = ⌘K/Ctrl+K, no UA sniffing). Off by default.
+   * Skips keydowns already `preventDefault()`ed and blocks the browser's own binding.
    */
   hotkey?: string;
 }
@@ -112,11 +96,8 @@ export function CommandMenu({
     return Array.from(map.entries()).filter(([, groupItems]) => groupItems.length > 0);
   }, [filtered]);
 
-  // The rows in the order they are drawn. Navigation, Enter and
-  // `aria-activedescendant` all index into this rather than `filtered`: items
-  // arrive in the consumer's order but are drawn bucketed by group, so with
-  // groups interleaved (`A:x, B:y, C:x` draws `A, C, B`) the arrow keys used to
-  // walk the array while the highlight jumped around the screen.
+  // Rows in drawn order. Navigation, Enter and `aria-activedescendant` index into this, not
+  // `filtered`: items are drawn bucketed by group (`A:x, B:y, C:x` draws `A, C, B`).
   const ordered = React.useMemo(() => groups.flatMap(([, groupItems]) => groupItems), [groups]);
 
   React.useEffect(() => {
@@ -132,9 +113,8 @@ export function CommandMenu({
     return () => document.removeEventListener("keydown", toggle);
   }, [hotkey, open, setOpen]);
 
-  // Reset the highlighted row whenever the query or open-state changes,
-  // without an effect (React's "adjusting state during render" pattern:
-  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
+  // Reset the highlighted row when the query or open state changes, without an effect:
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes
   const [resetKey, setResetKey] = React.useState({ query, open });
   if (resetKey.query !== query || resetKey.open !== open) {
     setResetKey({ query, open });
@@ -232,20 +212,9 @@ export function CommandMenu({
                       className={cn(
                         NATIVE_CONTROL_RESET,
                         "fj:box-border fj:flex fj:w-full fj:cursor-pointer fj:items-center fj:gap-2.5 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-left fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground",
-                        // `--fuji-surface-strong` is a translucent WHITE fill in
-                        // light+glass (see tokens.css) - painted on top of an
-                        // already-near-white glass panel, the old
-                        // `bg-fuji-surface-strong` swap measured ~1:1 against
-                        // its siblings there (invisible to a keyboard user).
-                        // Every other "current selection" indicator in the
-                        // library - Tabs' pill, Pagination's current page,
-                        // Sidebar's active item, BottomNavigation's pill/circle
-                        // - inverts fill and text per theme instead
-                        // (`bg-fuji-contained-default` / `text-fuji-default
-                        // -foreground`), which is why those measure ~14-17:1 in
-                        // every theme x material combination. CommandMenu was
-                        // the one place still using the flat, theme-blind
-                        // surface tint; use the same pairing here too.
+                        // Inverted fill/text like every other selection indicator (~14-17:1 in
+                        // every theme x material); `bg-fuji-surface-strong` measured ~1:1 on
+                        // light+glass, invisible to keyboard users.
                         index === activeIndex &&
                           "fuji-raised fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
                       )}

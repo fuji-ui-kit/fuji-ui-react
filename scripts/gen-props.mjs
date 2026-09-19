@@ -1,11 +1,6 @@
-// Generates `dist/props.json`: every exported `*Props` interface/type in the
-// built declarations, with each prop's name, type text, required flag,
-// default (from a `Default "x"` / `Default x` / `(default ...)` phrase in the
-// JSDoc) and description. The documentation site consumes this instead of
-// hand-maintaining prop tables that drift from the code.
-//
-// Uses the TypeScript compiler API that is already a devDependency - no new
-// tooling. Run after `npm run build` (the `build` script chains it).
+// Generates `dist/props.json` from the built declarations: every exported `*Props` with each prop's
+// type, required flag, default and description, so the docs site never hand-maintains prop tables.
+// Runs after `npm run build` (the `build` script chains it).
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -39,14 +34,8 @@ function docText(symbol) {
 }
 
 /**
- * Where the rest of a component's props come from.
- *
- * Props declared in React's or Base UI's own types are filtered out below -
- * a table listing every DOM attribute is noise - but "this also takes
- * everything `Field.Root` takes" is the sentence a reader needs, and without
- * it a component like `FormField`, whose props are entirely inherited, gets
- * an empty table and no explanation. Read syntactically from the declaration:
- * an interface's heritage clause, or a type alias's right-hand side.
+ * Where the rest of the props come from (heritage clause or alias RHS), since inherited ones are
+ * filtered out - otherwise wholly inherited `FormField` gets an empty, unexplained table.
  */
 function inheritedFrom(declaration) {
   if (ts.isInterfaceDeclaration(declaration)) {
@@ -58,18 +47,8 @@ function inheritedFrom(declaration) {
 }
 
 /**
- * Import aliases in the rolled-up declarations, resolved to the module they
- * came from.
- *
- * The rollup renames on collision - `import { Dialog as Dialog$1 } from
- * "@base-ui/react/dialog"` - because this package exports its own `Dialog`. The
- * heritage text is read out of that file, so `extends` strings named `Dialog$1`,
- * `Input$1`, `Select$1`: identifiers that exist in no namespace a consumer can
- * reach, and that collide with this package's own exports. `Dialog$1.Popup` was
- * worse than opaque, because `Dialog.Popup` is not even the right part name.
- *
- * The suffix is assigned by rollup collision order, so these strings also churn
- * between builds. Built once, lazily, from the declaration file's own imports.
+ * Resolves the d.ts rollup's collision renames (`Dialog as Dialog$1`) to their module: `Dialog$1`
+ * is unreachable for consumers and its suffix churns between builds. Built lazily, once.
  */
 let dtsAliases;
 function resolveDtsAliases(text) {
@@ -107,18 +86,9 @@ function defaultFromDoc(text) {
     text.match(/\b[Dd]efaults?(?: to| is)?:?\s+`([^`]+)`/) ||
     text.match(/\b[Dd]efaults?(?: to| is)?:?\s+"([^"]+)"/) ||
     text.match(/\b[Dd]efaults?(?: to| is)?:?\s+(true|false|null|-?\d+(?:\.\d+)?)\b/) ||
-    // Deliberately no bare-word alternative. One existed, and it scavenged
-    // English out of prose: "Defaults to false, which keeps..." yielded "to",
-    // and "defaults follow the variant's role" yielded "follow" - both shipped.
-    // Since defaults are now read from the source destructuring (176 of them),
-    // this fallback only has to cover props handled outside the signature, and
-    // for those a quoted or backticked value is the honest requirement.
-    //
-    // The value MUST be quoted or backticked here. An earlier unquoted form
-    // matched `default` inside the word `defaults`, so "(defaults to h3, its
-    // semantic role)" shipped a default of "s to h3, its semantic role" on
-    // `Card.Title.as`. A prop whose default is only ever stated in prose now
-    // reports none, which is the honest answer rather than a wrong one.
+    // The value MUST be quoted or backticked: bare-word forms scavenged prose ("to", "follow",
+    // "s to h3, its semantic role" all shipped). Source destructuring supplies most defaults
+    // (176), so this only covers props handled outside the signature; prose-only means none.
     text.match(/\(default:?\s*`([^`]+)`\s*\)/) ||
     text.match(/\(default:?\s*"([^"]+)"\s*\)/);
   const value = match?.[1].trim();
@@ -129,13 +99,8 @@ function defaultFromDoc(text) {
 const CONNECTORS = new Set(["to", "is", "the", "a", "an"]);
 
 /**
- * The props interface a type annotation ultimately refers to.
- *
- * Defaults are recorded under the annotation's raw text but looked up by the
- * bare interface name, so any wrapper silently lost every default behind it:
- * `DataTableProps<Row>`, `SelectProps<Value>` and
- * `Omit<CarouselProps, "continuous">` never matched, taking `DataTable.pageSize`,
- * `Select.size` and all nine Carousel defaults with them.
+ * The props interface an annotation refers to, so `DataTableProps<Row>` or
+ * `Omit<CarouselProps, "continuous">` still key defaults under the bare interface name.
  */
 function basePropsName(text) {
   return /\b([A-Z]\w*Props)\b/.exec(text)?.[1] ?? text.trim();
@@ -157,8 +122,7 @@ function bindingDefaults(pattern, source) {
     if (!element.initializer || !ts.isIdentifier(element.name)) continue;
     const name = element.propertyName?.getText(source) ?? element.name.getText(source);
     const value = element.initializer.getText(source).replace(/\s+/g, " ");
-    // A multi-line or otherwise large initializer is an implementation detail,
-    // not something a props table can usefully print.
+    // Large initializers are implementation details, not printable defaults.
     if (value.length > 60) continue;
     found.push([name, value]);
   }
@@ -166,27 +130,14 @@ function bindingDefaults(pattern, source) {
 }
 
 /**
- * Destructuring defaults, read from the component source.
- *
- * A declaration file carries signatures, never bodies, so `dist/index.d.ts`
- * cannot know that `size` defaults to `"md"` - that value exists only in
- * `Button.tsx`'s parameter list. Without it the defaults column had to be
- * recovered from a JSDoc phrase that most props never wrote, and the
- * documentation site hand-maintained its own copy that drifted from the code
- * (its Button table was missing five props outright).
- *
- * Reading the source means a documented default IS what the component does.
- *
- * Syntactic only - `createSourceFile`, no type checker. Every fact needed is
- * in the syntax, and this runs over every source file inside `npm run build`.
+ * Destructuring defaults from component source - d.ts files have no bodies, so this makes a
+ * documented default exactly what the component does. Syntactic only (no checker), for speed.
  */
 function collectDefaults() {
   const byPropsType = new Map();
   const record = (annotation, pattern, source) => {
     if (!annotation || !ts.isObjectBindingPattern(pattern)) return;
-    // Normalised, so a wrapper or a type argument still lands on the interface
-    // the lookup asks for. Tables merge rather than overwrite, so a component
-    // declared twice (Carousel: once bare, once through `Omit<>`) accumulates.
+    // Normalised to the bare interface; tables merge, so Carousel (bare and `Omit<>`) accumulates.
     const propsType = basePropsName(annotation);
     const table = byPropsType.get(propsType) ?? new Map();
     for (const [name, value] of bindingDefaults(pattern, source)) table.set(name, value);
@@ -202,10 +153,8 @@ function collectDefaults() {
       ts.ScriptKind.TSX,
     );
     const visit = (node) => {
-      // `React.forwardRef<Ref, XProps>(function X({ size = "md" }, ref) {})`.
-      // The second type argument is the authoritative props link - better than
-      // mangling a component name into `${name}Props`, which breaks wherever
-      // the two do not match.
+      // `forwardRef<Ref, XProps>(function X({ size = "md" }, ref) {})`: the second type argument
+      // is the authoritative props link, unlike guessing `${name}Props`.
       if (
         ts.isCallExpression(node) &&
         /forwardRef$/.test(node.expression.getText(source)) &&
@@ -230,7 +179,7 @@ function collectDefaults() {
   return byPropsType;
 }
 
-/** Optional props are reported with their own type; the `| undefined` is implied by `required: false`. */
+/** Drops `| undefined` from optional props; `required: false` already implies it. */
 function cleanType(text) {
   return text.replace(/\s*\|\s*undefined$/, "").replace(/^undefined\s*\|\s*/, "");
 }
@@ -257,17 +206,14 @@ for (const symbol of exports) {
       name: prop.name,
       type: cleanType(checker.typeToString(propType, decl, ts.TypeFormatFlags.NoTruncation)),
       required: !(prop.flags & ts.SymbolFlags.Optional),
-      // Source first: the destructuring default is what the component actually
-      // does. The JSDoc phrase is the fallback for a prop handled somewhere
-      // other than the signature.
+      // Source first (what the component does); JSDoc for props handled outside the signature.
       default: sourceDefaults.get(symbol.name)?.get(prop.name) ?? defaultFromDoc(description),
       description: description || undefined,
       deprecated: deprecation(prop),
     });
   }
   const extendsFrom = inheritedFrom(declaration);
-  // A table with no own props is still worth emitting when it inherits - that
-  // IS the component's API, and the note below is the whole answer.
+  // A table with no own props is still emitted when it inherits - that IS its API.
   if (props.length === 0 && !extendsFrom) continue;
   result[symbol.name] = {
     component: symbol.name.replace(/Props$/, ""),

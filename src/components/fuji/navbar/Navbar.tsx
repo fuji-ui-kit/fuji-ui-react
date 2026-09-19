@@ -25,14 +25,8 @@ export interface NavbarProps extends React.HTMLAttributes<HTMLElement> {
   /** The links, in display order. */
   items: NavbarItem[];
   /**
-   * Wraps each item that has an `href` in a router link - `next/link`, a
-   * TanStack `Link` - while keeping Fuji's styling on the content it is handed.
-   *
-   * The third argument carries what Fuji's own anchor gets: `href`,
-   * `aria-current`, the link `className` and `children`, so
-   * `(item, children, props) => <Link {...props} />` is a complete link.
-   * Returning a single element without spreading them is also fine - they are
-   * applied to it for you, filling in only what it does not set itself.
+   * Wraps `href` items in a router link. `linkProps` holds `href`, `aria-current`, `className`,
+   * `children`, so `(item, c, props) => <Link {...props} />` works; unspread, they fill gaps.
    */
   renderLink?: (item: NavbarItem, children: React.ReactNode, linkProps: NavbarLinkProps) => React.ReactNode;
   /** Called when an item is activated. An item with no `href` needs this to do anything. */

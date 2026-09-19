@@ -35,7 +35,7 @@ export const Invalid: Story = {
   args: { invalid: true },
 };
 
-/** Label, description and invalid state all come from the surrounding FormField - no `aria-label` or `invalid` on the picker. */
+/** Label, description and invalid state come from the surrounding FormField, not the picker. */
 export const InFormField: Story = {
   name: "In a FormField",
   render: () => (
@@ -81,7 +81,7 @@ export const StaticHeader: Story = {
   },
 };
 
-/** Selectable header - clicking the month/year label opens a month grid + year list for fast, longer-range navigation. */
+/** Clicking the month/year label opens a month grid and year list for long-range navigation. */
 export const SelectableHeader: Story = {
   args: { interactiveHeader: true },
   play: async ({ canvasElement }) => {

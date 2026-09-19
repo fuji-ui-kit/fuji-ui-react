@@ -45,12 +45,8 @@ export interface DataTableProps<Row> extends React.HTMLAttributes<HTMLDivElement
 }
 
 /**
- * Table + client-side sorting and pagination - built on `Table`.
- *
- * Declared with `forwardRef` + an explicit cast (rather than plain
- * `React.forwardRef<HTMLDivElement, DataTableProps<Row>>`) because
- * `forwardRef` itself isn't generic - without the cast, `Row` would collapse
- * to `unknown` for every caller instead of being inferred per usage.
+ * Table + client-side sorting and pagination - built on `Table`. Cast after `forwardRef` because
+ * `forwardRef` isn't generic; without it `Row` collapses to `unknown` for every caller.
  */
 export const DataTable = React.forwardRef(function DataTable<Row>(
   {
@@ -113,11 +109,8 @@ export const DataTable = React.forwardRef(function DataTable<Row>(
                 <Table.Head
                   key={column.key}
                   className={column.className}
-                  // `aria-sort` belongs on the header CELL, not the button
-                  // inside it - that is where assistive tech looks when
-                  // reading a column, and it is the only machine-readable
-                  // record of the current sort. Without it the sort state
-                  // existed solely as an arrow glyph.
+                  // `aria-sort` belongs on the header cell, where assistive tech looks; it is the
+                  // only machine-readable record of the sort, not just the arrow glyph.
                   aria-sort={
                     column.sortable
                       ? active
@@ -138,13 +131,8 @@ export const DataTable = React.forwardRef(function DataTable<Row>(
                       )}
                     >
                       {column.header}
-                      {/*
-                        The arrows are decoration: they carry the state
-                        visually but announce as nothing. This span is what a
-                        screen reader reads after the column name, so the
-                        button says "Revenue, sorted ascending" rather than
-                        just "Revenue".
-                      */}
+                      {/* The arrows are decoration; this span makes the button read "Revenue,
+                          sorted ascending" rather than just "Revenue". */}
                       <span className="fj:sr-only">
                         {active
                           ? sort.direction === "asc"

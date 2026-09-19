@@ -322,7 +322,9 @@ selectors may need updating.
   bar.
 - `Card` takes `effect` (`"none" | "lift" | "tilt"`) for its hover treatment.
   `"lift"` is the CSS scale-and-tip that `interactive` used to enable; `"tilt"`
-  tracks the pointer and tilts the card in 3D towards it. The `interactive`
+  tracks the pointer and leans the card gently towards it in 3D (at most 3deg
+  at the corners, under a long perspective, so a large card never swings
+  visibly out of plane). The `interactive`
   boolean still works and maps to `"lift"`, but is deprecated - `effect` takes
   precedence when both are set, so `effect="none"` opts a card back out.
 - `LineChart` takes `area` for a soft gradient fill under each line.

@@ -1,16 +1,7 @@
 #!/usr/bin/env node
 /*
- * Renders real components from the built package to static HTML, once per
- * appearance combination (2 themes x 2 materials x 2 radii x 2 elevations),
- * against the compiled `dist/styles.css`.
- *
- * This exists because token work touches ~5 files that restyle all 79
- * components at once, and hand-written proof markup only ever verifies the
- * markup you wrote, not what the components actually emit. Rendering the real
- * thing is the only check that catches "this token change broke Badge".
- *
- * Dev-only: `scripts/` is not in package.json's `files`, so it never ships.
- * Run `npm run build` first, then `node scripts/render-gallery.mjs`.
+ * Renders real built components to static HTML for all 16 appearance combinations, since token
+ * edits restyle all 79 components and only real output shows "this broke Badge". Build first.
  */
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -161,16 +152,8 @@ function page(theme, material, radius, elevation) {
       h("div", { style: { display: "flex", flexDirection: "column", gap: 22, padding: 24 } }, gallery()),
     ),
   );
-  // `<html>` is a plain string, not part of the React tree FujiProvider
-  // mounts into, so it never gets the provider's own data-fuji-* attributes.
-  // `data-fuji-material`/`data-fuji-glass` are added here by hand for the
-  // same reason theme/radius/elevation already were: `body`'s
-  // `--fuji-page-background` lookup only sees tokens declared on one of
-  // *its own* ancestors (html), never pulled down from the FujiProvider
-  // wrapper div nested inside it. `data-fuji-glass` replicates the
-  // provider's own derivation (`FujiProvider.tsx`: glassTint follows theme
-  // - dark theme -> dark tint, otherwise light tint - until overridden) so
-  // glass renders with the tint that theme would actually resolve to.
+  // `<html>` is outside the provider's tree, so its data-fuji-* attrs are set by hand: `body`'s
+  // `--fuji-page-background` only sees tokens on its own ancestors. Glass tint follows theme.
   const glassTint = theme === "dark" ? "dark" : "light";
   return `<!doctype html><meta charset="utf-8">
 <title>${theme} / ${material} / ${radius} / ${elevation}</title>

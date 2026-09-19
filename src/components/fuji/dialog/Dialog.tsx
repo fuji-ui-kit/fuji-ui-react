@@ -64,12 +64,8 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         {...portalAttrs}
         className={cn(
           "fuji-glass-surface-overlay fuji-motion-modal fj:fixed fj:z-50 fj:flex fj:flex-col fj:gap-4 fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
-          // Every mobile behavior caps the popup at the viewport (85vh, or the
-          // full height when fullscreen), but nothing let it scroll - content
-          // taller than the cap spilled out past the rounded edge, and with the
-          // page scroll-locked behind it the bottom was unreachable. The popup
-          // itself scrolls; `overscroll-contain` keeps a flick at either end
-          // from chaining into the locked page.
+          // Mobile behaviours cap the popup at the viewport (85vh or full height), so it scrolls
+          // itself; `overscroll-contain` stops a flick at either end chaining into the locked page.
           "fuji-scrollbar fj:overflow-y-auto fj:overscroll-contain",
           MOBILE_BEHAVIOR_CLASSES[mobileBehavior],
           className,
@@ -77,15 +73,8 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
         {...props}
       >
         {children}
-        {/*
-          Rendered after `children`, not before, even though it is positioned
-          in the top-right corner either way. Initial focus lands on the first
-          tabbable element in the popup, and with the close button first that
-          was always "Close dialog" - a keyboard or screen-reader user opened
-          every dialog focused on the way out of it, and had to tab past the
-          content to reach the primary action. Absolute positioning means the
-          visual order is unchanged.
-        */}
+        {/* After `children` (absolute positioning keeps it top-right) so initial focus lands on
+            content, not "Close dialog" - users otherwise opened every dialog focused on the exit. */}
         {!hideCloseButton && (
           <Base.Close
             render={<DismissButton aria-label="Close dialog" className="fj:absolute fj:top-3 fj:right-3" />}
@@ -98,8 +87,7 @@ export const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps
 
 /**
  * `<Dialog><Dialog.Trigger/><Dialog.Content mobileBehavior="sheet">
- *   <Dialog.Title/><Dialog.Description/>...
- * </Dialog.Content></Dialog>`
+ *   <Dialog.Title/><Dialog.Description/>...</Dialog.Content></Dialog>`
  */
 export const Dialog = Object.assign(DialogRoot, {
   Trigger: DialogTrigger,

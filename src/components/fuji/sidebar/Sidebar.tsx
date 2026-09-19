@@ -6,11 +6,8 @@ import { NATIVE_LINK_RESET } from "../lib/native-control-reset";
 export const SidebarRoot = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
   function SidebarRoot({ className, children, ...props }, ref) {
     return (
-      // `<nav>`, not `<aside>`. `Sidebar.Item` is a link, so this is a
-      // navigation landmark, not a complementary one - a screen-reader user
-      // listing "navigations" to find the site nav did not find this, and
-      // listing "complementary" content found the primary navigation filed
-      // under "related, tangential material".
+      // `<nav>`, not `<aside>`: items are links, so screen-reader users listing navigation
+      // landmarks must find it here, not filed under "complementary" content.
       <nav
         ref={ref}
         // Named for the same reason Navbar is: a page usually has more than
@@ -71,12 +68,8 @@ export const SidebarItem = React.forwardRef<HTMLAnchorElement, SidebarItemProps>
   { icon, active, as: Tag = "a", className, children, href, ...props },
   ref,
 ) {
-  // Every other link-rendering component in the package (Navbar,
-  // BottomNavigation, Breadcrumb, Link) runs its `href` through this; Sidebar
-  // was the one that passed it straight through, so a `javascript:` URL from
-  // a CMS-driven nav tree became a live script link here and nowhere else.
-  // Only applied when this actually renders an anchor - `as={Link}` hands the
-  // href to a router, which does its own resolution.
+  // Like Navbar/Breadcrumb/Link, sanitize `href` so a CMS-supplied `javascript:` URL can't become
+  // a live script link. Only for a real anchor; `as={Link}` hands href to a router.
   const resolvedHref = Tag === "a" ? toSafeHref(href) : href;
 
   return (

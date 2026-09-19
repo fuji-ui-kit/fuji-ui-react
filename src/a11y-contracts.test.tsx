@@ -14,14 +14,8 @@ import {
 } from "./index";
 
 /**
- * Cross-component accessibility contracts.
- *
- * These live together rather than in each component's own file because they
- * assert one rule applied across the system - "state that is only a color is
- * not state", "one landmark per role needs a name", "a chart is one tab stop"
- * - and a rule enforced in eight separate files drifts. When a new component
- * joins one of these families it should be added to the list here, which is
- * harder to forget than remembering to copy an assertion.
+ * Cross-component accessibility contracts, kept together because a system-wide rule enforced in
+ * eight files drifts. Add a new component joining one of these families to its list here.
  */
 
 afterEach(() => {

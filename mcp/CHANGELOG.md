@@ -1,5 +1,22 @@
 # @fujiui/mcp
 
+## 0.2.0
+
+Dark mode and glass, which agents kept getting wrong.
+
+- New `get_appearance(topic?, group?)` tool: recipes for filling the page in
+  dark mode, a light/dark toggle, following the OS, remembering the choice
+  without a flash, glass and its backdrop, making your own markup (and
+  Tailwind's `dark:` variant) follow the provider, and the design tokens - one
+  group at a time, with each theme's and material's value. Reads the
+  `appearance` recipes and `tokens` from the installed `registry.json`; a
+  registry without recipes gets a pointer to `docs/theming.md` instead.
+- `review_usage` flags theme switching that bypasses the provider - toggling a
+  `.dark` class or writing `data-fuji-*` attributes by hand - and answers
+  `theme="system"` with the follow-the-OS recipe instead of a bare invalid value.
+- The connect-time instructions tell the agent to call `get_appearance` before
+  writing appearance code.
+
 ## 0.1.0
 
 First public release.

@@ -1,7 +1,6 @@
 /**
- * Deterministic, offline `data:` URI images for stories that need "a photo"
- * or "an avatar" - no hotlinked third-party host, so nothing to rate-limit,
- * go offline, or vary between CI and local runs.
+ * Deterministic offline `data:` URI photos and avatars - no third-party host to rate-limit, go
+ * down, or differ between CI and local runs.
  */
 
 const PALETTE = ["#b3623f", "#4a7a5c", "#c99a3f", "#3f6f8f", "#8a4a6b", "#6f7a3f"];

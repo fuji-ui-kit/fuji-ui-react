@@ -5,12 +5,8 @@ import { cn } from "../../../lib/cn";
 export type FormFieldRootProps = React.ComponentPropsWithoutRef<typeof Field.Root>;
 
 /**
- * Whether the root was told it is invalid via its own `invalid` prop, rather
- * than by Base UI's validation. Base UI's `Field.Error` only renders for a
- * validation result it produced itself, so without this a field marked
- * `<FormField invalid>` got the red border and `aria-invalid` but never showed
- * its `<FormField.Error>` message - the one thing that tells the user what is
- * actually wrong.
+ * Whether the root's own `invalid` prop (not Base UI validation) marked it invalid. `Field.Error`
+ * only renders for Base UI's own results, so `<FormField invalid>` never showed its error message.
  */
 const ForcedInvalidContext = React.createContext(false);
 
@@ -77,11 +73,8 @@ export const FormFieldError = React.forwardRef<
 });
 
 /**
- * Compound field wrapper backed by Base UI's Field: wires label/description/
- * error `aria-describedby` and `data-invalid`/`data-disabled` automatically to
- * any Fuji input rendered inside it.
- *
- * `<FormField invalid><FormField.Label/><Input/><FormField.Error/></FormField>`
+ * Base UI Field wrapper wiring label/description/error `aria-describedby` and `data-invalid`/
+ * `data-disabled` to any Fuji input inside. `<FormField invalid><FormField.Label/><Input/></FormField>`
  */
 export const FormField = Object.assign(FormFieldRoot, {
   Label: FormFieldLabel,

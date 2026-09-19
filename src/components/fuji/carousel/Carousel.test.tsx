@@ -5,26 +5,19 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Carousel } from "./Carousel";
 
-// `React.Children.toArray` reads Carousel's JSX children as authored, so the
-// slides must be passed as direct children - a wrapper component here would
-// collapse to a single child element instead of N slides.
+// Slides must be direct children: `React.Children.toArray` would count a wrapper as one slide.
 function slides(count: number) {
   return Array.from({ length: count }, (_, i) => <div key={i}>Slide {i + 1}</div>);
 }
 
-// next()/previous()/autoplay move `display` right away (the CSS transform
-// starts sliding), but `active` (and therefore which dot is aria-current)
-// only updates once the real browser fires `transitionend` on the track -
-// jsdom never runs the animation or fires that event on its own, so tests
-// exercising arrow/autoplay navigation simulate the browser finishing it.
+// Navigation moves `display` at once but `active` (the aria-current dot) waits for the track's
+// `transitionend`, which jsdom never fires - so simulate it.
 function settleTransition(region: HTMLElement) {
   const track = region.firstElementChild as HTMLElement;
   act(() => {
     fireEvent.transitionEnd(track);
-    // A loop-boundary reset also schedules a `requestAnimationFrame` (to
-    // re-enable animation on the next frame - see Carousel.tsx) which fake
-    // timers turn into a pending timer; flushing it inside the same `act()`
-    // keeps that follow-up state update from firing outside any act scope.
+    // Flush the loop reset's rAF (a fake timer) inside this `act()` so its state update isn't
+    // outside any act scope.
     vi.advanceTimersByTime(0);
   });
 }
@@ -62,10 +55,7 @@ describe("Carousel", () => {
       </Carousel>,
     );
     const region = screen.getByRole("region", { name: "Demo" });
-    // A plain DOM `.focus()` call fires React's `onFocusCapture` (which pauses
-    // autoplay) outside of Testing Library's own act-wrapped event helpers -
-    // unlike `fireEvent`/`user-event`, nothing wraps a direct native API call
-    // for you.
+    // A native `.focus()` fires `onFocusCapture` (pausing autoplay) outside Testing Library's act.
     act(() => region.focus());
     await user.keyboard("{ArrowRight}");
     settleTransition(region);

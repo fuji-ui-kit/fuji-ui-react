@@ -25,16 +25,8 @@ export interface TreeProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "o
   /** `id`s expanded on first render. Expansion is uncontrolled from then on. */
   defaultExpandedIds?: string[];
   /**
-   * Whether selecting a parent node also toggles it. Default `true` - clicking
-   * a folder row, or pressing Enter/Space on it, both selects it and
-   * expands/collapses it, as before.
-   *
-   * Set `false` to decouple the two, per the WAI-ARIA tree pattern: a row
-   * click and Enter/Space only select, the chevron toggles on click, and
-   * ArrowRight/ArrowLeft expand and collapse from the keyboard (they always
-   * do, in both modes). Use it when a folder is itself something to select -
-   * a file browser that shows a folder's details - without it opening or
-   * closing every time.
+   * Whether selecting a parent node also toggles it. Default `true`. `false` (WAI-ARIA tree): select
+   * only; the chevron or ArrowRight/Left toggles. Use when a folder is itself selectable.
    */
   expandOnSelect?: boolean;
 }
@@ -215,13 +207,8 @@ function TreeItem({
   return (
     <div>
       {/*
-        The treeitem role, its aria-expanded/selected/level/posinset/setsize,
-        and the roving tabIndex all live on this single node - it's the
-        element that actually receives DOM focus. Splitting them across this
-        wrapper and a nested interactive child (as an earlier version did,
-        wrapping a real <button> inside) leaves AT focus landing on an
-        element with none of that tree semantics attached. A plain div (not
-        a <button>) also avoids nesting one interactive role inside another.
+        treeitem role, aria-* state and the roving tabIndex sit on this focused div; a nested <button>
+        would leave AT focus without tree semantics and nest interactive roles.
       */}
       <div
         ref={(el) => registerRef(node.id, el)}
@@ -247,11 +234,9 @@ function TreeItem({
         )}
       >
         {hasChildren ? (
-          // With `expandOnSelect={false}` the chevron is the pointer's toggle.
-          // Deliberately not a <button>: a focusable control nested in the
-          // treeitem would split focus from the tree semantics (see above),
-          // and keyboard users already have ArrowRight/ArrowLeft. It stops
-          // propagation so the toggle does not also select the row.
+          // With `expandOnSelect={false}` the chevron is the pointer toggle. Not a <button>: that
+          // would split focus from the treeitem (see above); keyboards use ArrowRight/Left. Stops
+          // propagation so toggling doesn't also select the row.
           <span
             aria-hidden="true"
             data-tree-toggle=""

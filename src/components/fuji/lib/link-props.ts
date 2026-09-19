@@ -2,10 +2,8 @@ import * as React from "react";
 import { cn } from "../../../lib/cn";
 
 /**
- * What a navigation component's own `<a>` would have received, handed to a
- * consumer's `renderLink` so a router link can carry the same semantics and
- * styling. Internal: each component re-exports it under its own name
- * (`NavbarLinkProps`, `BreadcrumbLinkProps`, `BottomNavigationLinkProps`).
+ * The props a navigation component's own `<a>` would get, passed to `renderLink` so a router link
+ * matches it. Re-exported per component (`NavbarLinkProps`, `BreadcrumbLinkProps`, ...).
  */
 export interface NavigationLinkProps {
   /** The item's `href`, unmodified - a router resolves it itself. */
@@ -27,15 +25,8 @@ type LinkElementProps = {
 };
 
 /**
- * Applies `linkProps` to whatever `renderLink` returned, so a consumer who
- * writes the common `(item, children) => <Link href={item.href}>{children}</Link>`
- * - ignoring the third argument - still gets `aria-current`, the link reset
- * and focus ring, and the selection callback, exactly like the default anchor.
- *
- * Only fills gaps: a consumer's own `aria-current` wins, their `className` is
- * merged after ours (so it wins conflicts), and their `onClick` runs first.
- * Anything that is not a single element (a string, an array, a Fragment,
- * which accepts no props) is returned untouched.
+ * Applies `linkProps` to `renderLink`'s result, filling gaps only (the consumer's `aria-current` and
+ * `className` win, their `onClick` runs first). Non-elements and Fragments pass through untouched.
  */
 export function applyLinkProps(node: React.ReactNode, linkProps: NavigationLinkProps): React.ReactNode {
   if (!React.isValidElement<LinkElementProps>(node) || node.type === React.Fragment) return node;

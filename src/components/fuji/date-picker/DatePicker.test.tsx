@@ -30,9 +30,8 @@ describe("DatePicker", () => {
     expect(screen.getByLabelText("Date")).not.toHaveAttribute("aria-invalid");
   });
 
-  // Regression: the trigger was a bare Popover.Trigger, invisible to Base UI
-  // Field - `<FormField invalid>` never reached it (no red border, no
-  // aria-invalid) and the label's `for` pointed at an id nothing rendered.
+  // Regression: a bare Popover.Trigger was invisible to Field - no invalid state, and the label's
+  // `for` pointed at an id nothing rendered.
   it("picks up an ancestor FormField's invalid state without its own prop", () => {
     render(
       <FormField invalid>

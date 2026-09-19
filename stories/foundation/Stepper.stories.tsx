@@ -37,9 +37,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Every story is live: click any step to move there. `activeStep` from the
- * controls sets the starting step; `onStepClick` is what makes the circles
- * buttons.
+ * Every story is live: click a step to move there. `activeStep` sets the starting step;
+ * `onStepClick` makes the circles buttons.
  */
 function LiveStepper(props: React.ComponentProps<typeof Stepper>) {
   const [active, setActive] = React.useState(props.activeStep);
@@ -105,9 +104,8 @@ function StepperPlayground() {
 }
 
 /**
- * Every step is clickable (the "Payment" step is `disabled`), and Back /
- * Next move one at a time. Watch the connector grow along the line, the
- * circle cross over to the filled state and the check pop in on each move.
+ * Every step is clickable except the `disabled` "Payment"; Back/Next move one at a time, animating
+ * the connector, the filled circle and the check.
  */
 export const Playground: Story = {
   name: "Playground (back / next)",

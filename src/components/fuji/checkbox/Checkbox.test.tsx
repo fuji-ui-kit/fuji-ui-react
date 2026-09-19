@@ -6,16 +6,8 @@ import { axe } from "jest-axe";
 import { Checkbox } from "./Checkbox";
 
 /**
- * Tailwind's `x:utility` variant compiles to the CSS pseudo-class `&:x`, and
- * its `x-[y]:utility` form compiles to the attribute selector `&[y]` (e.g.
- * `data-[disabled]:opacity-45` -> `[data-disabled] { opacity: .45 }`). Both
- * are real CSS the browser (and jsdom) evaluates against the live element -
- * not something this test invents. Pull every disabled-dimming utility class
- * actually shipped on `el` and ask the DOM whether the selector it compiles
- * to matches `el` as currently rendered. This fails whenever the shipped
- * variant can never match the element's real state (e.g. `disabled:` on a
- * `<span role="checkbox">`, which can never satisfy `:disabled`), instead of
- * merely checking that some class string is present.
+ * Whether the disabled-dimming classes shipped on `el` compile to selectors that match it in the
+ * DOM, so a variant that never can (`disabled:` on a `<span role="checkbox">`) fails.
  */
 function disabledStylingApplies(el: Element): boolean {
   const relevant = el.className
@@ -62,14 +54,8 @@ describe("Checkbox", () => {
     expect(control).toHaveAttribute("data-disabled", "");
   });
 
-  // Regression: Base.Root renders a `<span role="checkbox">`, not a native
-  // form control - the real `disabled` attribute lives on Base UI's
-  // visually-hidden `<input>` beside it. Styling that box with the
-  // `disabled:` pseudo-class variant can never match (a span can never
-  // satisfy `:disabled`), so a disabled checkbox rendered pixel-identical to
-  // an active one even though `aria-disabled`/`data-disabled` were present.
-  // Fails before the `data-[disabled]:` fix (the shipped `disabled:` variant
-  // never matches this element); passes after.
+  // Regression: Base.Root is a `<span role="checkbox">`, which never satisfies `:disabled`, so a
+  // disabled checkbox looked identical to an active one despite `data-disabled` being present.
   it("actually applies the disabled-dimming styling to the box (not just the data attribute)", () => {
     render(<Checkbox label="Accept terms" disabled />);
     const control = screen.getByRole("checkbox");

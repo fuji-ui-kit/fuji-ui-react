@@ -6,10 +6,16 @@ Code. The plugin bundles two things:
 - **The Fuji MCP server**
   ([`@fujiui/mcp`](https://github.com/fuji-ui-kit/fuji-ui-react/tree/main/mcp#readme)) -
   the component API of the `@fujiui/react` version your project has installed,
-  the steps for setting Fuji up in an app, and `review_usage`, which checks code
-  against the package's conventions.
+  the steps for setting Fuji up in an app, recipes for dark mode and glass
+  (`get_appearance`), and `review_usage`, which checks code against the
+  package's conventions.
 - **The `fuji-ui` skill** - tells Claude when to use those tools, how to add Fuji
-  to an existing app, and the rules code review enforces.
+  to an existing app, how to get dark mode and glass right, and the rules code
+  review enforces.
+
+Installing the plugin gives you both at once: the skill is loaded from the
+plugin, and the MCP server starts from its `.mcp.json` (`npx -y @fujiui/mcp`).
+There is nothing else to install.
 
 ## Install
 

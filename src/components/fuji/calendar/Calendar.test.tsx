@@ -53,9 +53,7 @@ describe("Calendar", () => {
     expect(screen.getByLabelText(/June 2024/)).toBeInTheDocument();
   });
 
-  // Regression: `minDate={new Date()}` carries the current time of day, and
-  // the old timestamp comparison put today's midnight grid cell "before" it -
-  // so the one date a "no past dates" picker must allow was disabled.
+  // Regression: `minDate={new Date()}` carries the time of day, so a timestamp compare disabled today.
   it("compares minDate and maxDate by calendar day, ignoring the time of day", () => {
     const today = new Date(2024, 4, 15);
     render(

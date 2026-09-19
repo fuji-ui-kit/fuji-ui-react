@@ -7,35 +7,8 @@ import type { StorybookConfig } from "@storybook/react-vite";
 const execFileAsync = promisify(execFile);
 
 /**
- * `npm run storybook`/`storybook:build` only run build-css.mjs and
- * build-storybook-css.mjs ONCE, before Vite starts - they are plain Node
- * scripts, not part of Vite's own module graph, so Vite's dev server has no
- * way to know a component's Tailwind classes changed and dist/styles.css /
- * .storybook/generated/storybook.css need regenerating. Left alone, a long-
- * running `storybook dev` session silently drifts from source: the same
- * failure mode a `git status`-clean checkout doesn't have, but a session that
- * started before the most recent component edit does. This plugin re-runs
- * both scripts whenever a file that can affect either compiled stylesheet
- * changes, so `storybook dev` never needs a manual restart to reflect a
- * Tailwind class edit.
- *
- * Vite is never told about the rewrite by its own file watcher, so this
- * plugin has to invalidate the generated stylesheets itself. `dist/` is the
- * resolved `build.outDir`, and Vite unconditionally appends `<outDir>/**` to
- * chokidar's `ignored` list whenever `emptyOutDir` is on (which it is, since
- * the directory sits inside the project root) - see `resolveChokidarOptions`
- * in vite/dist/node. An ignored path stays ignored even when it is passed to
- * `server.watcher.add()`, so no `change` event ever fires for
- * `dist/styles.css` and Vite keeps serving the transform it cached the first
- * time preview.tsx imported it - including across a full browser reload,
- * which is what makes the staleness look like a build problem rather than an
- * HMR one. Invalidating the modules explicitly after each rebuild is the only
- * reliable signal; the full reload that follows is cheap and unambiguous.
- *
- * `src/styles` is in the watch list because `scripts/css-entry.css` imports
- * tokens.css, fuji-theme.css and base.css directly. Leaving it out meant a
- * token or recipe edit - the single most common reason to want a rebuild -
- * was the one change that never triggered one.
+ * Rebuilds both CSS files on source edits (the npm scripts build them once, outside Vite) and
+ * invalidates them manually: Vite ignores `<outDir>/**`, so it would serve stale cached CSS.
  */
 function fujiCssWatchPlugin(projectRoot: string): Plugin {
   const generatedCss = [
@@ -97,22 +70,14 @@ function fujiCssWatchPlugin(projectRoot: string): Plugin {
   };
 }
 
-// Storybook's own config loader transpiles this file through esbuild-register
-// in CJS mode regardless of this package's `"type": "module"` - `import.meta.url`
-// there produces a `require(...)` interop shim that then fails at runtime
-// ("require is not defined in ES module scope"). `process.cwd()` sidesteps it;
-// Storybook always invokes its CLI from the project root, so it's equivalent
-// to `__dirname` here.
+// Not `import.meta.url`: Storybook loads this file as CJS, where it throws "require is not
+// defined". The CLI always runs from the project root, so cwd is equivalent.
 const projectRoot = process.cwd();
 
 const config: StorybookConfig = {
-  // Stories live at the repo root, not under src/, specifically so tsup's
-  // `src/**/*.{ts,tsx}` build glob (see tsup.config.ts) can never pick them up
-  // and ship them as part of the published package.
+  // Outside src/ so tsup's `src/**` glob can never ship them.
   stories: ["../stories/**/*.stories.@(ts|tsx)"],
-  // `addon-essentials` and `addon-interactions` do not exist past Storybook 8 -
-  // both were folded into core, so listing them is now an error rather than a
-  // no-op. a11y is still a separate addon.
+  // Essentials/interactions are core since Storybook 9 and listing them errors; a11y is separate.
   addons: ["@storybook/addon-a11y"],
   framework: {
     name: "@storybook/react-vite",
@@ -125,12 +90,8 @@ const config: StorybookConfig = {
     viteConfig.resolve ??= {};
     viteConfig.resolve.alias = [
       ...(Array.isArray(viteConfig.resolve.alias) ? viteConfig.resolve.alias : []),
-      // Stories import from "@fujiui/react", exactly like a real consumer -
-      // this alias points that at the live TypeScript source (fast HMR while
-      // authoring components) rather than requiring a `tsup` build between
-      // every edit. Only the JS/TSX side is aliased; CSS is loaded from the
-      // real compiled `dist/styles.css` in preview.tsx (see its own comment)
-      // so the stylesheet previewed here is the one consumers actually get.
+      // Stories import "@fujiui/react" like consumers; JS resolves to live source for HMR, while CSS
+      // stays the real compiled `dist/styles.css` (see preview.tsx).
       { find: "@fujiui/react", replacement: join(projectRoot, "src/index.ts") },
     ];
     viteConfig.plugins ??= [];

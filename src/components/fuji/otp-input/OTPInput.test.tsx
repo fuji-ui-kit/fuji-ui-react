@@ -18,17 +18,9 @@ describe("OTPInput", () => {
     expect(screen.getByRole("group")).not.toHaveAttribute("data-invalid");
   });
 
-  // Gap 2: `OTPField.Root` calls Base UI's Field context hook itself and
-  // registers as the field control (confirmed by reading Base UI's source),
-  // so it mirrors an ancestor `<FormField invalid>` onto itself as
-  // `data-invalid` the same way `Field.Control` does elsewhere - but the
-  // group wrote `data-invalid={invalid ? "" : undefined}`, an explicit
-  // `undefined`-valued prop that still occupies the key and wins the merge
-  // in Base UI's `useRenderElement` over that computed value, erasing it
-  // whenever OTPInput's own `invalid` prop was left unset (the common case:
-  // the group's invalid state was supposed to come from the surrounding
-  // FormField). Fails before the fix (no `data-invalid` on the group);
-  // passes after.
+  // Gap 2: `OTPField.Root` mirrors an ancestor `<FormField invalid>` as `data-invalid`, but the
+  // group's explicit `data-invalid={undefined}` won the merge and erased it whenever OTPInput's
+  // own `invalid` was unset.
   it("picks up data-invalid on the group from an ancestor FormField without its own invalid prop", () => {
     render(
       <FormField invalid>

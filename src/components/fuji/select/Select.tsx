@@ -55,14 +55,9 @@ export function Select<Value extends string = string>({
       <Base.Trigger
         aria-label={ariaLabel}
         aria-labelledby={ariaLabelledBy}
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `Base.Trigger` already mirrors an ancestor `<FormField invalid>`
-        // onto this same element as `data-invalid` automatically, and an
-        // explicit `undefined`-valued prop still occupies the key and wins
-        // the merge in `useRenderElement`, erasing that computed value
-        // whenever this `invalid` prop itself was left unset (see Input.tsx
-        // for the full mechanism, and FormField.tsx for the symptom).
-        // Omitting the key when falsy instead lets the ambient value through.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: an explicit `undefined` wins the
+        // merge and erases the `data-invalid` Base.Trigger mirrors from `<FormField invalid>`.
+        // Omitting the key lets it through (see Input.tsx / FormField.tsx).
         {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid || undefined}
         className={cn(
@@ -99,11 +94,9 @@ export function Select<Value extends string = string>({
                   disabled={item.disabled}
                   className={cn(
                     "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-                    // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
-                    // highlighted row tracked the backdrop and washed out over the
-                    // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
-                    // inversion every other selection indicator uses - and the one
-                    // CommandMenu already moved to for this exact reason.
+                    // `--fuji-surface-strong` is translucent white under glass, so highlighted rows
+                    // washed out over bright backdrops (3.35:1). Uses the same fill/text inversion
+                    // as other selection indicators (CommandMenu too).
                     "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
                     "fj:data-[disabled]:pointer-events-none fj:data-[disabled]:opacity-45",
                   )}

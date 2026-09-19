@@ -21,10 +21,7 @@ interface TagHit {
 /** A spread (`{...props}`) is recorded under this key - it can carry anything. */
 const SPREAD = "...";
 
-/**
- * Controlled/uncontrolled prop pairs, per SPEC §4. The leading `\s` in the
- * lookups is what keeps `value` from matching inside `defaultValue`.
- */
+/** Controlled/uncontrolled prop pairs (SPEC §4). */
 const CONTROLLED_PAIRS = [
   ["value", "defaultValue"],
   ["open", "defaultOpen"],
@@ -33,15 +30,8 @@ const CONTROLLED_PAIRS = [
 ] as const;
 
 /**
- * Checks agent-written code against the contracts in SPEC.md and
- * ARCHITECTURE.md - the ones a model gets wrong in predictable ways because
- * they are conventions rather than type errors, so nothing else catches them.
- *
- * Text matching, not a parser: a fragment mid-generation does not parse, and
- * that is exactly the input worth checking. The cost of that choice is that
- * every rule has to be conservative. A false positive here is worse than a
- * miss - it tells an agent that correct code is broken, and the agent "fixes"
- * it into something that is.
+ * Checks agent code against SPEC/ARCHITECTURE conventions no type checker catches. Text matching,
+ * since fragments don't parse; rules stay conservative, as false positives get correct code "fixed".
  */
 export function reviewUsage(code: string, registry: Registry): Finding[] {
   const findings: Finding[] = [];
@@ -52,19 +42,13 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
     findings.push({ rule, line, problem, fix, source: known?.source ?? "SPEC.md" });
   };
 
-  // Everything the package really exports, values and types alike. Built from
-  // the registry's own export list, never from the component catalogue - the
-  // catalogue holds far fewer names than there are real exports, and the
-  // difference is entirely legitimate imports (`DialogRoot`, `SelectItem`,
-  // `TreeNode`, every `*Props`). Counts deliberately not quoted here: they
-  // move every release, and a stale number reads as a contract.
+  // Every real export, values and types. From the registry's export list, not the component
+  // catalogue, which misses legitimate imports like `DialogRoot`, `SelectItem`, every `*Props`.
   const exportedValues = new Set(registry.exports.values);
   const exportedAll = new Set([...registry.exports.values, ...registry.exports.types]);
 
-  // Local binding -> exported name, for the names this file imports from this
-  // package. Filled in by the import loop below, which runs before any rule
-  // reads it. `import { Card as FCard }` has to resolve `<FCard>` to `Card`, or
-  // every rule silently skips it.
+  // Local binding -> exported name, filled by the import loop below before any rule reads it.
+  // `import { Card as FCard }` must resolve `<FCard>` to `Card`, or every rule skips it.
   const importedFromPkg = new Map<string, string>();
   /** A tag as written, with its root resolved through any local alias. */
   const resolveTag = (name: string) => {
@@ -72,14 +56,9 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
     return [importedFromPkg.get(root) ?? root, ...rest].join(".");
   };
 
-  // Only names this package actually provides AND that this file imported from
-  // it. Checking the export set alone applied Fuji's rules to any library
-  // sharing a name - and the overlap is large: `Select`, `Card`, `Tabs`,
-  // `Dialog`, `IconButton`, `Button` are Radix, MUI, Chakra and Base UI names
-  // too. Base UI is Fuji's own runtime dependency, so its docs tripped this.
-  //
-  // A snippet with no imports at all is the tool's primary input, and there the
-  // export set is the best evidence available.
+  // Names this file imported from the package - the export set alone matched Radix/MUI/Base UI
+  // `Select`, `Card`, `Dialog`... A snippet with no imports (the primary input) falls back to the
+  // export set, the best evidence there.
   const importsAnything = /^\s*import\s/m.test(code);
   const isFujiComponent = (name: string) => {
     const root = name.split(".")[0] ?? name;
@@ -87,9 +66,7 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
     return exportedValues.has(root);
   };
 
-  // Props keyed by the tag as it is actually written, so `Sidebar.Item` resolves
-  // as readily as `Button`. Sub-parts were previously unreachable, which left
-  // every rule below blind to them.
+  // Props keyed by the tag as written, so sub-parts like `Sidebar.Item` resolve too.
   const propsByTag = new Map<string, Prop[]>();
   for (const component of registry.components) {
     propsByTag.set(component.name, component.props ?? []);
@@ -102,23 +79,13 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
   const hasUseClient = /^\s*["']use client["'];?/m.test(code);
   const lineOf = (index: number) => code.slice(0, index).split("\n").length;
 
-  // A bare fragment is the input this tool is built for - mid-generation code
-  // that does not parse and has no module structure. Module-level rules cannot
-  // be judged against one: a fragment has no import list, so "no stylesheet"
-  // and "no `use client`" are absences of context, not mistakes. Asking them of
-  // a fragment flags the package's own documented examples.
+  // Module-level rules only apply to modules: in a bare fragment "no stylesheet" or "no
+  // `use client`" is missing context, not a mistake, and would flag our own documented examples.
   const isModule = /^\s*(?:import|export)\s/m.test(code);
 
-  // Two masked copies, both length-preserving so every index still addresses
-  // `code`. Everything below reads one of them, never the raw source.
-  //
-  // `masked` blanks comments AND strings; `specifiers` blanks comments only.
-  // Rules that match an import specifier need the string contents, so they read
-  // `specifiers` - but a `<Card theme="dark" />` written inside a string
-  // literal is documentation, not code, so `isCode` rejects any position the
-  // full mask blanked. Without this, JSX and imports in a JSDoc `@example`, a
-  // `// TODO:` line, or a snippet constant all produced findings - this file
-  // flagged its own comments.
+  // Length-preserving masked copies, so indices still address `code`. `masked` blanks comments and
+  // strings; `specifiers` blanks comments only (import rules need string contents). `isCode`
+  // rejects positions the full mask blanked, so JSX in a JSDoc `@example` or a string is ignored.
   const masked = maskLiteralsAndComments(code);
   const specifiers = maskLiteralsAndComments(code, false);
   const isCode = (index: number) => masked[index] === code[index];
@@ -126,16 +93,9 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
   const tagMask = maskLiteralsAndComments(code, true, true);
   const isLiveJsx = (index: number) => tagMask[index] === code[index];
 
-  // "A module with no `use client`" is only a Server Component under a
-  // framework that has them. Vite, CRA, Remix and Storybook consumers never
-  // write the directive anywhere, so treating its absence as proof reported
-  // every dot-access sub-part in every file of those apps as broken - including
-  // this repo's own `fixtures/plain-vite`. Require positive evidence instead.
-  //
-  // Two signals: a `next/` import, or an async default-exported component,
-  // which only a Server Component can be. Read from masked code so a `next/`
-  // URL in a comment does not count. Deliberately NOT `"use server"` - that
-  // marks a server-actions module, not a Server Component.
+  // Missing `use client` proves nothing in Vite/CRA/Remix apps, so require positive RSC evidence:
+  // a `next/` import (masked, so comments don't count) or an async default-exported component.
+  // Not `"use server"` - that marks a server-actions module, not a Server Component.
   const looksLikeRsc =
     /from\s+["']next\//.test(specifiers) || /export\s+default\s+async\s+function/.test(code);
 
@@ -182,22 +142,12 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
   }
 
   // ---- stylesheet ----------------------------------------------------------
-  // SPEC §8 - the package ships pre-compiled CSS, so a consumer that never
-  // imports it renders every component unstyled with nothing in the console.
-  //
-  // Scoped to a module that BOTH mounts the React root and renders the
-  // provider. "Renders FujiProvider" alone was wrong: in the standard Vite
-  // layout the stylesheet is imported in `main.tsx` and the provider lives in
-  // `App.tsx`, and Next.js splits them the same way across `layout.tsx` and a
-  // `providers.tsx` client component. It flagged this repo's own
-  // `fixtures/plain-vite/src/App.tsx`, which is correct code.
-  //
-  // Read from `masked` so `<FujiProvider>` inside a comment or a string is not
-  // mistaken for rendering one - docs/ssr.md tripped exactly that.
+  // SPEC §8 - without the CSS import everything renders unstyled, silently. Only checked where a
+  // module both mounts the root and renders the provider (Vite/Next.js split them across files).
+  // Read from `masked` so a `<FujiProvider>` in a comment doesn't count.
   const provider = /<FujiProvider[\s/>]/.exec(masked);
   const mountsRoot = /\b(?:createRoot|hydrateRoot|ReactDOM\.render)\s*\(/.test(masked);
-  // A test may legitimately mount a root and render the provider without ever
-  // importing the stylesheet - it asserts behaviour, not appearance.
+  // Tests assert behaviour, not appearance, so they may skip the stylesheet.
   const isTest = /from\s+["'](?:vitest|@jest\/globals|@testing-library\/)/.test(specifiers);
   if (
     isModule &&
@@ -214,18 +164,28 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
     );
   }
 
+  // ---- theme switching -----------------------------------------------------
+  // SPEC §2 - the provider owns the theme. A `.dark` class toggles nothing in Fuji, and a
+  // hand-written data-fuji-* attribute is overwritten on the provider's next render. Only in code
+  // that uses Fuji (or a bare fragment, which is what this tool is usually handed).
+  if (!importsAnything || importedFromPkg.size > 0) {
+    const bypass =
+      /\bdocument\.(?:documentElement|body)\.classList\.(?:add|remove|toggle)\(\s*["'`]dark["'`]|\.setAttribute\(\s*["'`]data-fuji-(?:theme|material|radius|elevation)["'`]/g;
+    // `specifiers`, not `masked`: the class and attribute names are string literals.
+    for (const match of specifiers.matchAll(bypass)) {
+      add(
+        "theme-via-provider",
+        lineOf(match.index ?? 0),
+        "Switches the theme outside FujiProvider. Fuji components ignore a `.dark` class, and the provider overwrites data-fuji-* attributes on its next render.",
+        'Use setTheme / setMaterial from useFujiConfig() (or a controlled theme prop). get_appearance topic "toggle" shows it.',
+      );
+    }
+  }
+
   // ---- class names ---------------------------------------------------------
-  // Two conditions, both required.
-  //
-  // The interpolation must CONTINUE a class token: `bg-fuji-${tone}` never
-  // reaches Tailwind's static scan, while `` `px-4 ${className}` `` is a whole,
-  // already-written class being merged and is the standard idiom. The character
-  // immediately before `${` is what tells them apart.
-  //
-  // And it must be INSIDE a class expression. Testing "is there a class-ish word
-  // within 200 characters" flagged `key={`row-${i.id}`}` in any list that also
-  // had a className, and `id={`field-${id}`}` beside `className={cls}` - both
-  // correct, everyday code.
+  // Flag only an interpolation that continues a class token (`bg-fuji-${tone}`, not
+  // `` `px-4 ${className}` ``) AND sits inside a class expression - proximity alone flagged
+  // `key={`row-${i.id}`}`.
   const classRanges = classExpressionRanges(code);
   for (const match of code.matchAll(/[\w-]\$\{/g)) {
     const index = match.index ?? 0;
@@ -240,28 +200,18 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
   }
 
   // ---- JSX elements --------------------------------------------------------
-  // `scanTags` finds every tag, nested ones included, and gives each its OWN
-  // attributes. That matters more than it sounds: reading an attribute list with
-  // a regex meant a child passed as a prop
-  // (`renderOption={(o) => <Option value={o.id} />}`) had its props read as the
-  // parent's, and the parent was told it passed both `value` and `defaultValue`.
+  // `scanTags` gives each tag, nested ones included, its OWN attributes, so a child passed as a
+  // prop (`renderOption={(o) => <Option value={o.id} />}`) is not read as the parent's.
   for (const { name, attrs, index } of scanTags(specifiers)) {
     if (!isLiveJsx(index)) continue;
-    // Filter first. `lineOf` copies the string up to the match, so running it
-    // for every capitalised tag made this quadratic - 15s on a 1500-line file
-    // that produced no findings at all.
+    // Filter first: `lineOf` is O(n), so calling it per tag took 15s on a 1500-line file.
     if (!isFujiComponent(name)) continue;
-    // Resolved for lookups, `name` for display: an alias must still find its
-    // props, and the message must still name what the author actually wrote.
+    // Resolved name for lookups; `name` for messages, so they show what the author wrote.
     const canonical = resolveTag(name);
     const line = lineOf(index);
     const [root, part] = canonical.split(".");
 
-    // SPEC §2 - appearance belongs to the provider, not to components.
-    // `material` is here because it is a real axis (SPEC §2: `theme` and
-    // `material` are orthogonal). It was missed when the axis split landed, so
-    // `<Card material="glass">` - exactly the mistake this rule exists to catch
-    // - produced no finding at all.
+    // SPEC §2 - appearance axes (including `material`) belong to the provider, not components.
     if (root !== "FujiProvider") {
       for (const axis of ["theme", "material", "radius", "elevation"]) {
         if (!attrs.has(axis)) continue;
@@ -274,11 +224,8 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
       }
     }
 
-    // `glassTint` was removed with the theme x material split - glass now
-    // follows the active `theme`. Kept as its own check rather than dropped:
-    // a model trained on the older API still writes it, and silently ignoring
-    // it is worse than saying what replaced it. Reported on the provider too,
-    // because the provider does not take it either any more.
+    // `glassTint` was removed in the theme x material split; models trained on the old API still
+    // write it, so say what replaced it. Reported on the provider too.
     if (attrs.has("glassTint")) {
       add(
         "removed-api",
@@ -288,18 +235,13 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
       );
     }
 
-    // SPEC §4 - one convention throughout: `value` + `onChange` controlled,
-    // `defaultValue` uncontrolled. Passing both is not a merge; the component
-    // is controlled and the default is silently dropped, which reads at a
-    // glance like an initial value that simply never appears.
+    // SPEC §4 - passing both makes the component controlled and silently drops the default.
     for (const [controlled, uncontrolled] of CONTROLLED_PAIRS) {
       const a = attrs.get(controlled);
       const b = attrs.get(uncontrolled);
       if (!a || !b) continue;
-      // At least one has to be a value the author chose here. A wrapper that
-      // forwards both (`<Input value={value} defaultValue={defaultValue} />`,
-      // which is how SearchInput is built) passes exactly one of them at
-      // runtime and is the correct way to write that component.
+      // A wrapper forwarding both as expressions (how SearchInput is built) passes only one at
+      // runtime, so at least one must be a literal the author chose here.
       if (a.kind === "expression" && b.kind === "expression") continue;
       add(
         "value-defaultvalue",
@@ -309,11 +251,8 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
       );
     }
 
-    // SPEC §4 - icons are component references: not a name, not an element.
-    //
-    // Keyed on the prop's declared TYPE, not its name: of the ten props called
-    // `icon`, seven take `React.ReactNode`, where `<Sidebar.Item icon={<Home />} />`
-    // is correct and `icon={Home}` would render nothing.
+    // SPEC §4 - icons are component references. Keyed on the prop's TYPE, not its name: seven of
+    // the ten `icon` props take `React.ReactNode`, where `icon={<Home />}` is correct.
     for (const prop of propsByTag.get(canonical) ?? []) {
       if (!/\bIconComponent\b/.test(prop.type)) continue;
       const attr = attrs.get(prop.name);
@@ -366,13 +305,22 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
       }
     }
 
-    // Values the prop does not accept. Reads through the tag map, so a
-    // sub-part's props are checked too - they were skipped entirely before.
+    // Values the prop does not accept, sub-parts included.
     for (const prop of propsByTag.get(canonical) ?? []) {
       if (!prop.values?.length) continue;
       const attr = attrs.get(prop.name);
       // Only a literal can be checked; `size={x}` is unknowable from here.
       if (attr?.kind !== "string" || prop.values.includes(attr.value)) continue;
+      // The most common invalid theme, and the one with a real answer: follow the OS by hand.
+      if (/^(?:default)?[Tt]heme$/.test(prop.name) && attr.value === "system") {
+        add(
+          "theme-via-provider",
+          line,
+          `<${clip(name)} ${prop.name}="system">: there is no "system" theme.`,
+          'Read prefers-color-scheme and pass it as a controlled theme - get_appearance topic "system" has the hook.',
+        );
+        continue;
+      }
       add(
         "allowed-values",
         line,
@@ -386,16 +334,8 @@ export function reviewUsage(code: string, registry: Registry): Finding[] {
 }
 
 /**
- * Every JSX opening tag in the document, each with its own parsed attributes.
- *
- * A flat scan, so a tag nested inside another tag's prop is visited in its own
- * right rather than being swallowed by its parent - `<Card header={<Button
- * size="medium"/>}>` now reports the Button, which no earlier version did.
- *
- * Scanning rather than regex-matching is what makes that possible. A regex has
- * to guess where a tag ends, and every guess was wrong somewhere: `>` inside a
- * string, the `>` of an arrow function, or brace nesting deeper than the
- * pattern spelled out.
+ * Every JSX opening tag with its own attributes, nested tags in props included. Scanned, since a
+ * regex can't find the tag end past a `>` in a string, an arrow function, or deep brace nesting.
  */
 function* scanTags(code: string): Generator<TagHit> {
   for (const match of code.matchAll(/<([A-Z][\w.]*)/g)) {
@@ -408,9 +348,8 @@ function* scanTags(code: string): Generator<TagHit> {
 }
 
 /**
- * The `>` that closes an opening tag: the first one at brace depth zero and
- * outside any string. Depth is what makes `onClick={() => x}` safe - the arrow's
- * `>` is inside braces, so it never looks like the end of the tag.
+ * The `>` closing an opening tag: first one at brace depth zero, outside strings. Depth keeps
+ * the arrow in `onClick={() => x}` from ending the tag.
  */
 function findTagEnd(code: string, from: number) {
   let depth = 0;
@@ -418,10 +357,8 @@ function findTagEnd(code: string, from: number) {
   for (let i = from; i < code.length; i++) {
     const char = code[i]!;
     if (quote) {
-      // Count the run of backslashes: `"a\\\\"` ends the string, `"a\\""` does not.
-      // Looking at one character behind treated an escaped backslash as an
-      // escape, so quote parity inverted for the rest of the scan - an element
-      // then absorbed the next element's attributes, or was dropped entirely.
+      // Count the backslash run (`"a\\\\"` ends, `"a\\""` doesn't); checking one char inverted
+      // quote parity for the rest of the scan.
       if (char === quote && !escaped(code, i)) quote = "";
       continue;
     }
@@ -458,12 +395,8 @@ function skipBraces(text: string, from: number) {
 }
 
 /**
- * An attribute list, parsed into `name -> value`.
- *
- * Structure is what the rules need. Testing an attribute list with
- * `\svalue(?:\s*=|[\s/>])` matched a destructured callback argument
- * (`onValueChange={({ value }) => …}`), a shorthand property, and the word in a
- * comment - all reported as the component being passed `value`.
+ * An attribute list parsed into `name -> value`. A regex like `\svalue(?:\s*=|[\s/>])` also
+ * matched destructured callback args (`({ value }) => …`) and words in comments.
  */
 function parseAttributes(text: string) {
   const out = new Map<string, Attribute>();
@@ -508,24 +441,16 @@ function parseAttributes(text: string) {
 }
 
 /**
- * Character ranges that are class expressions: the body of `className={…}` and
- * of a `clsx(…)` / `cn(…)` / `twMerge(…)` call. Brace- and paren-matched rather
- * than regex-bounded, so a nested object or call inside them is included.
- *
- * An interpolation outside every one of these is not a class name, whatever it
- * sits next to.
+ * Ranges of class expressions: `className={…}` and `clsx(…)`/`cn(…)`/`twMerge(…)` bodies,
+ * brace/paren-matched so nested objects and calls are included.
  */
 function classExpressionRanges(code: string): [number, number][] {
-  // Anchors and depth are both read from a copy with comments and quoted
-  // strings blanked out. Without it, `const doc = "className={"` opened a range
-  // that ran to end of file, and a `{` inside a quoted string threw the depth
-  // count off so a real class expression's range vanished.
+  // Read from a masked copy: a `{` in a string or comment would otherwise skew anchors and depth.
   const masked = maskLiteralsAndComments(code);
   const ranges: [number, number][] = [];
   const match = (from: number, open: string, close: string) => {
     let depth = 0;
-    // An unbalanced delimiter would otherwise scan to end of file from every
-    // anchor, which is quadratic on a large input.
+    // Cap the scan: an unbalanced delimiter would be quadratic on large input.
     const limit = Math.min(masked.length, from + 4000);
     for (let i = from; i < limit; i++) {
       if (masked[i] === open) depth++;
@@ -542,11 +467,8 @@ function classExpressionRanges(code: string): [number, number][] {
 }
 
 /**
- * `code` with line comments, block comments and quoted strings replaced by
- * spaces, preserving every offset so ranges still index the original.
- *
- * Template literals are left intact: their `${…}` is the very thing the
- * class-name rule looks for, and interpolations are brace-balanced anyway.
+ * `code` with comments and quoted strings blanked to spaces, offsets preserved. Template literals
+ * are kept by default: their `${…}` is what the class-name rule looks for.
  */
 function maskLiteralsAndComments(code: string, maskStrings = true, maskTemplates = false) {
   const out = code.split("");
@@ -566,19 +488,13 @@ function maskLiteralsAndComments(code: string, maskStrings = true, maskTemplates
       blank(i, stop);
       i = stop - 1;
     } else if (maskTemplates && code[i] === "`") {
-      // Only for the tag scan. A `<Card …>` inside a template literal is a
-      // string being built, not JSX being rendered. The class-name rule reads a
-      // copy that KEEPS templates, because `${…}` inside one is exactly what it
-      // looks for.
+      // Tag scan only: a `<Card …>` inside a template literal is a string, not rendered JSX.
       let j = i + 1;
       while (j < code.length && code[j] !== "`") j += code[j] === "\\" ? 2 : 1;
       blank(i, Math.min(j + 1, code.length));
       i = j;
     } else if (code[i] === '"' || code[i] === "'") {
-      // Strings are always SKIPPED, and only blanked when asked. Skipping them
-      // either way is what stops `const OPEN = "/*"` from being read as the
-      // start of a block comment and blanking the rest of the file - which it
-      // did, silently disabling the checks that read this copy.
+      // Always skip strings (blank only when asked), so `"/*"` isn't read as a comment opener.
       const quote = code[i];
       let j = i + 1;
       while (j < code.length && code[j] !== quote && code[j] !== "\n") {
@@ -591,20 +507,12 @@ function maskLiteralsAndComments(code: string, maskStrings = true, maskTemplates
   return out.join("");
 }
 
-/**
- * Match text is interpolated into findings, and the input is only capped at
- * 64k - so an attribute value or import path could make one finding larger
- * than the whole response budget. Clip what gets echoed back.
- */
+/** Clips echoed text: input is capped at 64k, so one finding could exceed the response budget. */
 function clip(value: string, max = 80) {
   return value.length <= max ? value : `${value.slice(0, max)}…`;
 }
 
-/**
- * `pkg.replace("/", "\\/")` escaped only the first slash, and `\/` means
- * nothing to the `RegExp` constructor anyway - while `.` in a package name
- * stayed a wildcard. Escape properly instead.
- */
+/** Escapes every regex metacharacter, so `.` in a package name is literal. */
 function escapeForRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

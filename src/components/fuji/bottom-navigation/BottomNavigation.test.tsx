@@ -94,3 +94,24 @@ describe("BottomNavigation", () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 });
+
+describe("BottomNavigation with a centre action", () => {
+  it("reports each item's own index to onItemSelect on both sides of the action", async () => {
+    const user = userEvent.setup();
+    const onItemSelect = vi.fn();
+    const items = ["Home", "Messages", "Playing", "Friends"].map((label) => ({ label, icon: null }));
+    render(
+      <BottomNavigation
+        items={items}
+        onItemSelect={onItemSelect}
+        action={{ icon: null, "aria-label": "Shuffle", onClick: () => {} }}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Friends" }));
+    expect(onItemSelect).toHaveBeenLastCalledWith(items[3], 3);
+    await user.click(screen.getByRole("button", { name: "Playing" }));
+    expect(onItemSelect).toHaveBeenLastCalledWith(items[2], 2);
+    await user.click(screen.getByRole("button", { name: "Home" }));
+    expect(onItemSelect).toHaveBeenLastCalledWith(items[0], 0);
+  });
+});

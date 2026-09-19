@@ -1,20 +1,6 @@
 /**
- * Rebuilds `dist/styles.css` + `dist/tokens.css` whenever a source stylesheet
- * or a component file changes.
- *
- * `tsup --watch` covers the JS half of the package, but the CSS is produced by
- * a separate Tailwind pass (scripts/build-css.mjs) that nothing was watching.
- * With the website consuming this package through a directory symlink, a
- * class added to a component would compile into the JS but its utility would
- * be missing from the stylesheet until someone remembered to run
- * `npm run build:css` - which looks exactly like "the fix didn't work".
- *
- * Component files are watched too, not just `src/styles`: Tailwind generates
- * utilities by scanning them, so a new `fj:` class in a .tsx changes the CSS
- * output even though no stylesheet was touched.
- *
- * No dependencies - `fs.watch` with a debounce, since editors fire several
- * events per save.
+ * Rebuilds the CSS (which `tsup --watch` ignores) on stylesheet or component edits - a new `fj:`
+ * class changes the CSS too. Plain `fs.watch`, debounced since editors fire several events per save.
  */
 import { watch } from "node:fs";
 import { spawn } from "node:child_process";

@@ -5,18 +5,8 @@ import { afterEach, describe, expect, it } from "vitest";
 import { loadRegistry, type LoadOptions } from "./registry.js";
 
 /**
- * Where the server looks for `registry.json` decides whether it works at all
- * for someone who installed it from npm, and each case below is a real client:
- *
- * - Claude Code's local and project scopes start a server in the project;
- * - its user scope starts it in `~/.claude` and names the project only through
- *   `CLAUDE_PROJECT_DIR` - so a lookup from the working directory alone found
- *   nothing, in every project, for every user-scope install;
- * - Claude Desktop has no project at all, so the user passes `--project`.
- *
- * Every call injects `env` and `cwd`. This suite runs inside Claude Code often
- * enough that the real `CLAUDE_PROJECT_DIR` would make it pass for the wrong
- * reason.
+ * Each case is a real client: Claude Code local/project scope (cwd), user scope (`~/.claude`,
+ * only `CLAUDE_PROJECT_DIR`), Desktop (`--project`). `env`/`cwd` are injected so real ones can't leak.
  */
 const temps: string[] = [];
 
@@ -30,7 +20,7 @@ function tempDir(): string {
   return dir;
 }
 
-/** A project with `@fujiui/react` installed. `registry: false` is a release from before the file shipped. */
+/** A project with `@fujiui/react` installed; `registry: false` is a release predating the file. */
 function project(version: string, { registry = true } = {}): string {
   const root = tempDir();
   const pkg = path.join(root, "node_modules", "@fujiui", "react");
@@ -117,9 +107,7 @@ describe("loadRegistry", () => {
   });
 
   it("stops at the project's own install instead of answering from a different version", () => {
-    // The named project is outdated and a current install sits in the working
-    // directory. Using the second would describe props the project's code does
-    // not have.
+    // The named project is outdated; the newer cwd install would describe props it doesn't have.
     const message = messageOf({
       cwd: project("2.0.0"),
       env: { CLAUDE_PROJECT_DIR: project("0.2.1", { registry: false }) },
@@ -173,10 +161,8 @@ function workspace(
 const atRoot = (root: string): LoadOptions => ({ cwd: root, env: { CLAUDE_PROJECT_DIR: root } });
 
 /**
- * A monorepo opened at its root - which is the directory Claude Code names as
- * the project. Before workspace lookup existed a pnpm monorepo (and so
- * Turborepo or Nx on pnpm) answered "Could not find @fujiui/react" here, and so
- * did npm and Yarn workspaces whenever the package was not hoisted.
+ * A monorepo opened at its root (Claude Code's project dir); pnpm, and unhoisted npm/Yarn
+ * workspaces, once answered "Could not find @fujiui/react" here.
  */
 describe("loadRegistry in a monorepo opened at its root", () => {
   it("finds pnpm's install, linked into a workspace package from the store", () => {
@@ -275,10 +261,8 @@ describe("loadRegistry in a monorepo opened at its root", () => {
 });
 
 /**
- * How far a workspace pattern is scanned. The first version shared one
- * 5,000-entry budget across every pattern and counted files against it, so a
- * `packages/**` over a large source tree used it all up and a later `apps/*`
- * silently found nothing - reproduced against the built server before the fix.
+ * Scan budgets: one shared 5,000-entry budget that counted files let `packages/**` starve a later
+ * `apps/*`, which then silently found nothing.
  */
 describe("loadRegistry scanning workspace patterns", () => {
   it("does not count files against the scan", () => {
@@ -328,9 +312,8 @@ describe("loadRegistry scanning workspace patterns", () => {
 });
 
 /**
- * pnpm-workspace.yaml as real repositories write it. The first reader required
- * indented items and kept trailing comments as part of the pattern, so both of
- * these valid files answered "Could not find @fujiui/react".
+ * Real-world pnpm-workspace.yaml: the first reader required indented items and kept trailing
+ * comments in the pattern, so both of these valid files failed.
  */
 describe("loadRegistry reading pnpm-workspace.yaml as people write it", () => {
   it.each([

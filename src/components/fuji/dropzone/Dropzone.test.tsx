@@ -26,10 +26,8 @@ describe("Dropzone", () => {
   });
 
   it("opens the file picker on Enter/Space (keyboard accessible)", async () => {
-    // user-event also synthesizes its own click for role="button" elements
-    // on Enter/Space (a testing convenience real browsers don't apply to
-    // plain divs) - so this only asserts the picker opens, not an exact
-    // call count, to avoid coupling to that tooling behavior.
+    // user-event synthesizes its own click on Enter/Space for role="button", so assert only that
+    // the picker opens, not a call count.
     const user = userEvent.setup();
     render(<Dropzone />);
     const zone = screen.getByRole("button", { name: /upload files/i });
@@ -85,16 +83,8 @@ describe("Dropzone", () => {
 });
 
 /**
- * The drag-over fill was dead code for its entire life and nothing noticed,
- * because nothing tested the state that drives it. The element also carries
- * `.fuji-glass-surface-subtle` (for its backdrop blur), which lives in the
- * `fuji.components` layer - ordered AFTER `fuji.utilities` - so the old
- * `fj:bg-*` utility never won and the fill never painted, in any theme. The
- * state now drives `.fuji-dropzone[data-drag-active]` in base.css instead.
- * jsdom cannot evaluate cascade layers, so this pins the part it CAN see: that
- * the attribute the rule keys on is actually set, and cleared, at the right
- * moments. Verified by removing the `data-drag-active` prop and watching this
- * go red.
+ * `.fuji-glass-surface-subtle` (a later layer) beat the old `fj:bg-*` drag fill, so it never painted;
+ * base.css now keys on `[data-drag-active]`. jsdom can't evaluate layers, so this pins the attribute.
  */
 describe("Dropzone drag state", () => {
   const zone = () => screen.getByRole("button", { name: /upload files/i });

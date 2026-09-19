@@ -63,10 +63,7 @@ export const FileUpload = React.forwardRef<HTMLInputElement, FileUploadProps>(fu
         onChange={(event) => {
           const list = Array.from(event.target.files ?? []);
           setFiles(multiple ? [...files, ...list] : list);
-          // Without this, the input keeps the selected filename as its value,
-          // so picking the exact same file again fires no `change` event at
-          // all (the browser sees no value change) - including after it was
-          // removed from the list below.
+          // Reset the value so re-picking the same file (e.g. after removing it) still fires `change`.
           event.target.value = "";
         }}
       />

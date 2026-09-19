@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import * as React from "react";
 import { describe, expect, it, vi } from "vitest";
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { Keyboard } from "./Keyboard";
@@ -15,6 +15,13 @@ const TOKENS_CSS = fs.readFileSync(path.join(__dirname, "..", "..", "..", "style
 
 function cap(code: string): HTMLElement {
   return document.querySelector<HTMLElement>(`[data-fuji-key="${code}"]`)!;
+}
+
+/** Engages an in-flow board's key capture by focusing inside it; floating boards need only be open. */
+function engage(): void {
+  // The first cap is the only one guaranteed on every layout.
+  const target = document.querySelector<HTMLElement>("[data-fuji-key]");
+  if (target) act(() => target.focus());
 }
 
 describe("Keyboard layouts", () => {
@@ -44,10 +51,8 @@ describe("Keyboard layouts", () => {
   });
 
   it.each(LAYOUTS)("fills every %s row edge to edge, with no hole and no overhang", (layout) => {
-    // The invariant a row-width arithmetic slip breaks silently: the resolver
-    // will happily shift a cap right to avoid an overlap, so a bottom row one
-    // unit too wide widened the whole board and pushed the numpad's Enter off
-    // the right-hand edge with every other assertion still green.
+    // A row one unit too wide silently widened the board and pushed numpad Enter off the edge,
+    // since the resolver shifts caps right to avoid overlaps.
     const resolved = resolveLayout(KEYBOARD_LAYOUT_ROWS[layout]);
     const covered = new Set<string>();
     for (const key of resolved.keys) {
@@ -95,10 +100,8 @@ describe("Keyboard layouts", () => {
   });
 
   it("keeps the phone layout at most ten units wide, so an interactive cap clears the 24x24 target floor", () => {
-    // Column count is the whole story here: the sizing already takes min()
-    // against the container, so a narrower board is the only lever that moves
-    // a phone-width cap above the WCAG 2.5.8 floor. jsdom does no layout, so
-    // this pins the column count rather than a pixel size it can't produce.
+    // Column count is the only lever that lifts a phone-width cap above the WCAG 2.5.8 floor; jsdom
+    // has no layout, so pin columns rather than pixels.
     const resolved = resolveLayout(KEYBOARD_LAYOUT_ROWS.phone);
     expect(resolved.columns).toBeLessThanOrEqual(10);
   });
@@ -125,7 +128,12 @@ describe("Keyboard", () => {
     render(<Keyboard layout="numpad" onKeyPress={onKeyPress} />);
 
     await user.click(cap("Numpad7"));
-    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7", value: "7" }));
+    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7", value: "7" }), {
+      shift: false,
+      meta: false,
+      ctrl: false,
+      alt: false,
+    });
     expect(cap("Numpad7")).toHaveAttribute("type", "button");
   });
 
@@ -153,10 +161,8 @@ describe("Keyboard", () => {
     const user = userEvent.setup();
     render(<Keyboard layout="numpad" />);
 
-    // The restart is the component's own job: nothing clears `data-struck` on
-    // `animationend`, because a throttled tab never delivers that event. A cap
-    // hit while still marked must be un-marked, reflowed and re-marked, or the
-    // second strike silently plays nothing.
+    // `data-struck` is never cleared (throttled tabs skip `animationend`), so a re-hit must
+    // un-mark, reflow and re-mark or the second strike plays nothing.
     await user.click(cap("Numpad7"));
     expect(cap("Numpad7")).toHaveAttribute("data-struck", "true");
 
@@ -180,6 +186,9 @@ describe("Keyboard", () => {
     expect(cap("Backspace")).toHaveAttribute("tabindex", "0");
     expect(cap("Numpad7")).toHaveAttribute("tabindex", "-1");
 
+    // The sound toggle takes the first tab stop; the deck must still be a single stop after it.
+    await user.tab();
+    expect(screen.getByRole("button", { name: /key sounds/i })).toHaveFocus();
     await user.tab();
     expect(cap("Backspace")).toHaveFocus();
 
@@ -237,8 +246,7 @@ describe("Keyboard", () => {
   });
 
   it("paints no cap in the accent tone until asked to", () => {
-    // A default accent shipped five red caps that meant nothing, which reads as
-    // a highlight the consumer did not ask for. Colour is opt-in.
+    // Colour is opt-in: a default accent once shipped five meaningless red caps.
     const { rerender, container } = render(<Keyboard layout="tkl" />);
     expect(container.querySelectorAll('[class*="bg-fuji-contained-"]')).toHaveLength(0);
 
@@ -259,6 +267,7 @@ describe("Keyboard", () => {
   it("lights a cap while the real key is held, and releases it again", async () => {
     const user = userEvent.setup();
     render(<Keyboard layout="compact" captureKeys />);
+    engage();
 
     await user.keyboard("{Shift>}");
     expect(cap("ShiftLeft")).toHaveAttribute("data-pressed", "true");
@@ -266,9 +275,119 @@ describe("Keyboard", () => {
     expect(cap("ShiftLeft")).not.toHaveAttribute("data-pressed");
   });
 
-  it("ignores the real keyboard unless captureKeys is set", async () => {
+  it("mirrors the physical keyboard by default, without being asked to", async () => {
     const user = userEvent.setup();
     render(<Keyboard layout="compact" />);
+    engage();
+
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).toHaveAttribute("data-pressed", "true");
+    await user.keyboard("{/Shift}");
+  });
+
+  it("stays out of it until the board is engaged, so one page of boards is not one chorus", async () => {
+    // Eight boards share the docs page; a global listener would light and click all of them.
+    const user = userEvent.setup();
+    render(<Keyboard layout="compact" />);
+
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).not.toHaveAttribute("data-pressed");
+    await user.keyboard("{/Shift}");
+  });
+
+  it("engages when focus is already inside it, not only when focus arrives", async () => {
+    // Focus already inside (autofocus, restored focus) fired its `focusin` before the listener.
+    const user = userEvent.setup();
+    function Late() {
+      const [mounted, setMounted] = React.useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setMounted(true)}>
+            mount it
+          </button>
+          {mounted ? <Keyboard layout="compact" /> : null}
+        </>
+      );
+    }
+    render(<Late />);
+    await user.click(screen.getByRole("button", { name: "mount it" }));
+    // Focus is on the trigger, outside the board: nothing should mirror.
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).not.toHaveAttribute("data-pressed");
+    await user.keyboard("{/Shift}");
+
+    engage();
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).toHaveAttribute("data-pressed", "true");
+    await user.keyboard("{/Shift}");
+  });
+
+  it("lets go again when focus leaves the board", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Keyboard layout="compact" />
+        <button type="button">elsewhere</button>
+      </>,
+    );
+    engage();
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).toHaveAttribute("data-pressed", "true");
+    await user.keyboard("{/Shift}");
+
+    act(() => screen.getByRole("button", { name: "elsewhere" }).focus());
+    await user.keyboard("{Shift>}");
+    expect(cap("ShiftLeft")).not.toHaveAttribute("data-pressed");
+    await user.keyboard("{/Shift}");
+  });
+
+  it("strikes the mirrored cap, so a real key feels like a pressed one", async () => {
+    const user = userEvent.setup();
+    render(<Keyboard layout="compact" />);
+    engage();
+
+    await user.keyboard("{a>}");
+    expect(cap("KeyA")).toHaveAttribute("data-struck", "true");
+    await user.keyboard("{/a}");
+  });
+
+  it("does not stutter the strike through an auto-repeating hold", () => {
+    render(<Keyboard layout="compact" />);
+    engage();
+    const first = cap("KeyB");
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyB", key: "b" }));
+    });
+    expect(first).toHaveAttribute("data-struck", "true");
+
+    // Replaying the strike (and click) on every auto-repeat keydown would stutter.
+    const restarts = vi.spyOn(first, "removeAttribute");
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyB", key: "b", repeat: true }));
+    });
+    expect(restarts).not.toHaveBeenCalled();
+    restarts.mockRestore();
+  });
+
+  it("never reports a mirrored press through onKeyPress, which would type it twice", async () => {
+    // The real key already reached the focused field; reporting it would type it twice.
+    const user = userEvent.setup();
+    const onKeyPress = vi.fn();
+    render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+    engage();
+
+    await user.keyboard("{a>}{/a}");
+    expect(onKeyPress).not.toHaveBeenCalled();
+
+    // A press on the board itself still reports, exactly as before.
+    await user.click(cap("KeyA"));
+    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "KeyA" }), expect.anything());
+  });
+
+  it("ignores the real keyboard entirely under captureKeys={false}, engaged or not", async () => {
+    const user = userEvent.setup();
+    render(<Keyboard layout="compact" captureKeys={false} />);
+    engage();
 
     await user.keyboard("{Shift>}");
     expect(cap("ShiftLeft")).not.toHaveAttribute("data-pressed");
@@ -278,6 +397,7 @@ describe("Keyboard", () => {
   it("drops every lit cap when the window loses focus mid-press", async () => {
     const user = userEvent.setup();
     render(<Keyboard layout="compact" captureKeys />);
+    engage();
 
     await user.keyboard("{Shift>}");
     expect(cap("ShiftLeft")).toHaveAttribute("data-pressed", "true");
@@ -290,6 +410,7 @@ describe("Keyboard", () => {
     const user = userEvent.setup();
     const remove = vi.spyOn(window, "removeEventListener");
     const { unmount } = render(<Keyboard layout="numpad" captureKeys />);
+    engage();
     unmount();
 
     const removed = remove.mock.calls.map(([type]) => type);
@@ -300,29 +421,25 @@ describe("Keyboard", () => {
 
   it("clears a held key's pressed state when captureKeys is turned off mid-hold", () => {
     const { rerender } = render(<Keyboard layout="compact" captureKeys />);
+    engage();
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE", key: "e" }));
     });
     expect(cap("KeyE")).toHaveAttribute("data-pressed", "true");
 
-    // The physical key can come back up while captureKeys is off - a keyup
-    // this effect has no listener for, since captureKeys governs whether one
-    // exists at all. The render-time gate that hides `pressedCodes` while the
-    // prop is off only masks this; it does not clear the underlying state.
+    // The key can come up while captureKeys is off, with no listener to see it; the render gate
+    // only masks `pressedCodes`, it doesn't clear it.
     rerender(<Keyboard layout="compact" captureKeys={false} />);
     expect(cap("KeyE")).not.toHaveAttribute("data-pressed");
 
-    // Turning captureKeys back on must not resurrect a code from before the
-    // teardown - nothing observed the real key coming back up, so a state
-    // that survived the teardown would report it held forever.
+    // Re-enabling must not resurrect a pre-teardown code, or it would read as held forever.
     rerender(<Keyboard layout="compact" captureKeys />);
+    engage();
     expect(cap("KeyE")).not.toHaveAttribute("data-pressed");
   });
 
   it("gives a cap no hover state - the press is the only feedback", () => {
-    // Asserted against the stylesheet because a hover rule is invisible to a
-    // render test: jsdom has no pointer, so a cap that lifts under the cursor
-    // would pass every behavioural assertion in this file.
+    // Checked in the stylesheet: jsdom has no pointer, so render tests can't see a hover rule.
     const hoverRules = [...BASE_CSS.matchAll(/^[^{}\n]*fuji-keycap[^{}\n]*:hover[^{}\n]*\{/gm)].map((match) =>
       match[0].trim(),
     );
@@ -330,34 +447,21 @@ describe("Keyboard", () => {
   });
 
   it("keeps every cap shadow inside the gap between caps", () => {
-    // A cap is recessed into its board, so its shadow is a contact shadow. It
-    // used to take `--fuji-shadow-control`, the token for free-standing
-    // controls: at `floating` elevation that reaches ~28px down, into a gap
-    // that is never wider than 5px. The overflow is drawn entirely underneath
-    // the neighbouring cap - invisible, and paid for once per cap on a board
-    // that has up to 104 of them. Guarded here rather than visually because
-    // the wasted rasters look identical to the correct ones.
-    //
-    // `matchAll` deliberately, not `exec`: the token is defined once per
-    // theme, and a non-global read would check light and silently skip dark.
+    // `--fuji-shadow-control` reached ~28px at `floating` into a <=5px gap: invisible waste on up to
+    // 104 caps, so only a test can catch it. `matchAll`, not `exec`, so dark isn't skipped.
     const gaps = [...BASE_CSS.matchAll(/--fuji-key-gap:\s*([\d.]+)px/g)].map((m) => Number(m[1]));
     expect(gaps.length).toBeGreaterThan(0);
     const widestGap = Math.max(...gaps);
 
     const defs = [...TOKENS_CSS.matchAll(/--fuji-shadow-keycap:\s*([^;]+);/g)].map((m) => m[1]);
-    // One per theme. A material or elevation block redefining it would put the
-    // cap back on an elevation-scaled shadow, which is the bug.
+    // One per theme; a material/elevation override would reintroduce an elevation-scaled shadow.
     expect(defs).toHaveLength(2);
 
     for (const def of defs) {
-      // Strip the colour functions first so their internal commas cannot be
-      // mistaken for layer separators.
+      // Strip colour functions so their commas aren't read as layer separators.
       for (const layer of def.replace(/\b(?:rgba?|hsla?|color)\([^)]*\)/g, "").split(",")) {
-        // Positionally, NOT by matching a `px` suffix: a zero offset is written
-        // unitless (`0 1px 3px`), so a /px/ match silently drops it and shifts
-        // every value one slot left - which reads the BLUR as the y-offset and
-        // the y-offset not at all. That made this guard pass `0 20px 2px`
-        // (real reach 21px) as "reach 2".
+        // Positional, not /px/: unitless zeros (`0 1px 3px`) would shift values left and read blur as
+        // y-offset, passing `0 20px 2px` (reach 21px) as "reach 2".
         const lengths = layer
           .trim()
           .split(/\s+/)
@@ -365,17 +469,14 @@ describe("Keyboard", () => {
           .filter((n) => !Number.isNaN(n));
         if (lengths.length === 0) continue;
         const [, y = 0, blur = 0, spread = 0] = lengths;
-        // How far the shadow is painted below the cap: the blur fades over
-        // `blur`, half of it outside the shadow's own edge.
+        // Reach below the cap: half the blur falls outside the shadow's edge.
         expect(Math.abs(y) + spread + blur / 2).toBeLessThanOrEqual(widestGap);
       }
     }
   });
 
   it("does not put a cap back on the free-standing control shadow", () => {
-    // Both the resting rule and the strike keyframe's 0%/100% frames, which
-    // have to agree with it or a struck cap pops to a different shadow for the
-    // length of the animation and snaps back.
+    // The strike keyframe's 0%/100% must match the resting rule, or a struck cap pops and snaps back.
     const capRule = /\.fuji-keycap \{([^}]*)\}/.exec(BASE_CSS)?.[1];
     expect(capRule).toBeTruthy();
     expect(capRule).toContain("var(--fuji-shadow-keycap)");
@@ -387,18 +488,13 @@ describe("Keyboard", () => {
   });
 
   it("gives a focused cap an author-declared outline ring instead of relying on the UA default", () => {
-    // Asserted against the stylesheet for the same reason as the hover rule
-    // above: jsdom does not match `:focus-visible` from a real Tab press, so
-    // a missing rule here would still pass every render-level assertion.
+    // Stylesheet check: jsdom never matches `:focus-visible` from a real Tab press.
     const rule = /\.fuji-keycap:focus-visible\s*\{([^}]*)\}/.exec(BASE_CSS)?.[1];
     expect(rule).toBeTruthy();
     expect(rule).toContain("var(--fuji-focus-ring)");
     expect(rule).toMatch(/outline(?!-offset):/);
     expect(rule).toContain("outline-offset");
-    // A Tailwind `ring-*` utility compiles to `box-shadow` - the same
-    // property the moulded-cap sculpt and the strike keyframe already use -
-    // so this has to be `outline`, a separate layer, rather than adding to
-    // that property.
+    // Must be `outline`: Tailwind `ring-*` is `box-shadow`, already used by the sculpt and strike.
     expect(rule).not.toContain("box-shadow");
   });
 
@@ -429,8 +525,7 @@ describe("Keyboard", () => {
 
 describe("Keyboard focus", () => {
   it("does not blur the field it types into when laid out in flow", async () => {
-    // Only a floating board used to keep focus, so an inline keypad beside an
-    // input took focus off it on every press.
+    // Inline boards used to steal focus from the adjacent input on every press.
     const user = userEvent.setup();
     const onKeyPress = vi.fn();
     render(
@@ -444,7 +539,7 @@ describe("Keyboard focus", () => {
 
     await user.click(cap("Numpad7"));
     expect(document.activeElement).toBe(field);
-    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7" }));
+    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7" }), expect.anything());
   });
 
   it("cancels the mousedown on an in-flow board and a floating one alike", () => {
@@ -462,7 +557,17 @@ describe("Keyboard focus", () => {
 
   it("stays reachable from the keyboard - a cap still takes focus from Tab", async () => {
     const user = userEvent.setup();
+    render(<Keyboard layout="numpad" soundToggle={false} />);
+    await user.tab();
+    expect(cap("Backspace")).toHaveFocus();
+  });
+
+  it("puts the sound toggle ahead of the caps, matching the order it is drawn in", async () => {
+    // Focus order must follow visual order (WCAG 2.4.3): the strip above is reached first.
+    const user = userEvent.setup();
     render(<Keyboard layout="numpad" />);
+    await user.tab();
+    expect(screen.getByRole("button", { name: /key sounds/i })).toHaveFocus();
     await user.tab();
     expect(cap("Backspace")).toHaveFocus();
   });
@@ -509,8 +614,7 @@ describe("Keyboard floating", () => {
   });
 
   it("centers a floating board when placement is center", () => {
-    // "bottom" and "top" are exercised above and by the default; "center" -
-    // the third option - had nothing asserting it at all.
+    // "bottom" and "top" are covered elsewhere; "center" had no assertion.
     render(<Keyboard floating open placement="center" layout="numpad" data-testid="board" />);
     const board = screen.getByTestId("board");
     expect(board).toHaveClass("fj:inset-x-0", "fj:top-1/2", "fj:-translate-y-1/2");
@@ -519,8 +623,7 @@ describe("Keyboard floating", () => {
 
   it("leaves the margins around the board click-through", () => {
     render(<Keyboard floating open layout="numpad" data-testid="board" />);
-    // The wrapper spans the whole anchor, so a press on the page either side
-    // of the board has to reach the page rather than the keyboard.
+    // The wrapper spans the anchor, so presses beside the board must reach the page.
     expect(screen.getByTestId("board")).toHaveClass("fj:pointer-events-none");
     expect(cap("Numpad7").closest(".fuji-keyboard-deck")).toHaveClass("fj:pointer-events-auto");
   });
@@ -568,8 +671,7 @@ describe("Keyboard floating", () => {
     await user.click(cap("Numpad7"));
     expect(screen.getByTestId("board")).toBeInTheDocument();
 
-    // The trigger is excluded from outside-dismissal, so its own click is the
-    // only thing that toggles it - not a close followed by a reopen.
+    // The trigger is excluded from outside-dismissal, so its click toggles rather than close+reopen.
     await user.click(screen.getByTestId("trigger"));
     expect(screen.queryByTestId("board")).not.toBeInTheDocument();
 
@@ -595,11 +697,8 @@ describe("Keyboard floating", () => {
   });
 
   it("stays open on a dismiss attempt when open is controlled with no onOpenChange to tell", async () => {
-    // A fully controlled board with nothing wired to `onOpenChange` has no way
-    // to act on its own dismissal - `useControllableState` calls the (absent)
-    // callback and otherwise leaves `open` exactly as the consumer set it.
-    // This is the "controlled and the consumer hasn't wired a handler yet"
-    // state, not a crash or a silent auto-close, and nothing exercised it.
+    // Controlled with no `onOpenChange`: dismissal must neither crash nor auto-close; `open` stays
+    // exactly as the consumer set it.
     const user = userEvent.setup();
     render(
       <>
@@ -620,7 +719,7 @@ describe("Keyboard floating", () => {
     const onKeyPress = vi.fn();
     render(<Keyboard floating open layout="numpad" onKeyPress={onKeyPress} data-testid="board" />);
     await user.click(cap("Numpad7"));
-    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7" }));
+    expect(onKeyPress).toHaveBeenCalledWith(expect.objectContaining({ code: "Numpad7" }), expect.anything());
 
     const inFlow = render(<Keyboard layout="numpad" data-testid="in-flow" />);
     const board = inFlow.getByTestId("in-flow");
@@ -681,8 +780,7 @@ describe("Keyboard Caps Lock", () => {
 
   it("puts the lamp clear of a wide cap's left-set legend", () => {
     const lamp = /\.fuji-keycap\[data-locked\]::after\s*\{([^}]*)\}/.exec(BASE_CSS)![1];
-    // Every latched cap on this board is wide, so its legend is against the
-    // left edge and only the right corner is reliably clear.
+    // Latched caps here are wide and left-set, so only the right corner is reliably clear.
     expect(lamp).toContain("inset-inline-end");
     expect(lamp).not.toContain("inset-inline-start");
   });
@@ -697,6 +795,7 @@ describe("Keyboard Caps Lock", () => {
 
   it("follows the real Caps Lock key while captureKeys is on", () => {
     render(<Keyboard layout="compact" captureKeys />);
+    engage();
     expect(cap("CapsLock")).not.toHaveAttribute("data-locked");
 
     act(() => {
@@ -706,6 +805,133 @@ describe("Keyboard Caps Lock", () => {
       window.dispatchEvent(event);
     });
     expect(cap("CapsLock")).toHaveAttribute("data-locked", "true");
+  });
+});
+
+describe("Keyboard shortcut modifiers", () => {
+  it("latches a clicked ⌘ for the next cap, which then types nothing and reports meta", async () => {
+    const user = userEvent.setup();
+    const onKeyPress = vi.fn();
+    render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+
+    await user.click(cap("MetaLeft"));
+    expect(cap("MetaLeft")).toHaveAttribute("aria-pressed", "true");
+    expect(cap("MetaLeft")).toHaveAttribute("data-locked", "true");
+
+    await user.click(cap("KeyA"));
+    expect(onKeyPress).toHaveBeenLastCalledWith(expect.objectContaining({ code: "KeyA", value: undefined }), {
+      shift: false,
+      meta: true,
+      ctrl: false,
+      alt: false,
+    });
+    // Spent by the chord, like a sticky Shift.
+    expect(cap("MetaLeft")).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(cap("KeyA"));
+    expect(onKeyPress).toHaveBeenLastCalledWith(expect.objectContaining({ code: "KeyA", value: "a" }), {
+      shift: false,
+      meta: false,
+      ctrl: false,
+      alt: false,
+    });
+  });
+
+  it("unlatches a modifier clicked a second time", async () => {
+    const user = userEvent.setup();
+    render(<Keyboard layout="compact" />);
+    await user.click(cap("ControlLeft"));
+    await user.click(cap("ControlLeft"));
+    expect(cap("ControlLeft")).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("counts a physically held ⌘ while the board is engaged", async () => {
+    const user = userEvent.setup();
+    const onKeyPress = vi.fn();
+    render(<Keyboard floating open layout="compact" onKeyPress={onKeyPress} />);
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent("keydown", { code: "MetaLeft", key: "Meta" }));
+    });
+    await user.click(cap("KeyC"));
+    expect(onKeyPress).toHaveBeenLastCalledWith(
+      expect.objectContaining({ code: "KeyC", value: undefined }),
+      expect.objectContaining({ meta: true }),
+    );
+  });
+});
+
+describe("Keyboard hold to repeat", () => {
+  it("repeats a held cap after a pause, and the click that ends the hold adds nothing", () => {
+    vi.useFakeTimers();
+    try {
+      const onKeyPress = vi.fn();
+      render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+      const backspace = cap("Backspace");
+
+      fireEvent.pointerDown(backspace, { button: 0 });
+      act(() => vi.advanceTimersByTime(399));
+      expect(onKeyPress).not.toHaveBeenCalled();
+      // The first press at 400ms, then one every 50ms.
+      act(() => vi.advanceTimersByTime(1 + 150));
+      expect(onKeyPress).toHaveBeenCalledTimes(4);
+      expect(onKeyPress).toHaveBeenLastCalledWith(
+        expect.objectContaining({ code: "Backspace" }),
+        expect.anything(),
+      );
+
+      fireEvent.pointerUp(backspace);
+      fireEvent.click(backspace, { detail: 1 });
+      act(() => vi.advanceTimersByTime(500));
+      expect(onKeyPress).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports a quick tap exactly once", () => {
+    vi.useFakeTimers();
+    try {
+      const onKeyPress = vi.fn();
+      render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+      fireEvent.pointerDown(cap("KeyA"), { button: 0 });
+      act(() => vi.advanceTimersByTime(120));
+      fireEvent.pointerUp(cap("KeyA"));
+      fireEvent.click(cap("KeyA"), { detail: 1 });
+      act(() => vi.advanceTimersByTime(1000));
+      expect(onKeyPress).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stops repeating when the pointer slides off the cap", () => {
+    vi.useFakeTimers();
+    try {
+      const onKeyPress = vi.fn();
+      render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+      fireEvent.pointerDown(cap("Backspace"), { button: 0 });
+      act(() => vi.advanceTimersByTime(450));
+      fireEvent.pointerLeave(cap("Backspace"));
+      const calls = onKeyPress.mock.calls.length;
+      act(() => vi.advanceTimersByTime(1000));
+      expect(onKeyPress).toHaveBeenCalledTimes(calls);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("never repeats a modifier or a toggle", () => {
+    vi.useFakeTimers();
+    try {
+      const onKeyPress = vi.fn();
+      render(<Keyboard layout="compact" onKeyPress={onKeyPress} />);
+      fireEvent.pointerDown(cap("ShiftLeft"), { button: 0 });
+      fireEvent.pointerDown(cap("MetaLeft"), { button: 0 });
+      act(() => vi.advanceTimersByTime(2000));
+      expect(onKeyPress).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
@@ -730,8 +956,7 @@ describe("Keyboard sizing", () => {
   });
 
   it("reads a percentage width as a share of the board's container", () => {
-    // A bare `%` inside the unit's calc() resolves against the grid itself, not
-    // the space it was given - `width="100%"` collapsed a numpad to a sliver.
+    // A bare `%` in calc() resolves against the grid itself: `width="100%"` collapsed a numpad.
     render(<Keyboard layout="numpad" width="100%" />);
     const deck = cap("Numpad7").closest(".fuji-keyboard-deck") as HTMLElement;
     expect(deck.style.getPropertyValue("--fuji-key-target")).toBe("100cqi");
@@ -751,9 +976,7 @@ describe("Keyboard sizing", () => {
   });
 
   it("renders the sm and lg deck size classes, not only the md default", () => {
-    // Every other test in this file renders the `md` default, so a swapped
-    // `SIZE_CLASSES` entry (`sm` pointing at the `md` or `lg` class, say)
-    // would pass the whole suite with nothing exercising `sm` or `lg` at all.
+    // Every other test uses `md`, so a swapped `SIZE_CLASSES` entry would otherwise go unnoticed.
     const { rerender, container } = render(<Keyboard layout="numpad" size="sm" />);
     const deck = () => container.querySelector(".fuji-keyboard-deck")!;
     expect(deck()).toHaveClass("fuji-keyboard-sm");
@@ -782,22 +1005,17 @@ describe("Keyboard sizing", () => {
     const target = (size: string) =>
       new RegExp(`\\.fuji-keyboard-floating \\.fuji-keyboard-${size}\\s*\\{([^}]*)\\}`).exec(BASE_CSS)?.[1];
 
-    // The default size. The reason this is a rule rather than a px value: a
-    // dock is measured against the display, not against the cap scale that
-    // suits a board sitting inside a card.
+    // The default size, as a rule rather than px: a dock is sized to the display, not the cap scale.
     expect(target("md")).toContain("min(96vw, max(60vw, 40rem))");
     expect(target("sm")).toContain("45vw");
     expect(target("lg")).toContain("75vw");
 
-    // A target, never a floor - the unit still takes the smaller of it, the
-    // size's own ceiling, and whatever the container can actually give, so a
-    // board can never outgrow its parent.
+    // A target, not a floor: min() with the ceiling and container keeps it inside its parent.
     const deck = /\.fuji-keyboard-deck\s*\{([^}]*)\}/.exec(BASE_CSS)?.[1];
     expect(deck).toContain("var(--fuji-key-ceiling)");
     expect(deck).toContain("100cqi");
 
-    // A parent-anchored dock drops the viewport target entirely: 60vw spread
-    // over the numpad's four columns is a 187px cap that swallows the card.
+    // Parent-anchored docks drop the viewport target: 60vw over four numpad columns is a 187px cap.
     expect(BASE_CSS).toContain(
       '.fuji-keyboard-floating[data-fuji-keyboard-anchor="parent"] .fuji-keyboard-deck',
     );
@@ -864,6 +1082,7 @@ describe("Keyboard Shift", () => {
     const user = userEvent.setup();
     const seen: Array<{ value?: string }> = [];
     render(<Keyboard layout="compact" captureKeys onKeyPress={(key) => seen.push(key)} />);
+    engage();
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftRight", key: "Shift" }));
@@ -886,6 +1105,7 @@ describe("Keyboard Shift", () => {
   it("does not let the real Shift release one armed by clicking the cap", async () => {
     const user = userEvent.setup();
     render(<Keyboard layout="compact" captureKeys />);
+    engage();
     await user.click(cap("ShiftLeft"));
 
     act(() => {
@@ -896,6 +1116,7 @@ describe("Keyboard Shift", () => {
 
   it("drops the modifier when the window loses focus mid-hold", () => {
     render(<Keyboard layout="compact" captureKeys />);
+    engage();
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftLeft", key: "Shift" }));
     });
@@ -910,6 +1131,7 @@ describe("Keyboard Shift", () => {
     const user = userEvent.setup();
     const seen: Array<{ value?: string }> = [];
     render(<Keyboard layout="compact" captureKeys onKeyPress={(key) => seen.push(key)} />);
+    engage();
 
     await user.click(cap("ShiftLeft"));
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
@@ -917,9 +1139,7 @@ describe("Keyboard Shift", () => {
     act(() => {
       window.dispatchEvent(new Event("blur"));
     });
-    // Armed by a click, so no keyup was ever going to release it - a blur
-    // (the lost-keyup case this handler exists for) is not evidence the user
-    // let go of it.
+    // Click-armed, so it never awaited a keyup; a blur is no evidence the user let go.
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
 
     await user.click(cap("KeyA"));
@@ -932,15 +1152,14 @@ describe("Keyboard Shift", () => {
     const { rerender } = render(
       <Keyboard layout="compact" captureKeys onKeyPress={(key) => seen.push(key)} />,
     );
+    engage();
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftLeft", key: "Shift" }));
     });
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
 
-    // The keyup that would have released this Shift can never arrive now -
-    // its listener was just torn down along with the rest of the effect - so
-    // nothing else is left to let go of it.
+    // Its keyup listener was torn down with the effect, so nothing else could release it.
     rerender(<Keyboard layout="compact" captureKeys={false} onKeyPress={(key) => seen.push(key)} />);
     expect(cap("ShiftLeft")).not.toHaveAttribute("data-locked");
     expect(cap("ShiftLeft")).toHaveAttribute("aria-pressed", "false");
@@ -952,6 +1171,7 @@ describe("Keyboard Shift", () => {
   it("leaves a sticky Shift armed when captureKeys is turned off, since the real keyboard never armed it", async () => {
     const user = userEvent.setup();
     const { rerender } = render(<Keyboard layout="compact" captureKeys />);
+    engage();
 
     await user.click(cap("ShiftLeft"));
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
@@ -964,15 +1184,14 @@ describe("Keyboard Shift", () => {
     const user = userEvent.setup();
     const seen: Array<{ value?: string }> = [];
     render(<Keyboard layout="compact" captureKeys onKeyPress={(key) => seen.push(key)} />);
+    engage();
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftLeft", key: "Shift" }));
     });
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
 
-    // Clicking the very cap the real key is holding down must not null the
-    // shared state out from under it - the physical key is still down, and
-    // there would be nothing left for its keyup to release.
+    // Clicking the held cap must not null the state, or the physical keyup has nothing to release.
     await user.click(cap("ShiftLeft"));
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
     await user.click(cap("KeyA"));
@@ -990,22 +1209,19 @@ describe("Keyboard Shift", () => {
     const user = userEvent.setup();
     const seen: Array<{ value?: string }> = [];
     render(<Keyboard layout="compact" captureKeys onKeyPress={(key) => seen.push(key)} />);
+    engage();
 
     act(() => {
       window.dispatchEvent(new KeyboardEvent("keydown", { code: "ShiftLeft", key: "Shift" }));
     });
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
 
-    // Clicking the OTHER cap while the real key holds this one must not arm a
-    // fresh sticky latch there either - the two caps are one shared modifier,
-    // not two, so this has to stay a no-op for as long as the hold lasts.
+    // Clicking the OTHER cap mid-hold must not arm a sticky latch: both caps are one modifier.
     await user.click(cap("ShiftRight"));
     expect(cap("ShiftLeft")).toHaveAttribute("data-locked", "true");
     expect(cap("ShiftRight")).not.toHaveAttribute("data-locked");
 
-    // Proof it isn't a spent one-shot: two more letters both come through
-    // shifted, not just the first. (`seen[0]` is the ShiftRight click itself,
-    // which reports its own - valueless - key def.)
+    // Not a spent one-shot: two letters both come through shifted (`seen[0]` is the ShiftRight click).
     await user.click(cap("KeyA"));
     await user.click(cap("KeyB"));
     expect(values(seen).slice(1)).toEqual(["A", "B"]);
@@ -1041,10 +1257,8 @@ describe("Keyboard sound", () => {
       resume: vi.fn(),
       close: vi.fn(),
     };
-    // A regular function, not an arrow: the component calls `new AudioContext()`,
-    // and an arrow has no [[Construct]]. Vitest 3 tolerated it; Vitest 4 throws
-    // "() => context is not a constructor". Returning an object from a function
-    // constructor yields that object, so `new Ctor()` is still `context`.
+    // A function, not an arrow: `new AudioContext()` needs [[Construct]] (Vitest 4 throws on arrows).
+    // Returning an object from a constructor yields it, so `new Ctor()` is `context`.
     const Ctor = vi.fn(function () {
       return context;
     });
@@ -1076,9 +1290,7 @@ describe("Keyboard sound", () => {
   });
 
   it("closes the shared AudioContext as soon as sound is turned off, not only on unmount", async () => {
-    // Browsers cap AudioContexts per document, so one left open for the rest
-    // of the component's life - because only the unmount effect ever closed
-    // it - is a real leak, not a cosmetic one.
+    // Browsers cap AudioContexts per document, so one left open until unmount is a real leak.
     const user = userEvent.setup();
     class FakeOscillator {
       type = "";
@@ -1102,10 +1314,8 @@ describe("Keyboard sound", () => {
       context.state = "closed";
       return Promise.resolve();
     });
-    // A regular function, not an arrow: the component calls `new AudioContext()`,
-    // and an arrow has no [[Construct]]. Vitest 3 tolerated it; Vitest 4 throws
-    // "() => context is not a constructor". Returning an object from a function
-    // constructor yields that object, so `new Ctor()` is still `context`.
+    // A function, not an arrow: `new AudioContext()` needs [[Construct]] (Vitest 4 throws on arrows).
+    // Returning an object from a constructor yields it, so `new Ctor()` is `context`.
     const Ctor = vi.fn(function () {
       return context;
     });
@@ -1120,13 +1330,102 @@ describe("Keyboard sound", () => {
     expect(context.close).toHaveBeenCalledTimes(1);
     expect(context.state).toBe("closed");
 
-    // Already closed and nulled out the moment sound went false - unmounting
-    // afterwards must not call close() a second time, which would reject on
-    // an already-closed context and surface as an unhandled rejection.
+    // A second close() on unmount would reject and surface as an unhandled rejection.
     unmount();
     expect(context.close).toHaveBeenCalledTimes(1);
 
     vi.unstubAllGlobals();
+  });
+});
+
+describe("Keyboard sound toggle", () => {
+  it("is there by default on a board you can press", () => {
+    render(<Keyboard layout="numpad" />);
+    expect(screen.getByRole("button", { name: /key sounds/i })).toBeInTheDocument();
+  });
+
+  it("is absent on a static diagram, which has nothing to sound", () => {
+    render(<Keyboard layout="numpad" interactive={false} />);
+    expect(screen.queryByRole("button", { name: /key sounds/i })).not.toBeInTheDocument();
+  });
+
+  it("can be turned off where the app offers the control itself", () => {
+    render(<Keyboard layout="numpad" soundToggle={false} />);
+    expect(screen.queryByRole("button", { name: /key sounds/i })).not.toBeInTheDocument();
+  });
+
+  it("turns its own sound on and off, uncontrolled", async () => {
+    const user = userEvent.setup();
+    render(<Keyboard layout="numpad" soundToggle />);
+    const toggle = screen.getByRole("button", { name: "Turn key sounds on" });
+    expect(toggle).toHaveAttribute("aria-pressed", "false");
+
+    await user.click(toggle);
+    // The name states the action and the pressed state carries the fact.
+    expect(screen.getByRole("button", { name: "Turn key sounds off" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
+  it("starts from defaultSound and reports every change", async () => {
+    const user = userEvent.setup();
+    const onSoundChange = vi.fn();
+    render(<Keyboard layout="numpad" soundToggle defaultSound onSoundChange={onSoundChange} />);
+    const toggle = screen.getByRole("button", { name: "Turn key sounds off" });
+    expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+    await user.click(toggle);
+    expect(onSoundChange).toHaveBeenCalledWith(false);
+  });
+
+  it("obeys the controlled prop rather than its own click", async () => {
+    const user = userEvent.setup();
+    const onSoundChange = vi.fn();
+    render(<Keyboard layout="numpad" soundToggle sound={false} onSoundChange={onSoundChange} />);
+    await user.click(screen.getByRole("button", { name: "Turn key sounds on" }));
+    // Controlled: nothing re-rendered it with a new value, so nothing moved.
+    expect(onSoundChange).toHaveBeenCalledWith(true);
+    expect(screen.getByRole("button", { name: "Turn key sounds on" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+  });
+
+  it("keeps the caps below the toolbar, in layout order", () => {
+    // The toolbar takes grid row 1, so every cap shifts down one or sits under the strip.
+    const { rerender } = render(<Keyboard layout="numpad" soundToggle={false} />);
+    const rowOf = (code: string) => Number(cap(code).style.gridRow.split(" / ")[0]);
+    const bare = rowOf("Numpad7");
+    rerender(<Keyboard layout="numpad" soundToggle />);
+    expect(rowOf("Numpad7")).toBe(bare + 1);
+    // ...and back up again when the strip goes away.
+    rerender(<Keyboard layout="numpad" soundToggle={false} />);
+    expect(rowOf("Numpad7")).toBe(bare);
+  });
+
+  it("is disabled along with the board", () => {
+    render(<Keyboard layout="numpad" soundToggle disabled />);
+    expect(screen.getByRole("button", { name: /key sounds/i })).toBeDisabled();
+  });
+
+  it("warns when the toggle is drawn against a controlled prop nobody listens to", () => {
+    // Catches a toggle that silently does nothing and looks flaky rather than miswired.
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<Keyboard layout="numpad" sound />);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("no `onSoundChange`"));
+
+    error.mockClear();
+    render(<Keyboard layout="numpad" sound onSoundChange={() => {}} />);
+    render(<Keyboard layout="numpad" defaultSound />);
+    render(<Keyboard layout="numpad" sound soundToggle={false} />);
+    expect(error).not.toHaveBeenCalled();
+    error.mockRestore();
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(<Keyboard layout="numpad" soundToggle />);
+    expect(await axe(container)).toHaveNoViolations();
   });
 });
 
@@ -1140,10 +1439,8 @@ describe("Keyboard regressions", () => {
     act(() => cap("Numpad5").focus());
     expect(stops()).toBe(1);
 
-    // `layout` is a prop, so it can change under a board that has already been
-    // focused - a size toggle, a responsive switch, the Storybook select. The
-    // remembered code is not on the new board, and without a fallback every
-    // cap sat at tabIndex -1 and the board left the tab order for good.
+    // Switching `layout` after focus left the remembered code off-board, every cap at tabIndex -1,
+    // and the board out of the tab order for good.
     rerender(<Keyboard layout="compact" />);
     expect(document.querySelector('[data-fuji-key="Numpad5"]')).toBeNull();
     expect(stops()).toBe(1);
@@ -1160,23 +1457,13 @@ describe("Keyboard regressions", () => {
 
     rerender(<Keyboard layout="numpad" ref={collect} tone="water" />);
     rerender(<Keyboard layout="numpad" ref={collect} tone="sun" />);
-    // An imperative handle with no dependency array re-ran on every commit and
-    // gave a detach/attach pair per render of a hundred-cap board.
+    // An undeps'd imperative handle detached/re-attached on every commit.
     expect(calls).toHaveLength(1);
   });
 
   it("does not re-attach a per-cap ref callback on every render", () => {
-    // Each cap's ref callback is cached per `code` rather than written inline
-    // in the render below, for the same reason as the root ref just above: an
-    // inline `(node) => { ... }` is a new function every render, and React
-    // detaches and reattaches a ref whenever its identity changes - measured
-    // at 99 `set` calls plus 99 `delete` calls per re-render of the `full`
-    // board, for a prop (`tone`) that touched no cap at all. Spied on `Map`
-    // itself, since `caps` - the map the ref callback writes into - is a
-    // plain `Map` with no public hook of its own. Filtered to a node value to
-    // isolate `caps` from the separate cache map that stores the callback
-    // functions themselves (which also writes one `set` per code, but only
-    // ever once - it is never touched again once a code's callback exists).
+    // Inline ref callbacks cost 99 `set` + 99 `delete` per `full` re-render (for a `tone` change).
+    // Spies on `Map` since `caps` has no hook; filtering on node values excludes the callback cache.
     const sets = vi.spyOn(Map.prototype, "set");
     const deletes = vi.spyOn(Map.prototype, "delete");
     const { rerender } = render(<Keyboard layout="numpad" />);
@@ -1202,8 +1489,7 @@ describe("Keyboard regressions", () => {
   });
 
   it("names a blank cap on a static board", () => {
-    // `hideLabel` draws the space bar with no legend, and a <kbd> has no name
-    // requirement for axe to catch - it was simply an empty element.
+    // A blank <kbd> space bar has no name requirement for axe to catch; it was just empty.
     const staticBoard = render(<Keyboard layout="compact" interactive={false} />);
     const space = staticBoard.container.querySelector('[data-fuji-key="Space"]')!;
     expect(space.tagName).toBe("KBD");
@@ -1216,12 +1502,8 @@ describe("Keyboard regressions", () => {
   });
 
   it("names a glyph cap for screen readers on a static board too, not only a blank one", () => {
-    // A shortcut diagram - `interactive={false}`'s documented purpose - is
-    // read, not clicked, so a glyph legend with no accessible name is worse
-    // there than anywhere else on the board: `aria-label` (which the
-    // interactive path already carries `key.name` on) is prohibited on
-    // `<kbd>`, and `hideLabel` only wired the visually-hidden fallback up for
-    // the one cap drawn blank.
+    // Shortcut diagrams are read, not clicked, so glyph caps need a name; `aria-label` is prohibited
+    // on `<kbd>`, and the sr-only fallback used to cover only `hideLabel` caps.
     const staticBoard = render(<Keyboard layout="compact" interactive={false} />);
     const arrowUp = staticBoard.container.querySelector('[data-fuji-key="ArrowUp"]')!;
     expect(arrowUp.tagName).toBe("KBD");
@@ -1231,17 +1513,15 @@ describe("Keyboard regressions", () => {
     expect(arrowUp.querySelector('[aria-hidden="true"]')).toHaveTextContent("↑");
     expect(arrowUp.querySelector(".fj\\:sr-only")).toHaveTextContent("Arrow up");
 
-    // A cap whose name and label already match (a plain letter) gets none of
-    // this - nothing to hide, nothing to add.
+    // A cap whose name matches its label (a plain letter) gets none of this.
     const keyA = staticBoard.container.querySelector('[data-fuji-key="KeyA"]')!;
     expect(keyA.querySelector(".fj\\:sr-only")).toBeNull();
     staticBoard.unmount();
   });
 
   it("prints one cap the same way in every layout it appears in", () => {
-    // Left-set legends are for the wide modifier column - Tab, Caps, Shift -
-    // not for any wide cap that happens to sit at column 1. The numpad's 2u
-    // `0` is at the left edge of the `numpad` board and mid-row on `full`.
+    // Left-set is for Tab/Caps/Shift, not any wide column-1 cap: numpad's 2u `0` must print the
+    // same on `numpad` (column 1) as on `full` (mid-row).
     const numpad = render(<Keyboard layout="numpad" />);
     const inNumpad = cap("Numpad0").getAttribute("data-wide");
     numpad.unmount();
@@ -1255,11 +1535,8 @@ describe("Keyboard regressions", () => {
   });
 
   it("only left-sets a wide cap that carries a word legend, not a lone glyph", () => {
-    // The phone board's 1.5u ShiftLeft sits at column 1 like Tab/Caps/Shift do
-    // on the desktop boards, but its legend is a single `⇧` glyph rather than
-    // a word - left-setting it put that glyph hard against the board's edge
-    // while the matching `⌫` Backspace at the other end of the same row
-    // stayed centred.
+    // Phone's 1.5u ShiftLeft is at column 1, but a lone `⇧` left-set looked broken beside the
+    // centred `⌫` at the other end of the row.
     const phone = render(<Keyboard layout="phone" />);
     expect(cap("ShiftLeft")).not.toHaveAttribute("data-wide");
     expect(cap("Backspace")).not.toHaveAttribute("data-wide");

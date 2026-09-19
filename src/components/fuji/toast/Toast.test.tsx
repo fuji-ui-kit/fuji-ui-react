@@ -65,17 +65,9 @@ describe("Toast", () => {
     await user.click(screen.getByRole("button", { name: "Show toast" }));
     await screen.findByText("Changes saved");
 
-    // Base UI's own `Toast.Close` computes `aria-hidden: !expanded &&
-    // !hasFocus` - true for a background/unfocused toast in a stack - but
-    // never touches `tabIndex`, so the button stays in the Tab order while
-    // pruned from the accessibility tree: a screen-reader user tabbing to it
-    // gets nothing, while a sighted keyboard user reaches and can activate
-    // it. That's a WCAG 4.1.2 failure (focusable content inside
-    // `aria-hidden`), and it fails silently - `getByRole("button", { name:
-    // "Dismiss" })` finding nothing here is the only signal, since
-    // `aria-hidden` doesn't stop `.focus()` from succeeding. Fuji's wrapper
-    // overrides it (see Toast.tsx) so the control behaves like `Alert`'s
-    // identical dismiss button: always in the tree, before and after focus.
+    // Base UI's `Toast.Close` sets `aria-hidden` on unfocused toasts but keeps them tabbable
+    // (WCAG 4.1.2). It fails silently: `.focus()` still works, so `getByRole` finding nothing is
+    // the only signal. Toast.tsx overrides it so dismiss stays in the tree, like `Alert`'s.
     const dismissButton = screen.getByRole("button", { name: "Dismiss" });
     expect(dismissButton).not.toHaveAttribute("aria-hidden", "true");
 

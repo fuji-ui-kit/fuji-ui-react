@@ -6,16 +6,8 @@ import { axe } from "jest-axe";
 import { RadioGroup } from "./RadioGroup";
 
 /**
- * Tailwind's `x:utility` variant compiles to the CSS pseudo-class `&:x`, and
- * its `x-[y]:utility` form compiles to the attribute selector `&[y]` (e.g.
- * `data-[disabled]:opacity-45` -> `[data-disabled] { opacity: .45 }`). Both
- * are real CSS the browser (and jsdom) evaluates against the live element -
- * not something this test invents. Pull every disabled-dimming utility class
- * actually shipped on `el` and ask the DOM whether the selector it compiles
- * to matches `el` as currently rendered. This fails whenever the shipped
- * variant can never match the element's real state (e.g. `disabled:` on a
- * `<span role="radio">`, which can never satisfy `:disabled`), instead of
- * merely checking that some class string is present.
+ * Compiles each disabled-dimming class on `el` to its real selector and asks the DOM if it
+ * matches, so a variant that can never fire (e.g. `disabled:` on a `<span role="radio">`) fails.
  */
 function disabledStylingApplies(el: Element): boolean {
   const relevant = el.className

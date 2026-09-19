@@ -26,12 +26,8 @@ export interface ChatBubbleProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Delivery/read status, shown next to the timestamp as an icon + text label. Hidden when `grouped`. */
   status?: ChatBubbleStatus;
   /**
-   * Marks this bubble as part of a consecutive run of messages from the same
-   * sender: suppresses the avatar/sender/timestamp/status and tightens the
-   * vertical gap before it. Render the last message of each run with
-   * `grouped={false}` (the default) to surface that metadata once per run,
-   * the way Messages/Slack-style threads do. ChatBubble itself does not know
-   * about a list of messages - the consumer decides which bubbles group.
+   * Marks a bubble inside a same-sender run: hides avatar/sender/timestamp/status and tightens the
+   * gap. Leave the run's last message ungrouped (the default); the consumer decides what groups.
    */
   grouped?: boolean;
   /** Per-slot class overrides, for styling one part without wrapping the whole bubble. */
@@ -57,96 +53,90 @@ export const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(
   const showMeta = !grouped;
   const StatusIcon = status ? STATUS_META[status].icon : null;
 
+  // A grid, not flex `items-end`, so the avatar sits level with the *bubble's* bottom edge rather
+  // than the whole column (a 32px `size="sm"` avatar ended up almost below the bubble). Rhythm uses
+  // margins, not `gap-y`: a grid gap applies even to empty tracks, costing 4px with no sender.
+  const contentColumn = avatar && !outgoing ? "fj:col-start-2" : "fj:col-start-1";
+
   return (
     <div
       ref={ref}
       data-align={align}
       className={cn(
-        "fj:flex fj:w-full fj:items-end fj:gap-2.5",
-        outgoing && "fj:flex-row-reverse",
+        "fj:grid fj:w-full fj:gap-x-2.5",
+        avatar
+          ? outgoing
+            ? "fj:grid-cols-[minmax(0,1fr)_auto] fj:justify-items-end"
+            : "fj:grid-cols-[auto_minmax(0,1fr)] fj:justify-items-start"
+          : outgoing
+            ? "fj:grid-cols-[minmax(0,1fr)] fj:justify-items-end"
+            : "fj:grid-cols-[minmax(0,1fr)] fj:justify-items-start",
         grouped ? "fj:mt-0.5" : "fj:mt-3 fj:first:mt-0",
         className,
       )}
       {...props}
     >
-      {avatar &&
-        (showMeta ? (
-          <span className={cn("fj:shrink-0", classNames?.avatar)}>{avatar}</span>
-        ) : (
-          // Reserves the avatar's footprint so grouped bubbles stay aligned
-          // with the run's other messages instead of drifting outward.
-          <span className="fj:size-8 fj:shrink-0" aria-hidden="true" />
-        ))}
-      <div
-        className={cn(
-          "fj:flex fj:min-w-0 fj:max-w-[75%] fj:flex-col fj:gap-1",
-          outgoing ? "fj:items-end" : "fj:items-start",
-        )}
-      >
+      {avatar && (
+        // Grouped bubbles hide the avatar in place rather than use a placeholder: only the avatar's
+        // own footprint is guaranteed to match (a hard-coded 32px misaligned the default 40px one).
+        <span
+          aria-hidden={showMeta ? undefined : "true"}
+          className={cn(
+            "fj:row-start-2 fj:self-end fj:shrink-0",
+            outgoing ? "fj:col-start-2" : "fj:col-start-1",
+            !showMeta && "fj:invisible",
+            classNames?.avatar,
+          )}
+        >
+          {avatar}
+        </span>
+      )}
+      {/* `display: contents` makes sender/bubble/meta grid items of the root so the avatar can align
+          to the bubble's row, while keeping the root's child count for consumer selectors. */}
+      <div className="fj:contents">
         {sender &&
           (showMeta ? (
             <span
               className={cn(
-                "fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-foreground-subtle",
+                "fj:row-start-1 fj:mb-1 fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:font-medium fj:text-fuji-foreground-subtle",
+                contentColumn,
                 classNames?.sender,
               )}
             >
               {sender}
             </span>
           ) : (
-            // Grouped messages hide the sender because a sighted reader infers
-            // it from the run's shape and the shared avatar column. There is
-            // no equivalent inference in a linear screen-reader pass: a run of
-            // five grouped messages announced five unattributed bubbles, and
-            // in a two-party thread that is the difference between "they said
-            // it" and "you said it". Visually suppressed, still announced.
+            // Sighted readers infer a grouped run's sender from its shape; a linear screen-reader
+            // pass cannot ("they said it" vs "you said it"), so it stays announced but hidden.
             <span className="fj:sr-only">{sender}</span>
           ))}
-        <div className="fuji-chat-bubble-shadow fj:relative fj:min-w-0">
-          {/* Speech-bubble tail, anchored at the bubble's bottom corner on the
-              side that faces the speaker - bottom-right when outgoing,
-              bottom-left when incoming - which is where a chat client puts it.
-              Shown only on the last message of a run (same rule as the
-              sender/timestamp/status metadata) so a thread reads as one
-              connected shape per run, not a tail per message.
-
-              The tail carries the bubble's exact fill and no border, and the
-              bubble squares off the corner it joins (`rounded-b*-none` below)
-              so the two read as one shape rather than a triangle stuck to a
-              rounded box.
-
-              Both use the opaque `fuji-chat-bubble-*` fills (see base.css)
-              rather than the glass material, and that took three attempts to
-              get right, so it is worth recording what actually mattered.
-              Removing the blur was not enough, and neither was removing the
-              shadow: bubble and tail are two separate elements, and two
-              *translucent* fills of the same declared colour still do not meet
-              cleanly at their seam - under glass the tail read as a visibly
-              darker wedge. Forcing both opaque removed the seam completely
-              with nothing else changed, which is what pinned the cause down.
-              Opaque is also how chat clients draw bubbles, and matches the
-              HIG's rule that the content layer uses plain surfaces. */}
+        <div
+          className={cn(
+            "fuji-chat-bubble-shadow fj:row-start-2 fj:relative fj:min-w-0 fj:max-w-[75%]",
+            contentColumn,
+          )}
+        >
+          {/* Tail on the speaker-facing bottom corner, last message of a run only. Opaque fills,
+              not glass: two translucent fills seam visibly even without blur or shadow. It also
+              overlaps the bubble by 1px, since touching edges seam on fractional pixels (the
+              arithmetic is in base.css beside `.fuji-chat-bubble-tail`). */}
           {showMeta && (
             <span
               aria-hidden="true"
               className={cn(
-                "fj:pointer-events-none fj:absolute fj:bottom-0 fj:h-3 fj:w-2",
+                "fuji-chat-bubble-tail",
                 outgoing
-                  ? "fuji-chat-bubble-outgoing fj:-right-2 fj:[clip-path:polygon(0_0,100%_100%,0_100%)]"
-                  : "fuji-chat-bubble-incoming fj:-left-2 fj:[clip-path:polygon(100%_0,100%_100%,0_100%)]",
+                  ? "fuji-chat-bubble-outgoing fuji-chat-bubble-tail-outgoing"
+                  : "fuji-chat-bubble-incoming fuji-chat-bubble-tail-incoming",
               )}
             />
           )}
           <div
             className={cn(
               "fj:relative fj:box-border fj:min-w-0 fj:break-words fj:rounded-fuji-panel fj:px-3.5 fj:py-2.5 fj:text-[length:var(--fuji-text-base)] fj:leading-snug",
-              // Square off only the corner the tail joins, and only while it
-              // is shown - otherwise the rounded corner leaves a visible
-              // notch between bubble and tail.
+              // Square off the corner the tail joins while it is shown, or it leaves a notch.
               showMeta && (outgoing ? "fj:rounded-br-none" : "fj:rounded-bl-none"),
-              // No shadow on either bubble, deliberately: a box-shadow paints
-              // over the tail that sits outside the bubble's box, so the
-              // darkened area cut across the join. The fill carries the shape.
+              // No shadow on either bubble: a box-shadow paints over the tail and cuts the join.
               outgoing
                 ? "fuji-chat-bubble-outgoing fj:text-fuji-default-foreground"
                 : "fuji-chat-bubble-incoming fj:text-fuji-foreground",
@@ -159,7 +149,8 @@ export const ChatBubbleRoot = React.forwardRef<HTMLDivElement, ChatBubbleProps>(
         {(timestamp || status) && showMeta && (
           <div
             className={cn(
-              "fj:flex fj:items-center fj:gap-1.5 fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:text-fuji-foreground-subtle",
+              "fj:row-start-3 fj:mt-1 fj:flex fj:items-center fj:gap-1.5 fj:px-1 fj:text-[length:var(--fuji-text-xs)] fj:text-fuji-foreground-subtle",
+              contentColumn,
               classNames?.meta,
             )}
           >
@@ -183,11 +174,8 @@ export interface ChatBubbleAttachmentProps extends Omit<React.HTMLAttributes<HTM
   /** Icon shown before the name - defaults to a generic paperclip. Ignored when `preview` is given. */
   icon?: IconComponent;
   /**
-   * Artwork shown in place of the icon - an image thumbnail, a video poster,
-   * a waveform. Rendered inside a small rounded square (40px by default,
-   * resizable through `classNames.preview`) that crops its content, so an
-   * `<img>` fills it edge to edge. Give the artwork an empty `alt` when the
-   * `name` already describes the file, so it is not announced twice.
+   * Artwork in place of the icon (thumbnail, poster), cropped to a 40px square (`classNames.preview`
+   * resizes it). Give it an empty `alt` when `name` already describes the file.
    */
   preview?: React.ReactNode;
   /** File/attachment name. */
@@ -195,10 +183,8 @@ export interface ChatBubbleAttachmentProps extends Omit<React.HTMLAttributes<HTM
   /** Secondary detail, e.g. a file size or an audio duration ("2.4 MB", "0:42"). */
   meta?: React.ReactNode;
   /**
-   * Renders as a real, keyboard-accessible `<button type="button">` (e.g. to
-   * open/download the attachment) instead of a static chip. Without it the
-   * chip is a plain, non-interactive `<div>`, so it can sit inside a consumer's
-   * own `<a>` without nesting one interactive element inside another.
+   * Renders a keyboard-accessible `<button type="button">` (e.g. open/download). Without it the
+   * chip is a static `<div>`, so it can sit inside a consumer's own `<a>` without nesting.
    */
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
   /** Per-slot class overrides. `preview` is the artwork box. */
@@ -269,21 +255,15 @@ const ChatBubbleAttachment = React.forwardRef<HTMLDivElement, ChatBubbleAttachme
 
 export interface ChatBubbleTypingProps extends React.HTMLAttributes<HTMLSpanElement> {
   /**
-   * Text announced to assistive technology in place of the animated dots,
-   * which are hidden from it. Default "Typing". Pass a name for a group
-   * thread ("Priya is typing") or a translated string.
+   * Text announced in place of the hidden animated dots. Default "Typing". Pass a name for group
+   * threads ("Priya is typing") or a translated string.
    */
   label?: string;
 }
 
 /**
- * Three pulsing dots - the "someone is typing" indicator. Place it as a
- * bubble's only child: `<ChatBubble avatar={...}><ChatBubble.Typing /></ChatBubble>`.
- *
- * `role="status"` so a screen reader hears `label` when the indicator
- * appears; the dots themselves are decorative. The pulse is the shared
- * `animate-fuji-pulse`, which stops entirely under
- * `prefers-reduced-motion: reduce` (the dots then sit still). Pure CSS, so this stays server-renderable.
+ * "Someone is typing" dots, as a bubble's only child; `role="status"` announces `label`. The pulse
+ * stops under `prefers-reduced-motion: reduce`. Pure CSS, so it stays server-renderable.
  */
 const ChatBubbleTyping = React.forwardRef<HTMLSpanElement, ChatBubbleTypingProps>(function ChatBubbleTyping(
   { label = "Typing", className, ...props },
@@ -299,8 +279,7 @@ const ChatBubbleTyping = React.forwardRef<HTMLSpanElement, ChatBubbleTypingProps
       {...props}
     >
       <span aria-hidden="true" className="fj:inline-flex fj:items-center fj:gap-1">
-        {/* Staggered so the pulse travels left to right. Full class strings,
-            never templated - Tailwind's scanner is static. */}
+        {/* Staggered left to right. Full class strings - Tailwind's scanner is static. */}
         <span className={dot} />
         <span className={cn(dot, "fj:[animation-delay:200ms]")} />
         <span className={cn(dot, "fj:[animation-delay:400ms]")} />

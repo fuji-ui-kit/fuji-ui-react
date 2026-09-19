@@ -19,9 +19,8 @@ const MAIN_ITEMS = [
 ];
 
 /**
- * Selection is the consumer's job (`active` is a plain prop, like Navbar's
- * items) - the story holds it in state so clicking an item actually moves
- * the highlight instead of demoing a frozen `active`.
+ * Selection is the consumer's job (`active` is a plain prop), so the story keeps it in state and
+ * clicking actually moves the highlight.
  */
 function InteractiveSidebar() {
   const [selected, setSelected] = React.useState("Home");

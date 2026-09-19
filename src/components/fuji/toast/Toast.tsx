@@ -42,16 +42,9 @@ function ToastList() {
               "fuji-glass-surface-overlay fuji-motion-toast fj:box-border fj:absolute fj:bottom-0 fj:left-0 fj:flex fj:w-full fj:items-center fj:gap-3 fj:overflow-hidden fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface-overlay fj:px-4 fj:py-3.5 fj:shadow-fuji-overlay fj:outline-none fj:focus-visible:ring-2 fj:focus-visible:ring-fuji-focus-ring",
             )}
           >
-            {/* Same tone wash and icon tile as `Alert` - the two carry the same
-                four variants, so a success toast and a success alert have to be
-                recognisable as the same thing. `overflow-hidden` above is what
-                clips the wash to the panel's corners.
-
-                Centred, where `Alert` top-aligns: a toast is short by design
-                (the description is clamped to two lines), so the icon tile is
-                about as tall as the text beside it and top-aligning the two
-                just reads as the text sitting high. An alert's body is
-                arbitrary-length content, where centring would drift. */}
+            {/* Same tone wash + icon tile as `Alert` so variants read alike (`overflow-hidden` clips
+                the wash). Centred, unlike `Alert`: the description is clamped to two lines, so
+                top-aligning reads as text sitting high; centring only drifts on long alert bodies. */}
             <span aria-hidden="true" className={cn(STATUS_WASH_CLASS, STATUS_WASH[variant])} />
             {Icon && (
               <span className={STATUS_ICON_TILE_CLASS}>
@@ -59,27 +52,14 @@ function ToastList() {
               </span>
             )}
             <div className="fj:relative fj:min-w-0 fj:flex-1">
-              {/* `m-0` matters here specifically: Base.Title/Description render
-                  native heading/paragraph elements, and this package ships no
-                  preflight (see SPEC.md §8) - without it their native ~0.83em
-                  top margin pushed the title down and out of vertical
-                  alignment with the icon next to it (measured ~11px off). */}
+              {/* `m-0`: Base.Title/Description are native h/p and there is no preflight (SPEC.md §8);
+                  their ~0.83em top margin pushed the title ~11px out of line with the icon. */}
               <Base.Title className="fj:m-0 fj:text-[length:var(--fuji-text-sm)] fj:leading-snug fj:font-semibold fj:text-fuji-foreground" />
               <Base.Description className="fj:m-0 fj:mt-0.5 fj:line-clamp-2 fj:text-[length:var(--fuji-text-sm)] fj:leading-snug fj:text-fuji-foreground-muted" />
             </div>
-            {/* Base UI's `Toast.Close` computes its own `aria-hidden` (`!expanded
-                && !hasFocus` - true whenever this toast isn't the one being
-                hovered/focused), but leaves `tabIndex`/keyboard activation
-                untouched: a Tab press moves real DOM focus onto a button a
-                screen reader's accessibility tree has already pruned, exactly
-                the "focusable content inside aria-hidden" failure WCAG 4.1.2
-                flags. That heuristic exists for collapsed background toasts
-                in a stack, but Fuji's dismiss control must always be
-                reachable the same way `Alert`'s identical button already is
-                - never conditionally hidden. `aria-hidden={false}` here is a
-                render-prop override, not a DOM default: `mergeProps` gives
-                explicit props on the `render` element precedence over Base
-                UI's computed ones, so this wins regardless of stack state. */}
+            {/* Base UI sets `aria-hidden` (`!expanded && !hasFocus`) but keeps it tabbable: focusable
+                content inside aria-hidden fails WCAG 4.1.2. Like `Alert`, dismiss must always be
+                reachable; `mergeProps` lets this `render` prop's `aria-hidden={false}` win. */}
             <Base.Close
               render={
                 <DismissButton aria-label="Dismiss" aria-hidden={false} className="fj:relative fj:-mr-1.5" />
@@ -106,11 +86,8 @@ export interface ToasterProps {
 }
 
 /**
- * Place once near the app root, inside `ToastProvider`. Call
- * `useToast().add(...)` anywhere to show one. Toasts stack - newest in
- * front, older ones pushed back, scaled and faded - and hovering or focusing
- * the stack fans it out so every toast can be read. The provider's `limit`
- * (default 3) caps how many are shown.
+ * Place once near the app root, inside `ToastProvider`; call `useToast().add(...)` anywhere. Toasts
+ * stack newest in front; hover/focus fans them out. The provider's `limit` (default 3) caps them.
  */
 export function Toaster({ position = "bottom-right" }: ToasterProps) {
   const portalAttrs = usePortalThemeAttrs();

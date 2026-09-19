@@ -29,7 +29,10 @@ which is what the code compiles against.
 3. After writing or editing a file that imports `@fujiui/react`, call
    `review_usage` with the file's contents and fix every finding before you
    finish.
-4. If a tool replies that it cannot find `@fujiui/react`, or that the installed
+4. For dark mode, a theme toggle, following the OS, remembering the choice,
+   glass, or styling your own markup so it follows the theme, call
+   `get_appearance` (omit `topic` for the list) before writing that code.
+5. If a tool replies that it cannot find `@fujiui/react`, or that the installed
    version is too old, tell the user exactly what it said - the reply names the
    fix.
 
@@ -138,13 +141,39 @@ not connected, too.
   `Timeline` are Server Components; check with `get_component` before passing a
   component an event handler.
 
+<!-- rule: theme-via-provider -->
+
+- **Switch the theme through the provider**: `setTheme` / `setMaterial` from
+  `useFujiConfig()`, or a controlled `theme` prop. Never toggle a `.dark` class
+  or write `data-fuji-*` attributes yourself - Fuji ignores the class and the
+  provider overwrites the attributes. There is no `theme="system"`; follow the
+  OS by passing a controlled theme (`get_appearance` topic `system`).
+
 <!-- rule: no-templated-classes -->
 
 - **Never assemble class names at runtime.** Tailwind's scanner is static, so
   `` `bg-fuji-${tone}` `` is never compiled. Write full class strings and branch
   between them.
 
-## Theming
+## Theming, dark mode and glass
 
-Customise the look by overriding the `--fuji-*` design tokens, not by restyling
-components. See `node_modules/@fujiui/react/docs/theming.md`.
+Call `get_appearance` with a topic before writing appearance code; these are
+the mistakes it prevents:
+
+- **Fill the page.** `FujiProvider` paints only its own wrapper - give the root
+  provider `className="min-h-dvh"` and `persist`, or a dark app shows the
+  browser's white past short content (topic `page`).
+- **Your own markup.** `bg-white`, `text-gray-900` and Tailwind's `dark:`
+  variant do not follow the provider. Use `var(--fuji-surface)`,
+  `var(--fuji-foreground)` and the other tokens, or point `dark:` at
+  `[data-fuji-theme=dark]` with one `@custom-variant` line (topic `own-markup`).
+- **Glass needs a backdrop.** `material="glass"` over the flat theme background
+  is correct but subtle; wrap the app in `fuji-glass-atmosphere` or your own
+  photo or gradient (topic `glass`).
+- **No flash on reload.** `persist` on the root provider, plus the
+  `buildAppearanceBootstrapScript()` script in `<head>` for server-rendered apps
+  (topic `persist`).
+
+For token values per theme and material, call `get_appearance` with topic
+`tokens` and a `group` (`color`, `glass`, `radius`, ...). The full guide is
+`node_modules/@fujiui/react/docs/theming.md`.

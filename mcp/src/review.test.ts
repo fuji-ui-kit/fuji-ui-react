@@ -5,17 +5,8 @@ import { reviewUsage } from "./review.js";
 import type { Registry } from "./registry.js";
 
 /**
- * `review_usage` is the tool that is supposed to raise an agent's output
- * quality, and it is the one place where being wrong is worse than being
- * absent: a false positive tells an agent that correct code is broken, and the
- * agent "fixes" it into something that is.
- *
- * Every case below was a real defect. The checker built its known-export set
- * from the 88-component catalogue rather than the 308 real exports, so
- * `DialogRoot` and `SelectItem` were reported as hallucinated; it flagged the
- * universal `${className}` merge idiom; it applied Fuji's rules to any
- * capitalised tag; and every JSX rule was line-scoped, so Prettier's own
- * formatting hid all of them.
+ * A false positive gets correct code "fixed" into broken code. Every case was a real defect: 88
+ * catalogued vs 308 real exports, the `${className}` idiom, foreign tags, line-scoped rules.
  */
 const REGISTRY = path.join(__dirname, "..", "..", "dist", "registry.json");
 const registry: Registry | null = fs.existsSync(REGISTRY)
@@ -51,8 +42,7 @@ describe.skipIf(!registry)("review_usage", () => {
     });
 
     it("a violation on a multi-line element", () => {
-      // Prettier wraps any element with more than about two props, so this is
-      // what real code looks like.
+      // Prettier wraps elements with more than ~two props, so this is what real code looks like.
       expect(rules(`<Card\n  theme="dark"\n  effect="lift"\n>\n  hi\n</Card>`)).toContain(
         "provider-owned-appearance",
       );
@@ -83,9 +73,7 @@ describe.skipIf(!registry)("review_usage", () => {
     });
 
     it("a dot-access sub-part in a Server Component", () => {
-      // Needs positive evidence of a framework that HAS Server Components. In a
-      // Vite or CRA app nobody writes "use client" anywhere, so its absence
-      // proves nothing - see the false-positive case below.
+      // Needs positive RSC evidence: in Vite/CRA a missing "use client" proves nothing (see below).
       expect(
         rules(
           `import Link from "next/link";\nimport { Dialog } from "@fujiui/react";\n<Dialog><Dialog.Content /></Dialog>`,
@@ -94,20 +82,15 @@ describe.skipIf(!registry)("review_usage", () => {
     });
 
     /**
-     * `material` was missed when the theme x material split landed: the axis
-     * list still named the removed `glassTint`, so `<Card material="glass">` -
-     * precisely the mistake this rule exists to catch - produced no finding.
-     * Verified by removing "material" from the axis list and watching this go
-     * red while the `theme` case above stayed green.
+     * `material` was missed in the theme x material split (the axis list still named `glassTint`).
+     * Verified: removing "material" from the list turns this red while `theme` stays green.
      */
     it("the material axis on a component, not just theme", () => {
       expect(rules(`<Card material="glass" />`)).toContain("provider-owned-appearance");
     });
 
     it("names glassTint as removed rather than ignoring it", () => {
-      // A model trained on the older API still writes it; saying what replaced
-      // it beats silence. Reported on the provider too - it does not take it
-      // either any more.
+      // Old-API models still write it; say what replaced it. The provider doesn't take it either.
       expect(rules(`<Card glassTint="light" />`)).toContain("removed-api");
       expect(rules(`<FujiProvider glassTint="light">x</FujiProvider>`)).toContain("removed-api");
     });
@@ -197,9 +180,8 @@ describe.skipIf(!registry)("review_usage", () => {
     });
 
     it("accepts a rendered element for an icon prop typed ReactNode", () => {
-      // Seven of the ten props named `icon` take React.ReactNode, where an
-      // element is the correct value. Flagging those told an agent to write
-      // `icon={Home}`, which does not render.
+      // Seven of ten `icon` props take ReactNode; flagging them led agents to `icon={Home}`, which
+      // renders nothing.
       expect(rules(`<Sidebar.Item icon={<Home />} active>Home</Sidebar.Item>`)).toEqual([]);
     });
 
@@ -243,9 +225,7 @@ describe.skipIf(!registry)("review_usage", () => {
     });
 
     it("survives an arrow function inside a nested element", () => {
-      // The `>` of `=>` used to end the tag match early, so the nested
-      // element's remaining props were glued onto the parent's list. A theme
-      // toggle always has an onClick; a render prop's element usually does too.
+      // The `>` of `=>` used to end the tag early, gluing nested props onto the parent.
       expect(
         rules(`<Card header={<ThemeToggle onClick={() => setT(t)} theme="dark" />}>body</Card>`),
       ).toEqual([]);
@@ -338,5 +318,42 @@ describe.skipIf(!registry)("review_usage", () => {
   it("suggests the real name for a near miss", () => {
     const [finding] = reviewUsage(`import { Buton } from "@fujiui/react";`, registry!);
     expect(finding?.fix).toContain("Button");
+  });
+});
+
+describe.skipIf(!registry)("review_usage: theme switching", () => {
+  const withFuji = (body: string) => `import { FujiProvider, useFujiConfig } from "@fujiui/react";\n${body}`;
+
+  it("flags a .dark class toggled by hand", () => {
+    expect(rules(withFuji(`document.documentElement.classList.toggle("dark");`))).toEqual([
+      "theme-via-provider",
+    ]);
+  });
+
+  it("flags a data-fuji-* attribute written by hand", () => {
+    expect(rules(withFuji(`document.documentElement.setAttribute("data-fuji-theme", "dark");`))).toEqual([
+      "theme-via-provider",
+    ]);
+  });
+
+  it('answers theme="system" with the follow-the-OS recipe, not a bare invalid value', () => {
+    const findings = reviewUsage(withFuji(`<FujiProvider theme="system"><App /></FujiProvider>`), registry!);
+    expect(findings.map((f) => f.rule)).toEqual(["theme-via-provider"]);
+    expect(findings[0]!.fix).toContain("get_appearance");
+  });
+
+  it("accepts setTheme from useFujiConfig", () => {
+    expect(
+      rules(
+        withFuji(
+          `const { theme, setTheme } = useFujiConfig();\n<Switch checked={theme === "dark"} onCheckedChange={(on) => setTheme(on ? "dark" : "light")} />`,
+        ),
+      ),
+    ).toEqual([]);
+  });
+
+  it("ignores the pattern in a comment, and in a file that does not use Fuji", () => {
+    expect(rules(withFuji(`// document.documentElement.classList.toggle("dark") is wrong`))).toEqual([]);
+    expect(rules(`import { useState } from "react";\ndocument.body.classList.add("dark");`)).toEqual([]);
   });
 });

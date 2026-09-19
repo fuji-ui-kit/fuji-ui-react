@@ -1,18 +1,7 @@
 #!/usr/bin/env node
 /*
- * The review/authoring skills are duplicated under .claude/skills and
- * .codex/skills so both toolchains can discover them as real files. This
- * check fails if the two copies drift, if a skill's directory name
- * doesn't match the `name:` in its own frontmatter (a mismatch makes the
- * skill un-invokable by the name it advertises), and if a skill is not marked
- * `metadata: internal: true`.
- *
- * That flag is what keeps these skills out of apps. `npx skills add
- * fuji-ui-kit/fuji-ui-react` - the documented way to install the consumer
- * `fuji-ui` skill in plugins/fuji-ui/ - scans .claude/skills too, and without
- * the flag an agent-run install put all twelve contributor skills into the
- * user's project, even when given `--skill fuji-ui`. Claude Code and Codex
- * ignore the field, so the contributor skills still load here.
+ * Fails if .claude/.codex skills drift, a dir name differs from its `name:` (un-invokable), or a skill
+ * lacks `metadata: internal: true`, which keeps `npx skills add` from installing all 12 into apps.
  */
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";

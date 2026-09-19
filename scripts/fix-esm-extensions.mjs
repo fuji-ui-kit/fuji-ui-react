@@ -1,11 +1,7 @@
 #!/usr/bin/env node
-// tsup's `bundle: false` mode leaves relative import/export specifiers
-// exactly as authored (extensionless, e.g. "./provider" or "../../lib/cn"),
-// which bundlers (Next.js, Vite, webpack) resolve fine but Node's native ESM
-// resolver rejects outright (it requires explicit file extensions and never
-// resolves a bare directory to its index file). This rewrites every relative
-// specifier in the compiled output to point at the real emitted file, so the
-// build works under strict Node ESM too, not only inside a bundler.
+// `bundle: false` leaves relative specifiers extensionless ("./provider"), which bundlers accept
+// but Node's ESM resolver rejects (no extension guessing, no directory index). Rewrite each one
+// to the real emitted file so the build also works under plain Node.
 import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -29,11 +25,8 @@ function resolveSpecifier(fromFile, spec) {
 
 const SPECIFIER_RE = /((?:from|import)\s*["'])(\.\.?\/[^"']+)(["'])/g;
 
-// tsup 8.5.1 emits the sourceMappingURL comment twice for every file in
-// `bundle: false` mode (reproducible with no plugins and no onSuccess). Tools
-// take the last one, so it is harmless, but it is 178 stray lines in the
-// published tarball. Drop the duplicates while we are already rewriting these
-// files; revisit if a future tsup stops emitting them.
+// tsup 8.5.1 duplicates sourceMappingURL in `bundle: false` mode - harmless, but 178 stray lines
+// in the tarball. Drop them while rewriting; revisit if tsup stops.
 const TRAILING_SOURCEMAP_RE = /(?:\r?\n\/\/# sourceMappingURL=\S+)+\s*$/;
 
 function dedupeSourceMappingComment(text) {

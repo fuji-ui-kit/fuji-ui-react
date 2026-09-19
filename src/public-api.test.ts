@@ -1,12 +1,9 @@
 import { describe, expect, it } from "vitest";
 import * as fuji from "./index";
 
-// `README.md`, `docs/nextjs.md` and `SPEC.md` §4 all tell Server Component
-// consumers to import the named sub-export (`DialogContent`) because a static
-// property read (`Dialog.Content`) fails across a "use client" boundary. Those
-// named exports were documented but never actually exported, so following the
-// documentation was a compile error. Every compound's parts are asserted here
-// so the dot-access form and the named form can never drift apart again.
+// Docs tell Server Component consumers to import named parts (`DialogContent`), since
+// `Dialog.Content` fails across a "use client" boundary - yet they were once never exported.
+// Asserting every compound's parts keeps the dot-access and named forms from drifting.
 const COMPOUNDS: Record<string, string[]> = {
   AlertDialog: ["Trigger", "Content", "Close", "Title", "Description", "Footer"],
   Card: ["Media", "Overlay", "Header", "Title", "Description", "Content", "Footer"],

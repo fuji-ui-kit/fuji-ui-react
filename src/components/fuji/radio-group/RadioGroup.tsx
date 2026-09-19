@@ -56,24 +56,15 @@ export const RadioGroupItem = React.forwardRef<HTMLButtonElement, RadioGroupItem
             // the inner dot - the dot stays a small, restrained accent.
             "fj:data-[checked]:border-2",
             "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-            // `Radio.Root` renders a `<span role="radio">` by default (its
-            // `nativeButton` prop defaults to false), not a native form
-            // control - the real `disabled` attribute lives on Base UI's
-            // visually-hidden `<input>` beside it, so a `disabled:`
-            // pseudo-class here can never match. Base UI does mirror the
-            // disabled state onto this element as `data-disabled`, so the
-            // attribute variant is the one that actually fires.
+            // `Radio.Root` is a `<span role="radio">`; `disabled` lives on the hidden `<input>`,
+            // so `disabled:` never matches. Base UI mirrors it here as `data-disabled`.
             "fj:data-[disabled]:cursor-not-allowed fj:data-[disabled]:opacity-45",
             className,
           )}
           {...props}
         >
-          {/* `keepMounted` so the dot can animate: the default unmounts it
-              when unchecked, and an element that does not exist cannot
-              transition - selection popped in instantly. It stays hidden
-              from assistive tech either way; only the painted dot changes.
-              The scale-plus-spin mirrors Switch's rolling thumb, so both
-              controls answer a toggle the same way. */}
+          {/* `keepMounted` so the dot can animate (unmounting made selection pop in); it stays
+              hidden from AT either way. The scale-plus-spin mirrors Switch's rolling thumb. */}
           <Radio.Indicator
             keepMounted
             className={cn(

@@ -7,16 +7,8 @@ const meta = {
   title: "Inputs/IconButton",
   component: IconButton,
   tags: ["autodocs"],
-  // No decorator on purpose. Every story here used to be wrapped in a
-  // `fuji-glass-surface` panel with a card radius, border and shadow, on the
-  // stated grounds that a ghost IconButton was "nearly invisible" on the bare
-  // canvas. That premise was wrong - `appearance.ts` gives ghost
-  // `fj:text-fuji-foreground`, i.e. full foreground contrast in every theme;
-  // what ghost leaves invisible is the button's BOUNDARY, which is the whole
-  // point of the appearance. The wrapper used Fuji's exact card recipe, so it
-  // read as part of the component rather than as story scaffolding, and the
-  // docs page appeared to show an icon inside a card. `Appearances` below
-  // shows the boundary difference the wrapper was standing in for.
+  // No decorator on purpose: a card-recipe wrapper read as part of the component. Ghost has full
+  // foreground contrast; only its boundary is invisible, by design - see `Appearances`.
   args: {
     "aria-label": "Like",
     children: <Heart className="size-4" />,

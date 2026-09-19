@@ -13,17 +13,13 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   /** Paints the error state. Pair with `FormField`'s `error` for the message. */
   invalid?: boolean;
   /**
-   * Shows an unboxed "X" button once there is a value, clearing it on click.
-   * Works uncontrolled and controlled: it updates the DOM value directly and
-   * fires a native `input` event, so an `onChange` handler sees the change
-   * either way.
+   * Shows an "X" button once there is a value that clears it. Works controlled or uncontrolled:
+   * it sets the DOM value and fires a native `input` event, so `onChange` sees the change.
    */
   clearable?: boolean;
   /**
-   * Visible text lines. Without it, `size` sets a minimum height (5rem / 6rem
-   * / 8rem for `sm` / `md` / `lg`). With it, that minimum is dropped and the
-   * box is exactly `rows` lines tall - so `rows={1}` gives a one-line composer
-   * that a consumer can grow with its content.
+   * Visible text lines. Without it, `size` sets a min height (5rem / 6rem / 8rem for `sm` / `md` /
+   * `lg`); with it the box is exactly `rows` tall, so `rows={1}` gives a growable one-line composer.
    */
   rows?: number;
 }
@@ -44,9 +40,8 @@ const MIN_HEIGHT_CLASSES: Record<ComponentSize, string> = {
 };
 
 /**
- * Renders through Base UI's `Field.Control` (typed for `<input>`, hence the cast below) so it
- * auto-registers with an ancestor `FormField`/`Field.Root` the same way Input does - a bare
- * `<textarea>` here would leave `FormField.Label` with no control to point `htmlFor` at.
+ * Renders via `Field.Control` (typed for `<input>`, hence the cast) so it registers with an
+ * ancestor `FormField` like Input; a bare `<textarea>` leaves `FormField.Label` no `htmlFor` target.
  */
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(function Textarea(
   { size = "md", invalid, clearable = false, rows, value, defaultValue, onChange, className, ...props },
@@ -61,14 +56,9 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(fun
       <Field.Control
         render={<textarea />}
         ref={innerRef as unknown as React.Ref<HTMLElement>}
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `Field.Control` already mirrors an ancestor `<FormField invalid>`
-        // onto this same element as `data-invalid` automatically, and an
-        // explicit `undefined`-valued prop still occupies the key and wins
-        // the merge in `useRenderElement`, erasing that computed value
-        // whenever this `invalid` prop itself was left unset (see Input.tsx
-        // for the full mechanism, and FormField.tsx for the symptom).
-        // Omitting the key when falsy instead lets the ambient value through.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: an explicit `undefined` wins the
+        // merge and erases the `data-invalid` Field.Control mirrors from `<FormField invalid>`.
+        // Omitting the key lets it through (see Input.tsx / FormField.tsx).
         {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         value={value}

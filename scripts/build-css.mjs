@@ -22,9 +22,7 @@ const result = await postcss([tailwindcss()]).process(source, {
 writeFileSync(join(DIST, "styles.css"), result.css, "utf8");
 if (result.map) writeFileSync(join(DIST, "styles.css.map"), result.map.toString(), "utf8");
 
-// tokens.css is shipped unprocessed too, for consumers who want the raw
-// custom properties without the compiled utility layer (e.g. to build their
-// own Tailwind theme mapping instead of using styles.css).
+// tokens.css also ships raw, for consumers building their own Tailwind mapping.
 copyFileSync(join(ROOT, "src/styles/tokens.css"), join(DIST, "tokens.css"));
 
 console.log("Built dist/styles.css and dist/tokens.css");

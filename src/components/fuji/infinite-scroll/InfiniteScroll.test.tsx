@@ -5,10 +5,8 @@ import { axe } from "jest-axe";
 import { InfiniteScroll } from "./InfiniteScroll";
 
 /**
- * jsdom has no IntersectionObserver, and the component's whole job is to react
- * to one. This stub keeps the observed callbacks so a test can drive the
- * crossing directly - which is also the only way to assert the re-entry guard,
- * the part that actually breaks in real use.
+ * jsdom has no IntersectionObserver; this stub keeps the callbacks so tests can drive the crossing,
+ * the only way to assert the re-entry guard.
  */
 type Trigger = () => void;
 let triggers: Trigger[] = [];
@@ -66,9 +64,7 @@ describe("InfiniteScroll", () => {
         <p>Rows</p>
       </InfiniteScroll>,
     );
-    // The observer can fire several times before the parent re-renders with
-    // the next page; without the guard this is where duplicate fetches come
-    // from.
+    // The observer can fire several times before the next page renders; the guard stops duplicates.
     triggers.forEach((fire) => {
       fire();
       fire();

@@ -63,7 +63,7 @@ touching packaging, add `npm pack --dry-run` and check the file list.
   in the root guides.
 - **Read `DESIGN.md` before changing anything under `src/styles/` or
   `components/fuji/lib/`.** Those five files (tokens.css, base.css, appearance.ts,
-  field-surface.ts, status-surface.ts) restyle all 89 components at once,
+  field-surface.ts, status-surface.ts) restyle all 86 components at once,
   and DESIGN.md records which values are deliberate. Token changes must be
   checked with `node scripts/render-gallery.mjs` across all sixteen appearance
   combinations - a rendered page catches what a unit test cannot (the dark

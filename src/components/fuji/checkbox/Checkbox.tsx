@@ -39,26 +39,16 @@ export const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(funct
       ref={ref}
       id={inputId}
       className={cn(
-        // Unchecked is a soft grey well (no border); checked becomes a raised
-        // tone tile - the reference's checkbox, and the same selected /
-        // unselected language as Pagination and SegmentedControl.
-        // The well carries a hairline inset (not a border) so it still reads
-        // on the page background, where surface-strong alone is near-invisible.
-        // `box-border` is load-bearing: no preflight ships with this package,
-        // so `size-5` alongside a 1px border rendered a 22px box instead of
-        // the declared 20px, throwing off alignment with the adjacent label.
+        // Unchecked is a soft grey well with a hairline inset (surface-strong alone vanishes on the
+        // page); checked is a raised tone tile, like Pagination/SegmentedControl. `box-border` is
+        // load-bearing: with no preflight, `size-5` plus a 1px border rendered 22px, not 20px.
         "fj:box-border fj:flex fj:size-5 fj:shrink-0 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-fuji-item fj:border fj:border-transparent fj:bg-fuji-surface-strong fj:[box-shadow:inset_0_0_0_1px_var(--fuji-border-strong)]",
         "fj:transition-[background-color,color,box-shadow,transform] fj:duration-[var(--fuji-duration-fast)] fj:ease-[var(--fuji-ease-spring)]",
         "fj:data-[checked]:[box-shadow:var(--fuji-shadow-raised)] fj:data-[indeterminate]:[box-shadow:var(--fuji-shadow-raised)] fj:data-[checked]:scale-105 fj:data-[indeterminate]:scale-105",
         TONE_CLASSES[tone],
         "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-        // `Base.Root` renders a `<span role="checkbox">`, not a native form
-        // control - the real `disabled` attribute lives on Base UI's
-        // visually-hidden `<input>` beside it, so a `disabled:` pseudo-class
-        // here can never match and this box rendered pixel-identical whether
-        // enabled or disabled. Base UI does mirror the disabled state onto
-        // this element as `data-disabled`, so the attribute variant is the
-        // one that actually fires.
+        // `data-disabled`, not `disabled:`: Base.Root is a `<span role="checkbox">` (the real
+        // `disabled` input is hidden beside it), so the pseudo-class never matched.
         "fj:data-[disabled]:cursor-not-allowed fj:data-[disabled]:opacity-45",
         "fj:data-[invalid]:border-fuji-fire",
         className,

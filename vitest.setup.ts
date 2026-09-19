@@ -23,13 +23,8 @@ if (typeof window !== "undefined") {
     });
   }
 
-  // jsdom doesn't implement the Pointer Events API at all - Base UI's
-  // Switch/Radio (and other) root components branch on `instanceof
-  // PointerEvent` in their own click handlers, which throws
-  // "is not a constructor" the moment `window.PointerEvent` is undefined.
-  // A minimal MouseEvent-based polyfill (the same shape jsdom itself uses
-  // for other synthetic pointer-ish events) is enough for these components
-  // to read the handful of Pointer Event fields they actually check.
+  // jsdom lacks PointerEvent, and Base UI's click handlers check `instanceof PointerEvent`, which
+  // throws when undefined. A minimal MouseEvent-based polyfill covers the fields they read.
   if (!("PointerEvent" in window)) {
     class PointerEventPolyfill extends MouseEvent {
       pointerId: number;

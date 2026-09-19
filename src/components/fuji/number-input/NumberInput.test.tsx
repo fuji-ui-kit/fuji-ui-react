@@ -7,16 +7,8 @@ import { NumberInput } from "./NumberInput";
 import { FormField } from "../form-field";
 
 /**
- * Tailwind's `x:utility` variant compiles to the CSS pseudo-class `&:x`, and
- * its `x-[y]:utility` form compiles to the attribute selector `&[y]` (e.g.
- * `data-[disabled]:opacity-45` -> `[data-disabled] { opacity: .45 }`). Both
- * are real CSS the browser (and jsdom) evaluates against the live element -
- * not something this test invents. Pull every disabled-dimming utility class
- * actually shipped on `el` and ask the DOM whether the selector it compiles
- * to matches `el` as currently rendered. This fails whenever the shipped
- * variant can never match the element's real state (e.g. `disabled:` on a
- * `<div role="group">`, which can never satisfy `:disabled`), instead of
- * merely checking that some class string is present.
+ * Compiles each disabled-dimming class on `el` to its real selector and asks the DOM if it
+ * matches, so a variant that can never fire (e.g. `disabled:` on a `<div role="group">`) fails.
  */
 function disabledStylingApplies(el: Element): boolean {
   const relevant = el.className
@@ -52,15 +44,9 @@ describe("NumberInput", () => {
     expect(screen.getByRole("textbox", { name: "Quantity" })).toBeDisabled();
   });
 
-  // Regression (Defect 1): the visible box is `NumberField.Group`, a
-  // `<div role="group">` wrapper around the real input/buttons - not a form
-  // control itself. It shares `fieldSurface()` with Input/NativeSelect/etc.,
-  // whose `disabled:` pseudo-class can only ever fire on a genuine `:disabled`
-  // element. Measured before the fix: the two spinner `<button disabled>`s
-  // dimmed correctly (real `:disabled`), but the group around them kept a
-  // full-strength border/background - "an active box containing dim
-  // buttons". Fails before the `data-[disabled]:` fix in field-surface.ts;
-  // passes after.
+  // Regression (Defect 1): the box is `NumberField.Group`, a `<div role="group">` that can't match
+  // `fieldSurface()`'s `disabled:`, so it kept full-strength styling around dimmed buttons. Guards
+  // the `data-[disabled]:` fix in field-surface.ts.
   it("actually applies the disabled-dimming styling to the group wrapper (not just the data attribute)", () => {
     render(<NumberInput aria-label="Quantity" disabled />);
     const group = screen.getByRole("group");
@@ -76,15 +62,9 @@ describe("NumberInput", () => {
     expect(screen.getByRole("group")).not.toHaveAttribute("data-invalid");
   });
 
-  // Regression (Defect 2): the group used to write
-  // `data-invalid={invalid ? "" : undefined}` itself. Passing an explicit
-  // `undefined` still occupies the prop key, so it won the merge in Base
-  // UI's `useRenderElement` over the `data-invalid` that `NumberField.Group`
-  // already computes automatically from an ancestor `<FormField invalid>` -
-  // erasing it whenever NumberInput's own `invalid` prop was left unset (the
-  // common case: the border was supposed to come from the surrounding
-  // FormField). Fails before the fix (no `data-invalid` on the group, so the
-  // `data-[invalid]:border-fuji-fire` border never painted); passes after.
+  // Regression (Defect 2): an explicit `data-invalid={undefined}` won the merge and erased the
+  // value the group derives from an ancestor `<FormField invalid>`, so the
+  // `data-[invalid]:border-fuji-fire` border never painted when `invalid` was unset.
   it("picks up data-invalid from an ancestor FormField without its own invalid prop", () => {
     render(
       <FormField invalid>

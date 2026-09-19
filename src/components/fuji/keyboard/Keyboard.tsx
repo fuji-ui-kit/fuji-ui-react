@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Volume2, VolumeX } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { useControllableState } from "../../../hooks/useControllableState";
 import type { ComponentSize, ComponentTone, SlotClassNames } from "../../../types";
@@ -22,14 +23,18 @@ export type KeyboardAnchor = "viewport" | "parent";
 /** Where inside that box a floating board sits. */
 export type KeyboardPlacement = "bottom" | "top" | "center";
 
+/** Modifiers a press was made under: latched on screen (a clicked ⌘) or held on the real keyboard. */
+export interface KeyboardModifiers {
+  shift: boolean;
+  meta: boolean;
+  ctrl: boolean;
+  alt: boolean;
+}
+
 export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onKeyPress"> {
   /**
-   * Which board to draw. Default "full".
-   *
-   * Only "numpad" and "phone" clear the 24x24 CSS px touch-target floor at
-   * `size="md"` in a 375px-wide container; "full", "tkl" and "compact" render
-   * caps well under it at that width and want a wider container or a larger
-   * `size` on a phone-width page.
+   * Which board to draw. Default "full". Only "numpad" and "phone" clear the 24x24px touch-target
+   * floor at `size="md"` in a 375px container; the others need a wider container or larger `size`.
    */
   layout?: KeyboardLayout;
   /** Cap scale. The board also shrinks below this to fit its container. Default "md". */
@@ -37,36 +42,44 @@ export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** Color a cap lights up in when it is struck, and the color `accentKeys` paints. Default "fire". */
   tone?: ComponentTone;
   /**
-   * `KeyboardEvent.code` values painted in `tone` - the coloured Esc and arrow
-   * caps of a real board. Empty by default: colour on a cap should mean
-   * something the consumer chose, not decoration the component invented.
+   * `KeyboardEvent.code` values painted in `tone`, like a real board's coloured Esc and arrows.
+   * Empty by default: cap colour should mean something the consumer chose.
    */
   accentKeys?: string[];
   /**
-   * Whether the caps are buttons. Default `true`: a board is something you
-   * press. Set it to `false` for a static diagram of a shortcut, which renders
-   * plain `<kbd>` elements and takes no tab stop.
+   * Whether the caps are buttons. Default `true`. Set `false` for a static shortcut diagram of
+   * plain `<kbd>` elements with no tab stop.
    */
   interactive?: boolean;
-  /** Lights caps as the real keyboard is used. Client-only; ignored during SSR. */
+  /**
+   * Mirrors the physical keyboard (strike, click, shared Shift/Caps Lock); on by default, ignored in SSR.
+   * Listens only while engaged (open, or focus inside) and never calls `onKeyPress` (it already typed).
+   */
   captureKeys?: boolean;
   /** Dims the board and stops it reporting presses. */
   disabled?: boolean;
   /**
-   * Plays a short click on every press, the way a soft keyboard does. Off by
-   * default - a component that makes noise unasked is a component nobody
-   * ships. Synthesised through the Web Audio API, so it costs no asset and no
-   * dependency, and it stays silent until the first press (browsers refuse a
-   * sound that no gesture asked for).
+   * Plays a short click on every press (controlled). Off by default. Synthesised via Web Audio, so no
+   * asset or dependency; silent until the first press, since browsers block gesture-less audio.
    */
   sound?: boolean;
-  /** Called with the pressed cap. Silent on a non-interactive board. */
-  onKeyPress?: (key: KeyboardKeyDef) => void;
+  /** Initial sound state when the board owns it. Default `false`. */
+  defaultSound?: boolean;
+  /** Called with the next sound state, from the board's own toggle. */
+  onSoundChange?: (sound: boolean) => void;
   /**
-   * Float the board over the page instead of laying it out in flow: it fills
-   * `anchor` edge to edge, centres itself, and unmounts while closed. The
-   * margins around the board stay click-through, so a docked keyboard never
-   * covers the page it is typing into.
+   * Shows the board's own sound toggle in a strip above the caps. Defaults to `interactive`
+   * (static diagrams make no sound). Set `false` where the app already offers the control.
+   */
+  soundToggle?: boolean;
+  /**
+   * Called with the pressed cap and the modifiers it was pressed under; a held cap repeats. Under ⌘ or
+   * Ctrl the cap reports no `value` (a shortcut types nothing) - branch on `modifiers` for ⌘A, ⌘C, ⌘V.
+   */
+  onKeyPress?: (key: KeyboardKeyDef, modifiers: KeyboardModifiers) => void;
+  /**
+   * Float the board over `anchor`, centred, unmounted while closed. The margins around it stay
+   * click-through, so a docked keyboard never blocks the page it types into.
    */
   floating?: boolean;
   /** Box a floating board is positioned against. Default "viewport". */
@@ -74,20 +87,8 @@ export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** Where inside that box it sits. Default "bottom". */
   placement?: KeyboardPlacement;
   /**
-   * Target width of the board - any CSS length, or a number of pixels. The cap
-   * unit is derived from it and everything else (row height, legends, gaps)
-   * follows, so the board stays in proportion at any width. It is a target,
-   * not a floor: a board never outgrows the space it is given.
-   *
-   * A percentage is of the box the board sits in, so `width="100%"` fills its
-   * parent - a keypad spanning its card. An explicit width lifts the size's
-   * cap ceiling (in flow as well as docked), so it can grow a board as well as
-   * shrink one.
-   *
-   * Floating boards default to a screen-relative width per `size` - roughly
-   * 45vw / 60vw / 75vw for `sm` / `md` / `lg`, never past 96vw - because a
-   * docked keyboard is something you type on, not a diagram. In flow the
-   * default is unset and `size`'s cap scale applies as before.
+   * Target board width (CSS length, px, or `%` of its box); never outgrows its box, lifts the size cap.
+   * Floating default ~45vw/60vw/75vw for `sm`/`md`/`lg` (max 96vw); unset in flow, where `size` applies.
    */
   width?: string | number;
   /** Open state of a floating board, controlled. Ignored when not floating. */
@@ -97,9 +98,8 @@ export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** Called with the board's next open state, from Escape, an outside press, or the trigger. */
   onOpenChange?: (open: boolean) => void;
   /**
-   * The control that opens the board. Presses on it are excluded from
-   * outside-dismissal, so clicking it while open closes the board instead of
-   * closing and immediately reopening it.
+   * The control that opens the board. Excluded from outside-dismissal, so clicking it while open
+   * closes the board instead of closing and immediately reopening it.
    */
   triggerRef?: React.RefObject<HTMLElement | null>;
   /** Close a floating board on Escape and on a pointer press outside. Default `true`. */
@@ -110,18 +110,15 @@ export interface KeyboardProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   classNames?: SlotClassNames<"root" | "deck" | "key">;
 }
 
-// Cap scale lives in CSS so the legend sizes can be derived from the resolved
-// key unit, which shrinks with the container - a JS-side pixel value could not
-// follow it. Written out in full for the Tailwind scanner's sake, though these
-// are hand-written classes rather than generated utilities.
+// Cap scale lives in CSS so legend sizes can follow the container-derived key unit, which a JS pixel
+// value could not.
 const SIZE_CLASSES: Record<ComponentSize, string> = {
   sm: "fuji-keyboard-sm",
   md: "fuji-keyboard-md",
   lg: "fuji-keyboard-lg",
 };
 
-// Filled accent cap - the orange Esc/arrow keys of the reference boards. Full
-// class strings: Tailwind's scanner never sees a templated name.
+// Filled accent cap. Full class strings: Tailwind's scanner never sees a templated name.
 const ACCENT_CLASSES: Record<ComponentTone, string> = {
   default: "fj:border-transparent fj:bg-fuji-contained-default fj:text-fuji-default-foreground",
   forest: "fj:border-transparent fj:bg-fuji-contained-forest fj:text-fuji-forest-foreground",
@@ -130,9 +127,7 @@ const ACCENT_CLASSES: Record<ComponentTone, string> = {
   water: "fj:border-transparent fj:bg-fuji-contained-water fj:text-fuji-water-foreground",
 };
 
-// The colour a cap lights up in when it is struck. Set once on the deck and
-// inherited by every cap, rather than stamped on each of the hundred-odd of
-// them. Hand-written classes, defined in base.css beside the strike keyframe.
+// Strike colour, set once on the deck and inherited by every cap. Defined in base.css.
 const GLOW_CLASSES: Record<ComponentTone, string> = {
   default: "fuji-keycap-glow-default",
   forest: "fuji-keycap-glow-forest",
@@ -141,10 +136,33 @@ const GLOW_CLASSES: Record<ComponentTone, string> = {
   water: "fuji-keycap-glow-water",
 };
 
-// A stable identity for the two optional key lists, so their `useMemo`s below
-// do not rebuild a Set on every render just because a default array literal is
-// a new object each time.
+// Stable default so `useMemo` doesn't rebuild the Set every render.
 const EMPTY_KEYS: string[] = [];
+
+// Clicked on screen, these latch until the next ordinary cap, like Shift: click ⌘ then A for ⌘A.
+const LATCHING_MODIFIERS: Record<string, "meta" | "ctrl" | "alt"> = {
+  MetaLeft: "meta",
+  MetaRight: "meta",
+  ControlLeft: "ctrl",
+  ControlRight: "ctrl",
+  AltLeft: "alt",
+  AltRight: "alt",
+};
+
+// Caps a held press never repeats: toggles and modifiers act once, as on hardware.
+const NON_REPEATING = new Set([
+  "ShiftLeft",
+  "ShiftRight",
+  "CapsLock",
+  "NumLock",
+  "Fn",
+  "Escape",
+  ...Object.keys(LATCHING_MODIFIERS),
+]);
+
+// Hardware-like auto-repeat: a pause before the first repeat, then a steady rate (20 per second).
+const REPEAT_DELAY_MS = 400;
+const REPEAT_INTERVAL_MS = 50;
 
 type Direction = "up" | "down" | "left" | "right";
 
@@ -168,23 +186,8 @@ const ARROW_DIRECTIONS: Record<string, Direction> = {
 };
 
 /**
- * Plays the strike animation on one cap.
- *
- * Written straight to the DOM rather than held in React state: a board is a
- * hundred-odd caps, and re-rendering all of them to mark one as struck - then
- * again to unmark it - is the wrong tool for something that is purely a
- * visual, self-ending effect. Removing the attribute and forcing a reflow
- * before re-adding it is what restarts the animation, so a cap hit twice in
- * quick succession plays two strikes instead of continuing the first.
- *
- * Nothing clears the attribute afterwards, on purpose. The obvious tidy-up -
- * dropping it on `animationend` - makes the component depend on a frame-driven
- * event arriving, and a throttled or backgrounded tab does not deliver one
- * (measured: the animation ran to completion and neither `animationstart` nor
- * `animationend` ever fired). A cap left marked is inert - the keyframes carry
- * no `fill-mode`, so the cap is back at its rest style the moment the stroke
- * ends - and the next strike restarts the animation explicitly rather than
- * waiting to be told the last one finished.
+ * Strikes via the DOM, not state (no re-rendering ~100 caps); the reflow restarts a rapid re-hit. Never
+ * cleared: backgrounded tabs skip `animationend`, and with no `fill-mode` the attribute is inert.
  */
 function strike(node: HTMLElement): void {
   node.removeAttribute("data-struck");
@@ -193,16 +196,8 @@ function strike(node: HTMLElement): void {
 }
 
 /**
- * The keypress click, synthesised rather than sampled.
- *
- * A short pitch drop with a fast decay is what a key sounds like, and an
- * oscillator plus a gain ramp is the whole of it - no audio file to ship, no
- * decode, no dependency, and nothing to fail to load. Each press gets its own
- * oscillator (they are single-use by design) over one shared context.
- *
- * The context is created on the first press, not on mount: browsers start one
- * created outside a gesture in `suspended`, and an autoplay-blocked context
- * left running is a resource leak for a board nobody pressed.
+ * The keypress click: a single-use oscillator with a fast pitch drop and decay, no audio file. The
+ * shared context is created on first press, not mount, since pre-gesture contexts start suspended.
  */
 function playClick(context: AudioContext): void {
   const now = context.currentTime;
@@ -211,8 +206,7 @@ function playClick(context: AudioContext): void {
   oscillator.type = "triangle";
   oscillator.frequency.setValueAtTime(1800, now);
   oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.03);
-  // Ramps to and from a hair above zero, never zero: `exponentialRampToValue`
-  // is undefined at 0 and silences the whole envelope.
+  // Never ramp to 0: `exponentialRampToValue` is undefined there and silences the envelope.
   gain.gain.setValueAtTime(0.0001, now);
   gain.gain.exponentialRampToValueAtTime(0.06, now + 0.004);
   gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.05);
@@ -222,14 +216,8 @@ function playClick(context: AudioContext): void {
 }
 
 /**
- * The `width` prop as a `--fuji-key-target` value.
- *
- * A percentage is rewritten to container query units. The target is read
- * inside `calc()`s that end up in `grid-auto-rows` and the column tracks,
- * where a bare `%` resolves against the grid's own (content-sized, or
- * indefinite) box instead of the space the board was given - `width="100%"`
- * collapsed a numpad to an 88px sliver. The board's root is the query
- * container, so `cqi` is exactly "percent of the box the board sits in".
+ * `width` as `--fuji-key-target`, with `%` as `cqi` of the root: in grid tracks a bare `%` resolves
+ * against the grid itself (`width="100%"` collapsed a numpad to 88px).
  */
 function boardTarget(width: string | number): string {
   if (typeof width === "number") return `${width}px`;
@@ -243,13 +231,8 @@ function centre(key: PlacedKey): number {
 }
 
 /**
- * The cap a direction key should move focus to.
- *
- * Geometric rather than index-based: the rows have different key counts and
- * the numpad's two-unit caps straddle a row boundary, so "the next item in the
- * array" is not the cap under the user's finger. Left/right stay on rows that
- * overlap the current one; up/down jump to the nearest row band and then to
- * the cap whose centre is closest.
+ * The cap an arrow key moves focus to, found geometrically since rows differ in length and tall
+ * numpad caps span rows. Left/right stay on overlapping rows; up/down pick the nearest centre.
  */
 function neighbor(keys: PlacedKey[], from: PlacedKey, direction: Direction): PlacedKey | undefined {
   if (direction === "left" || direction === "right") {
@@ -282,16 +265,8 @@ function neighbor(keys: PlacedKey[], from: PlacedKey, direction: Direction): Pla
 }
 
 /**
- * A full on-screen keyboard: the same key vocabulary as `Kbd`, drawn as a
- * complete board. Every cap is a button that travels down and lights up in
- * `tone` when it is struck, the way a backlit mechanical key does, and reports
- * itself through `onKeyPress`; pass `interactive={false}` for a static diagram
- * of a shortcut instead. `captureKeys` lights caps from the real keyboard
- * rather than from clicks.
- *
- * Caps sit on a quarter-unit CSS grid sized from the container, so a 100%
- * board keeps its proportions from a wide page down to a narrow column
- * without a resize listener.
+ * On-screen keyboard with `Kbd`'s vocabulary: caps light in `tone` and report via `onKeyPress`. Sits on a
+ * container-sized quarter-unit grid, so it keeps proportions at any width without a resize listener.
  */
 export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function Keyboard(
   {
@@ -300,9 +275,12 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     tone = "fire",
     accentKeys = EMPTY_KEYS,
     interactive = true,
-    captureKeys = false,
+    captureKeys = true,
     disabled = false,
-    sound = false,
+    sound,
+    defaultSound = false,
+    onSoundChange,
+    soundToggle,
     onKeyPress,
     floating = false,
     anchor = "viewport",
@@ -326,24 +304,29 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     defaultValue: defaultOpen ?? false,
     onChange: onOpenChange,
   });
+  const [soundOn, setSoundOn] = useControllableState({
+    value: sound,
+    defaultValue: defaultSound,
+    onChange: onSoundChange,
+  });
+  // The toolbar takes grid row 1, so caps shift down one; `layouts.ts` stays unaware of chrome.
+  const showToolbar = soundToggle ?? interactive;
+  const rowOffset = showToolbar ? 1 : 0;
+  // A visible toggle on controlled `sound` without `onSoundChange` is a dead button. Only a defect
+  // because we draw the control, so `useControllableState` can't catch it.
+  if (process.env.NODE_ENV !== "production" && showToolbar && sound !== undefined && !onSoundChange) {
+    console.error(
+      "[fuji-ui] Keyboard renders its sound toggle but `sound` is controlled with no `onSoundChange`, " +
+        "so pressing the toggle cannot change anything. Pass `defaultSound` to let the board own the " +
+        "state, pass `onSoundChange` to own it yourself, or pass `soundToggle={false}` if the control " +
+        "belongs elsewhere in your UI.",
+    );
+  }
   const root = React.useRef<HTMLDivElement | null>(null);
   const deck = React.useRef<HTMLDivElement | null>(null);
   /**
-   * Composed rather than `useImperativeHandle`, for two reasons.
-   *
-   * An imperative handle with no dependency array re-runs on every commit, so
-   * a consumer's callback ref - and anything built on one: ResizeObserver,
-   * focus management, a positioning library - was torn down and re-attached
-   * on every render of a hundred-cap board. A plain callback ref fires when
-   * the node actually changes, which is React's own semantics.
-   *
-   * And it tells the truth about `null`. A closed floating board renders
-   * nothing, so the ref genuinely holds `null` there; the handle version had
-   * to cast that away and hand the consumer a `null` behind a non-null type.
-   *
-   * The cast on assignment is to a bare `{ current }` rather than to a React
-   * ref type on purpose: React 18 types `RefObject.current` as readonly and
-   * React 19 does not, and this package builds against both.
+   * Composed, not `useImperativeHandle`, which re-ran callback refs every commit and hid `null`. Bare
+   * `{ current }` cast: React 18 types `RefObject.current` readonly, React 19 does not.
    */
   const setRoot = React.useCallback(
     (node: HTMLDivElement | null) => {
@@ -354,28 +337,27 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     [ref],
   );
   const [focusedCode, setFocusedCode] = React.useState<string | null>(null);
+  /**
+   * Focus inside the board: an in-flow board is "engaged" (see `captureKeys`) only then. Tracked with
+   * `focusin`/`focusout`, since `focus`/`blur` don't bubble up from the caps.
+   */
+  const [focusWithin, setFocusWithin] = React.useState(false);
   const [capsLock, setCapsLock] = React.useState(false);
   /**
-   * The engaged Shift, or null. A code rather than a boolean so the lamp
-   * lights the side actually in use, and `sticky` because the two ways of
-   * engaging it let go differently: a cap you clicked releases after the next
-   * character (every on-screen keyboard works this way - there is nothing to
-   * hold down), while a physical Shift stays engaged until it is released.
+   * The engaged Shift (by code, so the right side lights) or null. `sticky` = clicked on screen and
+   * released after the next character; a physical Shift holds until keyup.
    */
   const [shift, setShift] = React.useState<{ code: string; sticky: boolean } | null>(null);
   const [pressedCodes, setPressedCodes] = React.useState<readonly string[]>([]);
+  /** ⌘/Ctrl/Alt caps latched by a click, spent by the next ordinary cap. */
+  const [latched, setLatched] = React.useState<readonly string[]>([]);
+  /** The running auto-repeat of a held cap; `fired` swallows the click that ends it. */
+  const repeat = React.useRef<{ timeout?: number; interval?: number; fired: boolean } | null>(null);
   const caps = React.useRef(new Map<string, HTMLButtonElement>());
   const audio = React.useRef<AudioContext | null>(null);
   /**
-   * One ref callback per code, cached rather than written inline in the
-   * render below. An inline `(node) => { ... }` is a new function every
-   * render, and React detaches and reattaches a ref whenever its identity
-   * changes - measured at 99 `set` calls plus 99 `delete` calls per
-   * re-render of the `full` board, for a prop that touched no cap at all.
-   * The map is keyed by `code` and never pruned: the codes across every
-   * layout this component knows about are a fixed, small vocabulary, so the
-   * cache cannot grow unbounded the way a per-instance cache of arbitrary
-   * keys could.
+   * Cached ref callback per code: inline refs cost 99 `set` + 99 `delete` calls per `full` re-render.
+   * Never pruned, since the set of codes is small and fixed.
    */
   const capRefs = React.useRef(new Map<string, (node: HTMLButtonElement | null) => void>());
   const capRef = (code: string) => {
@@ -390,71 +372,90 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     return fn;
   };
 
-  /**
-   * Struck: the cap travels, and clicks if the board has a voice. Both belong
-   * to the press itself, so both run from `pointerdown` rather than waiting
-   * for the click - a sound that arrives on mouse-up reads as a separate
-   * event from the key going down.
-   */
+  /** Strike and click, run from `pointerdown`: a sound on mouse-up reads as a separate event. */
   const hit = (node: HTMLElement) => {
     strike(node);
-    if (!sound) return;
+    if (!soundOn) return;
     const Ctor =
       window.AudioContext ??
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctor) return;
     const context = (audio.current ??= new Ctor());
-    // Suspended if it was created before the page had a gesture, or parked by
-    // the browser while the tab was in the background.
+    // Suspended if created before a gesture, or parked while the tab was backgrounded.
     if (context.state === "suspended") void context.resume();
     playClick(context);
   };
 
-  // Keyed on `sound` rather than `[]` so the same cleanup fires both when
-  // `sound` goes false and on unmount - a context opened while sound was on
-  // must not outlive the prop, and browsers cap AudioContexts per document.
-  // Safe against a double `close()` (which would reject on an already-closed
-  // context, surfacing as an unhandled rejection): the cleanup nulls
-  // `audio.current` synchronously right after calling `close()`, so whichever
-  // of the two triggers runs second finds nothing left to close.
+  // Ref so capture listeners don't re-subscribe on sound changes (that loses a mid-hold keyup). An
+  // insertion effect runs synchronously in commit, so the ref is never a render behind.
+  const hitRef = React.useRef(hit);
+  React.useInsertionEffect(() => {
+    hitRef.current = hit;
+  });
+
+  // Keyed on `soundOn` so the context closes when sound turns off and on unmount (browsers cap
+  // AudioContexts). Nulling right after `close()` prevents a double-close unhandled rejection.
   React.useEffect(
     () => () => {
       void audio.current?.close();
       audio.current = null;
     },
-    [sound],
+    [soundOn],
   );
 
   React.useEffect(() => {
-    if (!captureKeys) return;
+    const node = root.current;
+    if (!node || !captureKeys) return;
+    // Read current state too: focus may already be inside (autofocus, restored focus), and its
+    // `focusin` has already fired.
+    setFocusWithin(node.contains(document.activeElement));
+    const enter = () => setFocusWithin(true);
+    const leave = (event: FocusEvent) => {
+      // Moving within the board isn't leaving; a null `relatedTarget` (window blur) is.
+      const next = event.relatedTarget;
+      if (next instanceof Node && node.contains(next)) return;
+      setFocusWithin(false);
+    };
+    node.addEventListener("focusin", enter);
+    node.addEventListener("focusout", leave);
+    return () => {
+      node.removeEventListener("focusin", enter);
+      node.removeEventListener("focusout", leave);
+      setFocusWithin(false);
+    };
+    // `isOpen`: a closed floating board has no root, so listeners re-attach on open.
+  }, [captureKeys, isOpen]);
+
+  /** Engaged: a floating board whenever mounted (i.e. open), an in-flow board while it holds focus. */
+  const capturing = captureKeys && !disabled && (floating || focusWithin);
+
+  React.useEffect(() => {
+    if (!capturing) return;
     const press = (event: KeyboardEvent) => {
-      // The real Caps Lock moves the lamp as well as lighting the cap. Read
-      // only on the Caps Lock press itself, not on every keystroke: sampling
-      // it continuously would overrule - and immediately undo - a lock the
-      // user set by clicking the on-screen cap.
+      // Sync the lamp only on the Caps Lock press itself; sampling every keystroke would undo a
+      // lock set by clicking the cap.
       if (event.code === "CapsLock" && typeof event.getModifierState === "function") {
         setCapsLock(event.getModifierState("CapsLock"));
       }
-      // One Shift state, shared by both keyboards: holding the real Shift
-      // engages the on-screen cap, so a cap clicked while it is down reports
-      // its shifted value. The two are the same modifier, not two of them.
+      // One Shift shared by both keyboards: a cap clicked while real Shift is held types shifted.
       if (event.code === "ShiftLeft" || event.code === "ShiftRight") {
         setShift({ code: event.code, sticky: false });
       }
       setPressedCodes((codes) => (codes.includes(event.code) ? codes : [...codes, event.code]));
+      // Strike and click like a finger press, but skip auto-repeat (a held key would stutter). Never
+      // call `onKeyPress`: the real key already reached the focused field, so it would type twice.
+      if (!event.repeat) {
+        const cap = deck.current?.querySelector<HTMLElement>(`[data-fuji-key="${CSS.escape(event.code)}"]`);
+        if (cap) hitRef.current(cap);
+      }
     };
     const release = (event: KeyboardEvent) => {
-      // Releasing the physical Shift lets go of the shared state - but only
-      // when the real key is what engaged it. A Shift armed by clicking the
-      // on-screen cap is not something the real key gets to cancel.
+      // The real Shift's keyup only releases a Shift it engaged, never a click-armed one.
       setShift((current) => (current && !current.sticky && current.code === event.code ? null : current));
       setPressedCodes((codes) => codes.filter((code) => code !== event.code));
     };
-    // A keyup never arrives for a key still held when the window loses focus
-    // (the ⌘-Tab case), which would leave that cap lit for good. That only
-    // implicates a physically-held Shift, though - one armed by clicking the
-    // on-screen cap was never waiting on a keyup, so a blur is not evidence
-    // the user let go of it.
+    // Keys held across a window blur (⌘-Tab) never get a keyup, so clear them; a click-armed Shift
+    // never awaited one and survives.
     const clear = () => {
       setPressedCodes([]);
       setShift((current) => (current && !current.sticky ? null : current));
@@ -466,61 +467,33 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
       window.removeEventListener("keydown", press);
       window.removeEventListener("keyup", release);
       window.removeEventListener("blur", clear);
-      // Turning captureKeys off mid-hold tears down `release` above, so a
-      // physical Shift's keyup would have nowhere left to land and the cap
-      // would stay lit - and every later press shifted - for good. A sticky
-      // Shift survives this teardown: the real keyboard never armed it, so
-      // losing the real keyboard's listeners has no business cancelling it.
-      // capsLock is deliberately left alone here: unlike Shift, its value
-      // stays true to reality (the OS lock really is still on) even with
-      // captureKeys off, and the user can always toggle it back from the cap.
+      // Teardown mid-hold loses the physical Shift's keyup, so release it (sticky Shift survives).
+      // capsLock stays: the OS lock really is still on, and the cap can toggle it.
       setShift((current) => (current && !current.sticky ? null : current));
-      // pressedCodes has the same problem, minus the sticky exception - there
-      // is no click-armed equivalent of a held key. A code still down when
-      // this listener goes away gets no keyup to remove it, and the
-      // render-time gate below only hides a stale code while `captureKeys` is
-      // off; it does not clear it, so the cap resurfaces lit the moment the
-      // prop comes back on, regardless of whether the real key is still
-      // down. Reset unconditionally: a key genuinely still held gets added
-      // right back by the next keydown its own listener sees.
+      // Same for pressedCodes: the render gate only hides stale codes, so they'd resurface when
+      // capture resumes. A key still held is re-added by its next keydown.
       setPressedCodes([]);
     };
-  }, [captureKeys]);
+  }, [capturing]);
 
   React.useEffect(() => {
     if (!interactive) return;
     const node = deck.current;
     // Null while a floating board is closed - it renders nothing.
     if (!node) return;
-    // A keyboard types into something else, so the one thing it must never do
-    // is take focus away from it. Swallowing the mousedown leaves the field
-    // focused and its caret where it was; the cap still gets its pointerdown,
-    // its strike and its click.
-    //
-    // Every mode, not just `floating`: an in-flow board beside an input is
-    // typing into that input just as much as a docked one, and binding this
-    // only when floating made every consumer of an inline board wrap it in a
-    // div cancelling mousedown themselves. Keyboard users are unaffected - a
-    // cap is still a focusable button reached with Tab and the arrow keys;
-    // only a pointer press no longer moves focus onto it.
-    //
-    // Bound imperatively rather than as an `onMouseDown` prop: this is a
-    // non-interactive container by design - the caps inside it are the
-    // controls - and a mouse listener in JSX on one is exactly what
-    // `jsx-a11y/no-static-element-interactions` exists to catch.
+    // Swallow mousedown in every mode so the field being typed into keeps focus and caret; caps stay
+    // Tab/arrow focusable. Bound imperatively since a JSX `onMouseDown` on this static container
+    // trips `jsx-a11y/no-static-element-interactions`.
     const keepFocus = (event: MouseEvent) => event.preventDefault();
     node.addEventListener("mousedown", keepFocus);
     return () => node.removeEventListener("mousedown", keepFocus);
-    // `floating` and `isOpen` decide whether the deck is mounted at all, so a
-    // board that opens (or stops floating) re-binds onto the new node.
+    // `floating`/`isOpen` decide whether the deck is mounted, so re-bind onto the new node.
   }, [interactive, floating, isOpen]);
 
   React.useEffect(() => {
     if (!floating || !isOpen || !dismissible) return;
 
-    // `pointerdown` rather than `click`: the board swallows the mousedown that
-    // would blur the field it types into, and a `click` listener would then
-    // fire after focus had already moved on.
+    // `pointerdown`, not `click`: by click time focus has already moved on.
     const outside = (event: PointerEvent) => {
       const target = event.target as Node | null;
       if (!target) return;
@@ -540,16 +513,31 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
     };
   }, [floating, isOpen, dismissible, triggerRef, setOpen]);
 
+  // A repeat must not outlive its cap: closing, disabling or unmounting the board stops it.
+  React.useEffect(() => {
+    if (disabled || (floating && !isOpen)) stopRepeat();
+    return stopRepeat;
+  }, [disabled, floating, isOpen]);
+
   /**
-   * What a cap reports with the modifiers currently engaged.
-   *
-   * Shift takes the cap's second legend where it has one (`1` types `!`) and
-   * otherwise flips case; Caps Lock only ever flips case, because it is not
-   * Shift - `1` stays `1` on a real board. The two cancel, so Shift on a
-   * locked board types lowercase, exactly as the hardware does.
+   * What a cap reports under the engaged modifiers. Shift uses `secondary` (`1` → `!`) else flips
+   * case; Caps Lock only flips letters. Shift on a locked board types lowercase, as hardware does.
    */
+  const held = capturing ? pressedCodes : EMPTY_KEYS;
+  const engaged = (kind: "meta" | "ctrl" | "alt") =>
+    latched.some((code) => LATCHING_MODIFIERS[code] === kind) ||
+    held.some((code) => LATCHING_MODIFIERS[code] === kind);
+  const modifiers: KeyboardModifiers = {
+    shift: shift !== null,
+    meta: engaged("meta"),
+    ctrl: engaged("ctrl"),
+    alt: engaged("alt"),
+  };
+
   const emitted = (key: PlacedKey): KeyboardKeyDef => {
     if (key.value === undefined) return key;
+    // A shortcut chord types nothing, exactly as ⌘A doesn't insert "a" into a real field.
+    if (modifiers.meta || modifiers.ctrl) return { ...key, value: undefined };
     if (shift) {
       if (key.secondary) return { ...key, value: key.secondary };
       return { ...key, value: capsLock ? key.value.toLowerCase() : key.value.toUpperCase() };
@@ -561,22 +549,64 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
   };
 
   const accented = React.useMemo(() => new Set(accentKeys), [accentKeys]);
-  // Reading the capture state only while `captureKeys` is on hides a stale
-  // code while the prop is off - it does not, by itself, prevent one. The
-  // effect cleanup above is what actually clears `pressedCodes`, and this
-  // gate exists only so a resurfaced cap can never flash between that
-  // cleanup running and the next render.
-  const pressed = captureKeys ? new Set(pressedCodes) : new Set<string>();
-  // Falls back when the focused code is not on the board any more. `layout` is
-  // a prop, so it can change under a board that has already been focused - and
-  // a `focusedCode` the new layout does not contain leaves EVERY cap at
-  // `tabIndex={-1}`, which drops the board out of the tab order entirely until
-  // it unmounts. Switching from `full` (focus on Numpad5) to `compact` did
-  // exactly that.
+  // Gate only hides stale codes between the cleanup above and the next render. Follows `capturing`,
+  // not the prop, so a cap held when focus leaves an in-flow board doesn't stay lit.
+  const pressed = capturing ? new Set(pressedCodes) : new Set<string>();
+  // Fall back if `layout` changed and dropped the focused code, or every cap gets `tabIndex={-1}` and
+  // the board leaves the tab order (seen switching `full` on Numpad5 to `compact`).
   const rovingCode =
     focusedCode !== null && resolved.keys.some((key) => key.code === focusedCode)
       ? focusedCode
       : resolved.keys[0]?.code;
+
+  /** One press of `key`: update the latches it toggles or spends, then report it. */
+  function activate(key: PlacedKey) {
+    if (key.code === "CapsLock") setCapsLock((on) => !on);
+    else if (key.code === "ShiftLeft" || key.code === "ShiftRight") {
+      setShift((current) => {
+        // A click never cancels or replaces a physical hold: that would orphan its keyup, or spend a
+        // sticky latch after one letter while the real key is still down.
+        if (current && !current.sticky) return current;
+        return current?.code === key.code ? null : { code: key.code, sticky: true };
+      });
+    } else if (key.code in LATCHING_MODIFIERS) {
+      setLatched((codes) =>
+        codes.includes(key.code) ? codes.filter((code) => code !== key.code) : [...codes, key.code],
+      );
+    } else {
+      // Sticky Shift and latched ⌘/Ctrl/Alt are spent; a physically held key lasts until keyup.
+      if (shift?.sticky) setShift(null);
+      if (latched.length) setLatched([]);
+    }
+    onKeyPress?.(emitted(key), modifiers);
+  }
+
+  function stopRepeat() {
+    const current = repeat.current;
+    if (!current) return;
+    window.clearTimeout(current.timeout);
+    window.clearInterval(current.interval);
+  }
+
+  /**
+   * Held cap: after `REPEAT_DELAY_MS` it fires once (spending latches) and then every interval, with
+   * the key and modifiers as they were at press time - held ⇧A keeps typing "A".
+   */
+  function startRepeat(key: PlacedKey, node: HTMLElement) {
+    stopRepeat();
+    const state: { timeout?: number; interval?: number; fired: boolean } = { fired: false };
+    const sameKey = emitted(key);
+    const sameModifiers = modifiers;
+    state.timeout = window.setTimeout(() => {
+      state.fired = true;
+      activate(key);
+      state.interval = window.setInterval(() => {
+        strike(node);
+        onKeyPress?.(sameKey, sameModifiers);
+      }, REPEAT_INTERVAL_MS);
+    }, REPEAT_DELAY_MS);
+    repeat.current = state;
+  }
 
   function move(event: React.KeyboardEvent<HTMLButtonElement>, key: PlacedKey) {
     const direction = ARROW_DIRECTIONS[event.key];
@@ -607,9 +637,7 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
       className={cn(
         "fuji-keyboard",
         floating
-          ? // Click-through margins: the wrapper spans the whole anchor so the
-            // board can centre in it, and would otherwise swallow every press
-            // on the page either side of the board.
+          ? // Click-through: the wrapper spans the anchor to centre the board.
             "fuji-keyboard-floating fj:pointer-events-none fj:flex fj:justify-center fj:p-3"
           : "fj:block fj:w-full",
         floating && ANCHOR_CLASSES[anchor],
@@ -627,8 +655,7 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
           SIZE_CLASSES[size],
           GLOW_CLASSES[tone],
           "fj:box-border fj:rounded-fuji-panel fj:border fj:border-fuji-border-strong fj:bg-fuji-surface-subtle fj:shadow-fuji-panel",
-          // Lifted onto the overlay shadow tier and made solid again inside the
-          // click-through wrapper above.
+          // Overlay shadow, and clickable again inside the click-through wrapper.
           floating && "fuji-glass-surface-overlay fj:pointer-events-auto fj:shadow-fuji-overlay",
           classNames?.deck,
         )}
@@ -639,43 +666,53 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
               ? null
               : {
                   "--fuji-key-target": boardTarget(width),
-                  // An explicit width is the consumer's own answer to "how big",
-                  // so the size's cap ceiling steps aside for it. The ceiling
-                  // exists to keep a *default* target from producing absurd caps
-                  // on a low-column board; left in place here it silently
-                  // capped an in-flow board at 38px caps, so `width="900px"`
-                  // drew a 630px board and a numpad could never fill its card.
-                  // The container `min()` in base.css still applies, so the
-                  // board never outgrows what it is given.
+                  // Explicit width lifts the size's ceiling, which capped caps at 38px (`width="900px"`
+                  // drew 630px). base.css's container `min()` still bounds it.
                   "--fuji-key-ceiling": "100000px",
                 }),
-            // `repeat(var(--n), ...)` is written from here rather than from the
-            // stylesheet: the column count is per layout, and a class name
-            // carrying it could never be generated by Tailwind's static scanner.
+            // Inline: a per-layout column count can't be a Tailwind-scannable class.
             gridTemplateColumns: `repeat(${resolved.quarterColumns}, calc(var(--fuji-key-unit) / 4))`,
+            // Toolbar is grid row 1 to inherit the deck's sizing; explicit `auto` because implicit
+            // rows are one cap tall.
+            ...(showToolbar ? { gridTemplateRows: "auto" } : null),
           } as React.CSSProperties
         }
       >
+        {showToolbar && (
+          <div className="fuji-keyboard-toolbar">
+            <button
+              type="button"
+              aria-pressed={soundOn}
+              aria-label={soundOn ? "Turn key sounds off" : "Turn key sounds on"}
+              disabled={disabled}
+              onClick={() => setSoundOn(!soundOn)}
+              className={cn(NATIVE_CONTROL_RESET, "fuji-keyboard-sound")}
+            >
+              {/* Icon shape plus a tone lamp: state is never signalled by colour alone. */}
+              {soundOn ? (
+                <Volume2 aria-hidden="true" className="fuji-keyboard-sound-icon" />
+              ) : (
+                <VolumeX aria-hidden="true" className="fuji-keyboard-sound-icon" />
+              )}
+              <span aria-hidden="true" className="fuji-keyboard-sound-lamp" />
+            </button>
+          </div>
+        )}
         {resolved.keys.map((key) => {
           const isAccent = accented.has(key.code);
           const isLocked =
-            (key.code === "CapsLock" && capsLock) || (shift !== null && key.code === shift.code);
-          const isToggle = key.code === "CapsLock" || key.code === "ShiftLeft" || key.code === "ShiftRight";
-          // A word legend, as opposed to a single character or glyph: it takes
-          // the smaller, tighter type so it still fits a one-unit cap.
+            (key.code === "CapsLock" && capsLock) ||
+            (shift !== null && key.code === shift.code) ||
+            latched.includes(key.code);
+          const isToggle =
+            key.code === "CapsLock" ||
+            key.code === "ShiftLeft" ||
+            key.code === "ShiftRight" ||
+            key.code in LATCHING_MODIFIERS;
+          // Word legends take smaller type to fit a one-unit cap.
           const isWord = !key.hideLabel && key.label.length > 1;
-          // Only the caps moulded against the board's left edge print their
-          // legend to the left - Tab, Caps, Shift. Backspace and Enter are the
-          // same width but sit on the right, where a left-set legend reads as
-          // a mistake rather than a convention.
-          // ...and types nothing itself: the numpad's 2u `0` sits at column 1
-          // of the `numpad` board and mid-row on `full`, so a rule about
-          // position alone printed the same cap two different ways.
-          // ...and it has to be a word: the phone board's 1.5u ShiftLeft carries
-          // a lone `⇧` glyph at column 1, and left-setting a single glyph read
-          // as broken rather than moulded - especially beside the matching
-          // `⌫` Backspace at the other end of the same row, which stayed
-          // centred.
+          // Left-set legend only for wide left-edge word modifiers (Tab, Caps, Shift): not right-side
+          // caps, not the value-typing numpad `0` (column 1 only on `numpad`), and not phone's lone `⇧`.
           const isWide = isWord && (key.width ?? 1) >= 1.5 && key.column === 1 && key.value === undefined;
           const capClassName = cn(
             "fuji-keycap",
@@ -691,7 +728,7 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
           );
           const capStyle: React.CSSProperties = {
             gridColumn: `${key.column} / span ${key.span}`,
-            gridRow: `${key.row} / span ${key.rowSpan}`,
+            gridRow: `${key.row + rowOffset} / span ${key.rowSpan}`,
           };
           const legend = key.hideLabel ? null : (
             <>
@@ -703,14 +740,8 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
               <span>{key.label}</span>
             </>
           );
-          // A printed legend that is a glyph or shorthand a screen reader
-          // cannot parse on its own - an arrow, "⌘", "⌥" - has a real name in
-          // `key.name` that differs from what is drawn. The interactive path
-          // below carries that name on `aria-label`, which wins over the
-          // button's own content regardless of what the content says; the
-          // static `<kbd>` path has no such attribute to fall back on
-          // (`aria-label` is prohibited on an element with no role), so it is
-          // the one that needs this.
+          // Spoken name for glyph legends (arrows, ⌘, ⌥) on the static `<kbd>` path, where `aria-label`
+          // is prohibited; buttons carry it on `aria-label` instead.
           const spokenName =
             !key.hideLabel && key.name !== undefined && key.name !== key.label ? key.name : undefined;
 
@@ -737,14 +768,8 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
                 ) : (
                   legend
                 )}
-                {/* A cap drawn blank, or one whose only legend is a glyph
-                    assistive tech can't read, still has to be named.
-                    `aria-label` is prohibited on <kbd> - it carries no role
-                    of its own - so the name goes in as visually hidden text
-                    instead, and the glyph above (if any) is hidden from the
-                    accessibility tree so the two don't both get announced.
-                    The button path above puts the same string on
-                    `aria-label`, where it is allowed. */}
+                {/* Blank or glyph caps still need a name; `aria-label` is prohibited on <kbd>, so use
+                    sr-only text (the glyph above is aria-hidden to avoid a double announcement). */}
                 {key.hideLabel ? (
                   <span className="fj:sr-only">{key.name ?? key.label}</span>
                 ) : spokenName !== undefined ? (
@@ -761,8 +786,7 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
               ref={capRef(key.code)}
               disabled={disabled}
               aria-label={key.name ?? key.label}
-              // Roving tabindex: the board is one tab stop and the arrow keys
-              // move between caps, rather than a hundred-odd stops of Tab.
+              // Roving tabindex: one tab stop, arrow keys move between caps.
               tabIndex={key.code === rovingCode ? 0 : -1}
               className={cn(
                 NATIVE_CONTROL_RESET,
@@ -774,45 +798,29 @@ export const Keyboard = React.forwardRef<HTMLDivElement, KeyboardProps>(function
               data-wide={isWide ? "true" : undefined}
               data-pressed={pressed.has(key.code) ? "true" : undefined}
               data-locked={isLocked ? "true" : undefined}
-              // A latched modifier is a toggle, so its state is announced as
-              // well as lit.
+              // Latched modifiers announce their state, not just light up.
               aria-pressed={isToggle ? isLocked : undefined}
               onFocus={() => setFocusedCode(key.code)}
               onKeyDown={(event) => move(event, key)}
-              // The cap travels on press, not on release - waiting for `click`
-              // left a visible lag between the finger landing and the key
-              // moving, which is the whole feel of a keyboard.
-              onPointerDown={(event) => hit(event.currentTarget)}
+              // Travel on press, not release: waiting for `click` left a visible lag.
+              onPointerDown={(event) => {
+                hit(event.currentTarget);
+                if (event.button === 0 && !NON_REPEATING.has(key.code)) startRepeat(key, event.currentTarget);
+              }}
+              onPointerUp={stopRepeat}
+              onPointerLeave={stopRepeat}
+              onPointerCancel={stopRepeat}
               onClick={(event) => {
-                // `detail === 0` means the click came from Enter/Space on a
-                // focused cap rather than a pointer, so no `pointerdown` ran
-                // and nothing has struck this cap yet. Striking on both would
-                // restart the animation on mouse-up.
-                if (event.detail === 0) hit(event.currentTarget);
-                // Caps Lock latches the way the real key does: on until it is
-                // pressed again, rather than applying to the next cap only.
-                if (key.code === "CapsLock") setCapsLock((on) => !on);
-                else if (key.code === "ShiftLeft" || key.code === "ShiftRight") {
-                  setShift((current) => {
-                    // A click never cancels or hijacks a hold the real
-                    // keyboard already has: nulling it out (the held cap
-                    // itself was clicked) leaves the physical keyup with
-                    // nothing left to release, and arming a fresh sticky
-                    // latch on the OTHER cap (see the capture effect's own
-                    // comment - "the two are the same modifier, not two of
-                    // them") spends after one letter even though the real key
-                    // is still down. Either way the physical hold already
-                    // supplies the shifted value, so a click has nothing to
-                    // add until it lets go.
-                    if (current && !current.sticky) return current;
-                    return current?.code === key.code ? null : { code: key.code, sticky: true };
-                  });
-                } else if (shift?.sticky) {
-                  // Spent on this cap. A Shift being physically held is not -
-                  // it stays engaged until the real key comes back up.
-                  setShift(null);
+                // The hold already reported this press when it started repeating.
+                if (repeat.current?.fired) {
+                  repeat.current = null;
+                  return;
                 }
-                onKeyPress?.(emitted(key));
+                repeat.current = null;
+                // `detail === 0`: Enter/Space, so no `pointerdown` struck it yet. Pointer clicks skip
+                // this, or the animation would restart on mouse-up.
+                if (event.detail === 0) hit(event.currentTarget);
+                activate(key);
               }}
             >
               {legend}

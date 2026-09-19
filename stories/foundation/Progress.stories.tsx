@@ -75,9 +75,8 @@ function LoadingDemo() {
 }
 
 /**
- * The fill is driven by `transform: scaleX()` on the spring curve, so a
- * value that arrives in discrete chunks still moves as one smooth, slightly
- * elastic bar (the reference is motion.dev's loading progress bar).
+ * The fill uses `scaleX()` on the spring curve, so chunked values still move as one smooth,
+ * slightly elastic bar (after motion.dev's loading bar).
  */
 export const Loading: Story = {
   name: "Loading (spring)",

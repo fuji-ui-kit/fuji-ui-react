@@ -13,17 +13,12 @@ import { ToastProvider, Toaster } from "../toast/Toast";
 import { BarChart } from "../chart/Chart";
 
 /**
- * Contracts introduced by the reference-design pass (motion.dev stack /
- * coverflow / progress, the dashboard bar card, the history timeline, the
- * activity inbox, the glass light tint). Each is the behaviour a consumer
- * would notice if it regressed.
+ * Consumer-visible contracts from the reference-design pass (motion.dev stack/coverflow/progress,
+ * dashboard bar card, history timeline, activity inbox, glass tint).
  */
 describe("glass material", () => {
-  // Glass no longer carries its own tint axis - it inherits whichever
-  // `theme` is active (dark theme -> dark-tinted glass, light theme ->
-  // light-tinted glass) with no separate override. A backdrop that disagrees
-  // with the active theme is a nested `theme="light"`/`theme="dark"`
-  // provider, not a fourth axis - see SPEC.md and docs/theming.md.
+  // Glass has no tint axis: it inherits the active `theme`. A mismatched backdrop takes a nested
+  // `theme` provider, not a fourth axis (SPEC.md, docs/theming.md).
   it("inherits the active theme instead of carrying its own tint attribute", () => {
     const dark = render(
       <FujiProvider theme="dark" material="glass">

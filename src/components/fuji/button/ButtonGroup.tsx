@@ -45,28 +45,18 @@ const ORIENTATION_CLASSES = {
     "fj:flex-col fj:[&>button]:rounded-none fj:[&>button:first-child]:rounded-t-fuji-control fj:[&>button:last-child]:rounded-b-fuji-control fj:[&>button:not(:first-child)]:-mt-px",
 } as const;
 
-// Managed (`items`) mode: unlike the bare-children mode above, a selected
-// segment here renders a fully opaque "contained" fill (see `appearanceClasses`
-// below) - overlapping borders via negative margin + z-index (the bare-children
-// technique) made that opaque fill visibly bleed a 1px sliver over its
-// neighbor's edge, worst on dark/glass where the contained fill is a light
-// off-white against a dark border. Each non-last button instead carries its
-// own trailing border (see the `!isLast` class below) with no overlapping
-// geometry, so an opaque selected segment can never paint over its neighbor.
-// (A shared `divide-x`/`divide-y` on the container looks equivalent but
-// doesn't work here: Tailwind compiles divide utilities as `:where(...)`,
-// zero specificity, so `buttonBase`'s own `border-0` reset always wins
-// regardless of source order - the divider silently never rendered.)
+// Managed (`items`) mode: a selected segment has an opaque "contained" fill, which bled a 1px sliver
+// over neighbours with the negative-margin overlap, so each non-last button carries its own trailing
+// border instead. (`divide-x` compiles to zero-specificity `:where(...)` and loses to `buttonBase`'s
+// `border-0`, so it never rendered.)
 const MANAGED_ORIENTATION_CLASSES = {
   horizontal: "fj:flex-row",
   vertical: "fj:flex-col",
 } as const;
 
 /**
- * Groups related buttons with shared, touching edges (segmented look). Pass
- * `items` with `value`/`defaultValue`/`onValueChange` to turn it into a real
- * single-selection control (radiogroup semantics with arrow-key navigation);
- * otherwise it wraps `Button` children as a visual group.
+ * Groups related buttons with touching edges. Pass `items` with `value`/`defaultValue`/
+ * `onValueChange` for a single-select radiogroup with arrow keys; otherwise a visual group.
  */
 export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(function ButtonGroup(
   {
@@ -158,20 +148,14 @@ export const ButtonGroup = React.forwardRef<HTMLDivElement, ButtonGroupProps>(fu
             onClick={() => setSelected(item.value)}
             className={cn(
               buttonBase({ size }),
-              // The group carries the one shadow. Each segment inheriting
-              // `buttonBase`'s own shadow (and the selected one `.fuji-raised`)
-              // inside an `overflow-hidden` container piled shadow against
-              // every divider and read as a much heavier outline than the
-              // bordered Button next to it.
+              // The group carries the one shadow; per-segment shadows piled against every
+              // divider inside `overflow-hidden` and read as a much heavier outline.
               "fj:rounded-none fj:shadow-none fj:focus-visible:z-10",
               isSelected
                 ? appearanceClasses(tone, "contained")
                 : "fj:bg-fuji-surface fj:text-fuji-foreground-muted fuji-hover-raised fj:hover:text-fuji-foreground",
-              // Applied last so it always wins the border-color merge, even
-              // for a selected button (whose "contained" appearance above
-              // sets its own `border-transparent`) - otherwise the divider
-              // between a selected segment and its next neighbor would
-              // vanish specifically when the selected segment isn't last.
+              // Last so it wins the border-color merge over a selected segment's
+              // `border-transparent`, which would otherwise erase the divider after it.
               !isLast &&
                 (orientation === "horizontal"
                   ? "fj:border-r fj:border-fuji-border-strong"

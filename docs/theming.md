@@ -141,6 +141,42 @@ If you are not using Tailwind, just reference the variables directly:
 }
 ```
 
+### Tailwind's `dark:` variant
+
+Tailwind's `dark:` follows the operating system (or a `.dark` class) by default,
+not `FujiProvider` - so `dark:bg-zinc-900` on your own markup disagrees with
+Fuji's components the moment someone picks a theme. Point the variant at Fuji's
+attribute once, in your global CSS:
+
+```css
+/* Tailwind v4 */
+@custom-variant dark (&:where([data-fuji-theme=dark], [data-fuji-theme=dark] *));
+```
+
+With Tailwind v3, `darkMode: ["selector", '[data-fuji-theme="dark"]']` in
+`tailwind.config` does the same. Reaching for the `--fuji-*` tokens instead
+avoids the variant altogether, and also follows `material` and any token
+overrides.
+
+## Filling the page in dark mode
+
+`FujiProvider` paints its own wrapper element, not the page. Give the root
+provider a full-height class so its background fills the viewport, and set
+`persist` on it: the root provider then mirrors the appearance onto `<html>`,
+which takes the theme background and `color-scheme`, so overscroll and a page
+shorter than the screen stay dark too.
+
+```tsx
+<FujiProvider defaultTheme="dark" persist className="min-h-dvh">
+  <App />
+</FujiProvider>
+```
+
+Switch the theme with `setTheme` from `useFujiConfig()` - never by toggling a
+`.dark` class or writing `data-fuji-theme` yourself, which the provider
+overwrites. There is no `theme="system"`; to follow the operating system, read
+`prefers-color-scheme` and pass the result as a controlled `theme`.
+
 ## CSS isolation
 
 Nothing about installation changes for this: `import "@fujiui/react/styles.css"`

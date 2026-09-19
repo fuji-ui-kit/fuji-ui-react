@@ -18,28 +18,15 @@ export interface InputProps extends Omit<React.ComponentPropsWithoutRef<typeof B
   /** Content rendered inside the field, after the text. */
   endSlot?: React.ReactNode;
   /**
-   * Shows an unboxed "X" button once there is a value, clearing it on click.
-   * Works uncontrolled and controlled: it updates the DOM value directly and
-   * fires a native `input` event, so an `onChange` handler sees the change
-   * either way. Renders alongside `endSlot` if both are given.
+   * Shows an unboxed "X" button once there is a value. Sets the DOM value and fires a native `input`
+   * event, so `onChange` sees it whether controlled or not. Coexists with `endSlot`.
    */
   clearable?: boolean;
 }
 
 /**
- * A height floor equal to the control height, on whichever element is the
- * field's root.
- *
- * In a flex column that overflows - a Sidebar, a scrolling panel - the root is
- * a flex item whose automatic minimum height is its *content* height, and an
- * `<input>`'s content is one line of text: the field was squeezed from 38px
- * to a 19px sliver. `shrink-0` would stop that too, but `flex-shrink` acts on
- * whichever axis is the main one, and every field is `w-full` - in the far
- * more common flex ROW (a search box beside a button) it refused to give up
- * any width and pushed the button 83px out of its container. A `min-height`
- * only ever constrains the block axis, so it fixes the column and leaves rows
- * alone. Written after `fieldSurface()` and before `className`, so a consumer
- * `min-h-*` still wins.
+ * Height floor: an overflowing flex column shrank the root to one line (38px to 19px); `shrink-0`
+ * instead pushed flex-row siblings 83px out. Before `className`, so a consumer `min-h-*` wins.
  */
 const MIN_HEIGHT: Record<ComponentSize, string> = {
   sm: "fj:min-h-[var(--fuji-control-h-sm)]",
@@ -98,17 +85,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
     return (
       <BaseInput
         ref={innerRef}
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`: Base
-        // UI's `Field.Control` (what `BaseInput` renders through) already
-        // mirrors an ancestor `<FormField invalid>`'s state onto this same
-        // element as `data-invalid` automatically. An explicit prop with an
-        // `undefined` value still occupies the key, and `useRenderElement`
-        // merges this component's own props over that computed value - so
-        // writing `undefined` here erased the FormField-driven attribute
-        // whenever this `invalid` prop itself was left unset, and the
-        // `data-[invalid]:border-fuji-fire` border never painted (see
-        // FormField.tsx). Omitting the key when `invalid` is falsy instead
-        // of asserting `undefined` lets that ambient value through.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: an explicit `undefined` wins the
+        // `useRenderElement` merge and erases the `data-invalid` that `Field.Control` mirrors from
+        // an ancestor `<FormField invalid>`, so the invalid border never painted.
         {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         className={cn(fieldSurface({ size }), MIN_HEIGHT[size], className)}
@@ -122,30 +101,9 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(function Inp
 
   return (
     <div
-      // Unlike the branch above, the visible bordered box here is a plain
-      // `<div>` (the real `<input>` inside it is deliberately borderless -
-      // see its className below) - not a Base UI element, so nothing ever
-      // mirrors an ancestor `<FormField invalid>` onto *it* the way
-      // `Field.Control` does onto `BaseInput`. Tried reading that ambient
-      // state directly: Base UI's only public accessor for it,
-      // `Field.Validity`, calls its own field-context hook as *required*
-      // (throws "FieldRootContext is missing" with no `<Field.Root>`
-      // ancestor - confirmed by rendering it standalone), which would break
-      // this component's documented standalone use outside a FormField (see
-      // `invalid`'s doc comment above); the only alternative that avoids
-      // that crash is Base UI's own internal field-context hook, which this
-      // package has deliberately never taken a dependency on. So instead of
-      // reading the ambient value into a prop here, react to it the same
-      // way this div already reacts to a real `:disabled` on a descendant
-      // it isn't itself (`has-disabled` right below): `<BaseInput>` inside
-      // *does* correctly mirror the ambient `data-invalid` onto itself
-      // (untouched fix below), so `has-[[data-invalid]]:border-fuji-fire`
-      // paints this box from that descendant's already-correct state,
-      // local `invalid` prop included - without this box ever needing to
-      // read Field context itself. Fails before the fix (this box has no
-      // `data-[invalid]:` rule that can react to anything outside itself,
-      // so `<Input startSlot={...}/>` inside a `<FormField invalid>` never
-      // painted the border a plain `<Input/>` there does); passes after.
+      // This box is a plain div, so nothing mirrors `<FormField invalid>` onto it, and
+      // `Field.Validity` throws outside a `<Field.Root>`, breaking standalone use. Instead
+      // `has-[[data-invalid]]` reacts to the inner `<BaseInput>`, which mirrors it correctly.
       className={cn(
         fieldSurface({ size }),
         MIN_HEIGHT[size],

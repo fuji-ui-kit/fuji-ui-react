@@ -8,10 +8,8 @@ export interface DismissButtonProps extends React.ButtonHTMLAttributes<HTMLButto
 }
 
 /**
- * Bare "X" dismiss control shared by every dismissible overlay (Dialog, Drawer,
- * Toast, the Image fullscreen preview...). Deliberately has no button chrome,
- * no fill, border, or shadow - just the icon with an opacity/color shift, a
- * real <button> underneath for semantics, and cursor-pointer + focus-visible.
+ * Bare "X" dismiss control shared by every dismissible overlay (Dialog, Drawer, Toast, Image
+ * preview...). Deliberately chrome-free: just the icon with an opacity shift on a real <button>.
  */
 export const DismissButton = React.forwardRef<HTMLButtonElement, DismissButtonProps>(function DismissButton(
   { className, ...props },

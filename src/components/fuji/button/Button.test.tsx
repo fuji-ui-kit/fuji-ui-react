@@ -71,9 +71,7 @@ describe("Button", () => {
       );
       const link = screen.getByRole("link", { name: "Docs" });
       expect(link.tagName).toBe("A");
-      // Both the Button's own ref and the child's original ref must resolve
-      // to the same node - cloneElement silently drops one of them if refs
-      // aren't merged.
+      // Both refs must resolve to the same node; cloneElement drops one unless refs are merged.
       expect(buttonRef.current).toBe(link);
       expect(linkRef.current).toBe(link);
     });

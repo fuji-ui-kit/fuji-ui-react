@@ -41,12 +41,8 @@ export interface MultiSelectProps extends Omit<
 }
 
 /**
- * Per-size geometry for the chip row. The group grows with its chips
- * (`h-auto`), so the field recipe's fixed `h-[--fuji-control-h-*]` can't set
- * the height here - this used to hard-code `min-h-[--fuji-control-h-md]` and
- * a 24px input/chip row, so `size="sm"` and `size="lg"` rendered exactly as
- * tall as `md` next to a `Select`/`Input` of the same size. Written out in
- * full for the Tailwind scanner.
+ * Per-size chip-row geometry: the group grows with its chips (`h-auto`), so the field's fixed height
+ * can't apply (a hard-coded `md` made `sm`/`lg` just as tall). Full strings for the Tailwind scanner.
  */
 const GROUP_SIZE_CLASSES: Record<ComponentSize, string> = {
   sm: "fj:min-h-[var(--fuji-control-h-sm)] fj:py-0.5",
@@ -82,14 +78,8 @@ export function MultiSelect({
   return (
     <Base.Root items={items} multiple {...props}>
       <Base.InputGroup
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `Base.InputGroup` already mirrors an ancestor `<FormField invalid>`
-        // onto this same element as `data-invalid` automatically, and an
-        // explicit `undefined`-valued prop still occupies the key and wins
-        // the merge in `useRenderElement`, erasing that computed value
-        // whenever this `invalid` prop itself was left unset (see Input.tsx
-        // for the full mechanism, and FormField.tsx for the symptom).
-        // Omitting the key when falsy instead lets the ambient value through.
+        // Spread, not `data-invalid={undefined}`: an explicit `undefined` wins the merge and
+        // erases the value `Base.InputGroup` mirrors from `<FormField invalid>` (see Input.tsx).
         {...(invalid ? { "data-invalid": "" } : null)}
         className={cn(
           fieldSurface({ size }),
@@ -106,12 +96,8 @@ export function MultiSelect({
             {(value: MultiSelectItem[]) => (
               <>
                 {value.map((item) => (
-                  // Same shape/padding/text recipe as `Badge` (rounded-full pill,
-                  // px-2.5 py-1, text-xs font-medium, opacity-fade remove button)
-                  // so a selected value reads as the same "chip" everywhere in
-                  // Fuji, not a bespoke shape unique to this field. `max-w`/
-                  // `shrink-0`/`outline-none`/`data-[highlighted]` are the only
-                  // additions, for combobox-specific truncation and keyboard nav.
+                  // Same recipe as `Badge` so a selected value reads as the same chip everywhere;
+                  // only `max-w`/`shrink-0`/`outline-none`/`data-[highlighted]` are added.
                   <Base.Chip
                     key={item.value}
                     aria-label={item.label}
@@ -137,9 +123,8 @@ export function MultiSelect({
                 <Base.Input
                   placeholder={value.length > 0 ? "" : placeholder}
                   aria-label={ariaLabel}
-                  // Spread only when set: Base UI already points this input's
-                  // `aria-labelledby` at an enclosing FormField's label, and an explicit
-                  // `undefined` occupies the key and erases it (see Input.tsx).
+                  // Spread only when set: an explicit `undefined` erases the `aria-labelledby` Base UI
+                  // points at an enclosing FormField's label (see Input.tsx).
                   {...(ariaLabelledBy ? { "aria-labelledby": ariaLabelledBy } : null)}
                   aria-invalid={invalid || undefined}
                   className={cn(
@@ -181,11 +166,8 @@ export function MultiSelect({
                   value={item}
                   className={cn(
                     "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-2.5 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-                    // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
-                    // highlighted row tracked the backdrop and washed out over the
-                    // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
-                    // inversion every other selection indicator uses - and the one
-                    // CommandMenu already moved to for this exact reason.
+                    // Inverted fill/text like other selection indicators: the translucent
+                    // `--fuji-surface-strong` washed out under glass (measured 3.35:1 here).
                     "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
                   )}
                 >

@@ -39,9 +39,7 @@ describe("FileUpload", () => {
     fireEvent.change(input, { target: { files: [file] } });
     expect(onChange).toHaveBeenCalledTimes(1);
 
-    // Simulate removing it, then picking the identical file again - since
-    // the input's value is reset after every change, the browser treats
-    // this as a real change and fires again.
+    // Remove it, then pick the identical file again: the reset input value makes this a real change.
     fireEvent.change(input, { target: { files: [file] } });
     expect(onChange).toHaveBeenCalledTimes(2);
   });

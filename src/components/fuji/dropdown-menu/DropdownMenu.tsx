@@ -12,9 +12,7 @@ export const DropdownMenuGroupLabel = React.forwardRef<
   HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof Base.GroupLabel>
 >(function DropdownMenuGroupLabel({ className, ...props }, ref) {
-  // Was a bare re-export of the Base UI primitive, so it rendered at body
-  // size, foreground color, flush against the popup edge - a heading that
-  // looked like a broken menu item. Same recipe as CommandMenu's group label.
+  // Styled like CommandMenu's group label; a bare re-export looked like a broken menu item.
   return (
     <Base.GroupLabel
       ref={ref}
@@ -45,11 +43,8 @@ export const DropdownMenuItem = React.forwardRef<
       ref={ref}
       className={cn(
         "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-item fj:px-3 fj:py-2 fj:text-[length:var(--fuji-text-base)] fj:text-fuji-foreground fj:outline-none fj:select-none",
-        // `--fuji-surface-strong` is a translucent WHITE fill under glass, so a
-        // highlighted row tracked the backdrop and washed out over the
-        // atmosphere's bright pixels (measured 3.35:1 here). Same fill/text
-        // inversion every other selection indicator uses - and the one
-        // CommandMenu already moved to for this exact reason.
+        // Inverted fill/text like other selection indicators: the translucent
+        // `--fuji-surface-strong` washed out under glass (measured 3.35:1 here).
         "fj:data-[highlighted]:bg-fuji-contained-default fj:data-[highlighted]:text-fuji-default-foreground",
         "fj:data-[disabled]:pointer-events-none fj:data-[disabled]:opacity-45",
         className,
@@ -108,8 +103,7 @@ export const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenu
 
 /**
  * `<DropdownMenu><DropdownMenu.Trigger/><DropdownMenu.Content>
- *   <DropdownMenu.Item/>...
- * </DropdownMenu.Content></DropdownMenu>`
+ *   <DropdownMenu.Item/>...</DropdownMenu.Content></DropdownMenu>`
  */
 export const DropdownMenu = Object.assign(DropdownMenuRoot, {
   Trigger: DropdownMenuTrigger,

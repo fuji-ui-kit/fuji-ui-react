@@ -42,16 +42,8 @@ describe("IconButton", () => {
     expect(button).toHaveAttribute("aria-busy", "true");
   });
 
-  // Regression (Defect 3): `Button.tsx` used to hardcode the focus-visible
-  // outline classes directly in its own JSX rather than in the shared
-  // `button.styles.ts` recipe, so `IconButton` - built from `iconButtonBase()`
-  // in the same module - never got them and fell back to the browser's
-  // native focus ring (measured at ~2:1 contrast against the light page,
-  // under the 3:1 non-text minimum). The outline classes now live in
-  // `button.styles.ts` itself so both Button and IconButton (and anything
-  // else built from these recipes) get them for free and can't drift apart
-  // again. Fails before the fix (no focus-visible/outline classes anywhere
-  // in the rendered className); passes after.
+  // Regression: focus-visible outline classes lived only in Button.tsx's JSX, so IconButton fell
+  // back to the native ring (~2:1, under the 3:1 non-text minimum). They now live in the recipe.
   it("carries the shared focus-visible outline styling", () => {
     render(
       <IconButton aria-label="Close">

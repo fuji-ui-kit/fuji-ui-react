@@ -2,50 +2,34 @@
 
 export type FujiTheme = "light" | "dark";
 /**
- * The surface material for the active theme, orthogonal to `theme` itself -
- * either theme can render in either material. `"solid"` is the default,
- * opaque surface; `"glass"` overlays a translucent, blurred surface over
- * whichever theme is active rather than painting its own palette - light
- * theme + glass reads light, dark theme + glass reads dark. Split out from
- * `FujiTheme` (which used to include a third `"glass"` value) because a
- * single theme axis made light-mode-plus-glass and dark-mode-plus-glass
- * mutually exclusive - see `docs/theming.md`.
+ * Surface material, orthogonal to `theme`: `"solid"` (default) is opaque; `"glass"` blurs over
+ * whichever theme is active. Split from `FujiTheme` so light+glass and dark+glass can coexist.
  */
 export type FujiMaterial = "solid" | "glass";
 export type FujiRadius = "cornered" | "soft";
 /**
- * Global shadow depth. `regular` keeps the restrained default shadows;
- * `floating` swaps in deeper, softly layered shadows at meaningful component
- * boundaries without adding scale or hover motion to static surfaces.
+ * Global shadow depth: `regular` keeps restrained defaults; `floating` layers deeper, softer
+ * shadows at component boundaries, without adding scale or hover motion to static surfaces.
  */
 export type FujiElevation = "regular" | "floating";
 
 export type ComponentSize = "sm" | "md" | "lg";
 
 /**
- * Fuji's decorative color palette, used purely for visual styling (Button,
- * IconButton, ButtonGroup, Badge, Icon, and the tone variants on form
- * controls). `default` renders as the neutral near-black/cream identity
- * color; the rest are named after their visual character rather than a
- * semantic meaning - see `StatusTone` for components where the color itself
- * conveys meaning (success/error/etc.) rather than just a look.
+ * Decorative palette for visual styling only (Button, Badge, Icon, form-control tones). `default`
+ * is the neutral near-black/cream identity color; for color that conveys meaning see `StatusTone`.
  */
 export type ComponentTone = "default" | "fire" | "water" | "forest" | "sun";
 
 /**
- * Semantic status used by components where the value itself is meaningful
- * for accessibility (Alert, Toast, Result, StatusIndicator, Timeline,
- * Progress, CircularProgress) - the prop and its values never change
- * regardless of the decorative tone palette in use; each status is mapped
- * internally to a `ComponentTone` for styling only.
+ * Semantic status where the value matters for accessibility (Alert, Toast, Result, Progress, ...);
+ * mapped internally to a `ComponentTone` for styling only, so the prop never changes with palette.
  */
 export type StatusTone = "default" | "success" | "warning" | "danger" | "info";
 
 /**
- * `dashed` renders a dashed border with a transparent background (AntD-style
- * "dashed" button) - supported by Button/IconButton; other components that
- * accept `ComponentAppearance` may treat it the same as `bordered` if a
- * dashed border doesn't apply to their shape.
+ * `dashed` is a dashed border on a transparent background (Button/IconButton); other components
+ * may render it as `bordered` where a dashed border doesn't fit their shape.
  */
 export type ComponentAppearance = "contained" | "bordered" | "dashed" | "ghost";
 

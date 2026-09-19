@@ -8,10 +8,8 @@ export function startOfDay(date: Date): Date {
 }
 
 /**
- * Whether `date`'s calendar day falls before `minDate`'s or after `maxDate`'s.
- * Compared by day, never by timestamp: `minDate={new Date()}` carries the
- * current time of day, so a timestamp comparison put today's midnight grid
- * cell "before" it and disabled today itself.
+ * Whether `date`'s calendar day falls before `minDate`'s or after `maxDate`'s. Compared by day,
+ * not timestamp: `minDate={new Date()}` carries the time of day and would disable today itself.
  */
 export function isDayOutOfRange(date: Date, minDate?: Date, maxDate?: Date): boolean {
   const day = startOfDay(date).getTime();
@@ -47,13 +45,8 @@ export function addMonthsPreserveDay(date: Date, amount: number): Date {
 }
 
 /**
- * "Today," normalized so its local Y/M/D fields equal UTC's Y/M/D fields at
- * call time. Server render and client hydration evaluate `new Date()` in
- * different runtime timezones - reading its local getters directly would make
- * "today" (and anything derived from it, like the default visible month)
- * genuinely disagree between the two passes for any visitor outside the
- * server's timezone, not just at a midnight edge case. This stays identical
- * across both passes as long as they land within the same UTC calendar day.
+ * "Today," normalized so its local Y/M/D equal UTC's: server and client read `new Date()` in
+ * different timezones, so this matches across both passes as long as they share a UTC day.
  */
 export function getHydrationSafeToday(): Date {
   const now = new Date();
@@ -106,11 +99,8 @@ export function formatMonthLabel(date: Date, locale = "en-US"): string {
 }
 
 /**
- * The full date, for a day cell's accessible name. The visible text is just
- * the day number, which announces as a bare "14" - useless without the month
- * a sighted user reads from the header. `weekday` is included because moving
- * with arrow keys is how the grid is navigated, and "Saturday" is the fact
- * that tells you the cursor wrapped to a new row.
+ * The full date, for a day cell's accessible name - the visible "14" is useless without the
+ * header's month. `weekday` tells arrow-key users when the cursor wrapped to a new row.
  */
 export function formatFullDate(date: Date, locale = "en-US"): string {
   return new Intl.DateTimeFormat(locale, {

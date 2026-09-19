@@ -88,10 +88,8 @@ function HistoryMedia({ id, date, caption }: { id: number; date: string; caption
 }
 
 /**
- * `groups` turns the timeline into a history page: each group's label sits
- * on a centred axis with a dot beneath it, media (an image with its
- * caption) on the left, and the group's dated entries listed on the right.
- * Below the `sm` breakpoint it collapses to a single column.
+ * `groups` makes a history page: labels on a centred axis, media on the left, dated entries on the
+ * right. Below `sm` it collapses to one column.
  */
 export const History: Story = {
   name: "History (grouped by year)",

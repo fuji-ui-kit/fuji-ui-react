@@ -50,19 +50,8 @@ export const TableBody = React.forwardRef<
 
 export interface TableRowProps extends React.HTMLAttributes<HTMLTableRowElement> {
   /**
-   * Row responds to hover/click, e.g. a selectable or navigable row. Defaults
-   * to off - plain rows show no hover feedback and stay out of the tab order.
-   * When combined with `onClick`, the row also becomes focusable and
-   * activatable with Enter/Space so it isn't pointer-only.
-   *
-   * **This is a shortcut, not the accessible affordance.** A focusable `<tr>`
-   * still announces as a table row: it has no role that says "activatable" and
-   * no name for what activating it does, and `aria-label` on a `<tr>` is not
-   * reliably read. Put the real action in a cell - a link on the primary
-   * column, or a button in an actions column - and treat the whole-row click
-   * as the pointer convenience it is. Replacing the row's role to fix this
-   * would break the table's own structure, so the pattern stays as-is and the
-   * limitation is stated here rather than papered over.
+   * Hover/click row; with `onClick`, also Enter/Space-activatable. Defaults to off. **Not the
+   * accessible affordance:** a `<tr>` has no activatable role/name; put the real action in a cell.
    */
   interactive?: boolean;
 }

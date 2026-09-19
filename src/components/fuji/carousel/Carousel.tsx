@@ -28,26 +28,13 @@ export interface CarouselProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** Bottom dot indicators. Default true. */
   indicators?: boolean;
   /**
-   * Slides visible per view. A number, or a responsive map keyed by breakpoint.
-   * Default 1 - or 1.6 with `effect="coverflow"`.
-   *
-   * With `effect="coverflow"` it sets the active slide's width as a fraction
-   * of the viewport (`100% / slidesPerView`), and so how much of the fan shows
-   * either side: `1.6` (the default) is a ~62% centre slide with neighbours
-   * peeking, `3` a third-width slide with more of the fan visible. Values below
-   * 1 are treated as 1.
+   * Slides per view: a number or breakpoint map. Default 1 - or 1.6 with `effect="coverflow"`, where
+   * it sets the centre width (`100% / slidesPerView`; 1.6 is ~62%, 3 shows more fan; min 1).
    */
   slidesPerView?: ResponsiveCount;
   /**
-   * Advance automatically. Paused on hover/focus/touch/tab-hidden, and always
-   * off under `prefers-reduced-motion`.
-   *
-   * Defaults to **false** as of 0.3.0 (it was `true`). Motion that starts on
-   * its own and lasts more than five seconds is a WCAG 2.2.2 obligation, and
-   * making every carousel in every consumer opt OUT of that was the wrong way
-   * round - a component library should not hand out an accessibility
-   * requirement by default. Pass `autoplay` explicitly for the marketing-hero
-   * case where it is wanted.
+   * Advance automatically; paused on hover/focus/touch/tab-hidden, off under reduced motion. Defaults
+   * to **false** (since 0.3.0): self-starting motion over 5s is a WCAG 2.2.2 duty, so it's opt-in.
    */
   autoplay?: boolean;
   /** Milliseconds between autoplay advances. Default 3000. */
@@ -57,38 +44,26 @@ export interface CarouselProps extends Omit<React.HTMLAttributes<HTMLDivElement>
   /** Allow touch/pointer swiping. Default true. */
   swipe?: boolean;
   /**
-   * Per-slide transition length in ms. Defaults to the shared
-   * `--fuji-duration-slow` token. Raise it close to `autoplayInterval` for a
-   * continuous-feeling glide instead of a quick step with a long static
-   * pause between advances.
+   * Per-slide transition length in ms. Defaults to the shared `--fuji-duration-slow` token. Raise it
+   * towards `autoplayInterval` for a continuous glide instead of a quick step and a long pause.
    */
   transitionDuration?: number;
   /**
-   * Renders an always-moving CSS-keyframe marquee instead of discrete
-   * step-and-pause slides - a genuinely continuous scroll with no stop/start
-   * feel. Ignores `index`/`defaultIndex`/`onIndexChange`/`controls`/
-   * `indicators`/`loop`/`swipe`/`transitionDuration`; only `autoplayInterval`
-   * (ms of travel per slide-width) and `slidesPerView` apply. Still pauses on
-   * hover/focus, tab-hidden, and `prefers-reduced-motion`. Default false.
+   * Always-moving CSS marquee instead of stepped slides; only `autoplayInterval` (ms per slide-width)
+   * and `slidesPerView` apply. Pauses on hover/focus, tab-hidden and reduced motion. Default false.
    */
   continuous?: boolean;
   /**
-   * `"coverflow"` is a port of motion.dev's coverflow carousel: the active
-   * slide sits centred at ~62% width, neighbours rotate away 20° and shrink
-   * to 70% by distance and tuck under each other, the fan fades out at the
-   * edges, and the whole thing follows the pointer continuously while you
-   * drag before snapping to the nearest slide. `slidesPerView` sets the centre
-   * slide's width (default 1.6, a ~62% slide).
-   * Default `"slide"`.
+   * `"coverflow"` ports motion.dev's: a centred ~62% slide, neighbours rotated 20° and shrunk to 70%,
+   * faded edges, following the drag then snapping. Default `"slide"`.
    */
   effect?: "slide" | "coverflow";
   "aria-label"?: string;
 }
 
 /**
- * Prev/next arrows. A bare chevron over a photograph is invisible half the
- * time, so they sit on the same translucent disc as the play/pause control -
- * a surface that reads against any slide.
+ * Prev/next arrows sit on the play/pause control's translucent disc: a bare chevron over a
+ * photograph is invisible half the time.
  */
 const ARROW_CLASSES =
   "fj:flex fj:size-9 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-surface-overlay/85 fj:text-fuji-foreground fj:shadow-fuji-control fj:backdrop-blur-sm fj:transition-[transform,opacity,box-shadow] fj:duration-[var(--fuji-duration-fast)] fj:hover:shadow-fuji-control-hover fj:active:scale-[var(--fuji-press-scale)] fj:disabled:cursor-not-allowed fj:disabled:opacity-35 fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
@@ -97,10 +72,8 @@ const ARROW_CLASSES =
 const COVERFLOW_PER = 1.6;
 
 function usePrefersReducedMotion() {
-  // Starts `false` on every render, server and client alike - `matchMedia` is a
-  // browser-only API and must never be read during render (see AGENTS.md's SSR
-  // rules). The real value is read and kept in sync from an effect below, which
-  // never runs during SSR and only runs on the client after the initial paint.
+  // SSR-safe: starts `false` everywhere, since `matchMedia` must never be read during render
+  // (AGENTS.md SSR rules); the effect syncs the real value after mount.
   const [reduced, setReduced] = React.useState(false);
   React.useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -124,12 +97,8 @@ function resolvePerView(slidesPerView: ResponsiveCount) {
 }
 
 /**
- * Tracks which responsive `per` value is active at the current viewport width,
- * mirroring the sm/md/lg breakpoints that `.fuji-carousel` declares in
- * base.css. The non-looping max index, indicator count, and prev/next disabled
- * state all need this - using `per.base` alone left them locked to the
- * mobile slide count even once CSS had already expanded the visible slides
- * at wider breakpoints.
+ * Active `per` at the current width, mirroring `.fuji-carousel`'s breakpoints (base.css): max index,
+ * dot count and arrow state stayed locked to the mobile count when read from `per.base`.
  */
 function useActivePer(per: { base: number; sm: number; md: number; lg: number }) {
   const resolve = React.useCallback(() => {
@@ -140,8 +109,7 @@ function useActivePer(per: { base: number; sm: number; md: number; lg: number })
     return per.base;
   }, [per.base, per.sm, per.md, per.lg]);
 
-  // Match server output on first paint (no `window` access during that render),
-  // then sync the real active breakpoint in an effect once mounted.
+  // Match server output on first paint, then sync the real breakpoint once mounted.
   const [activePer, setActivePer] = React.useState(per.base);
 
   React.useEffect(() => {
@@ -153,9 +121,7 @@ function useActivePer(per: { base: number; sm: number; md: number; lg: number })
     const update = () => setActivePer(resolve());
     update();
     queries.forEach((query) => query.addEventListener("change", update));
-    // Belt-and-suspenders: also resync on a plain window resize, since a
-    // resize doesn't always guarantee `change` fires on already-created
-    // MediaQueryList objects.
+    // Also resync on resize: `change` isn't guaranteed to fire on existing MediaQueryLists.
     window.addEventListener("resize", update);
     return () => {
       queries.forEach((query) => query.removeEventListener("change", update));
@@ -167,11 +133,8 @@ function useActivePer(per: { base: number; sm: number; md: number; lg: number })
 }
 
 /**
- * Explicit, persistent autoplay toggle (WCAG 2.2.2 Pause, Stop, Hide): hover
- * and focus already pause motion transiently, but neither gives a keyboard
- * user a way to stop it for good - especially when slides hold no focusable
- * content of their own to tab onto. `pressed` reflects the user's own choice,
- * independent of (and layered underneath) the hover/focus/tab-hidden pauses.
+ * Persistent autoplay toggle (WCAG 2.2.2): hover/focus pauses are transient, so keyboard users need
+ * a real stop. `pressed` is the user's choice, layered under the hover/focus/tab-hidden pauses.
  */
 function PlayPauseButton({
   pressed,
@@ -190,11 +153,8 @@ function PlayPauseButton({
       onClick={onToggle}
       className={cn(
         NATIVE_CONTROL_RESET,
-        // This control sits directly on top of slide media - the one place
-        // Apple's HIG singles out for components over "visually rich
-        // backgrounds" - so it takes the full overlay material rather than a
-        // thinned tint plus Tailwind's generic 4px blur, which left a pale
-        // disc with an invisible white glyph over any bright photo.
+        // Sits on slide media (Apple's HIG "visually rich backgrounds" case), so it takes the full
+        // overlay material: a thinned tint plus a 4px blur left an invisible glyph on bright photos.
         "fuji-glass-surface-overlay fj:flex fj:size-8 fj:cursor-pointer fj:items-center fj:justify-center fj:rounded-full fj:bg-fuji-surface-overlay fj:text-fuji-foreground fj:shadow-fuji-control fj:transition-[color,opacity] fj:duration-[var(--fuji-duration-fast)] fj:hover:text-fuji-foreground-muted",
         className,
       )}
@@ -209,13 +169,8 @@ function PlayPauseButton({
 }
 
 /**
- * One reusable carousel. Defaults to the basic preset (progress dots, no
- * arrows, no autoplay). Pass `autoplay` for self-advancing slides, `controls`
- * for arrow navigation, `slidesPerView` for a
- * multi-slide layout, `loop`/`autoplay`/`autoplayInterval` to tune playback, or
- * `continuous` for an always-moving marquee. Movement is transform-based; loop
- * is seamless via edge clones (stepped mode) or a duplicated slide set
- * (continuous mode).
+ * Carousel: dots, no arrows, no autoplay by default. Transform-based; loops seamlessly via edge
+ * clones (stepped) or a duplicated slide set (`continuous` marquee).
  */
 export const Carousel = React.forwardRef<CarouselHandle, CarouselProps>(function Carousel(
   { continuous = false, ...props },
@@ -254,9 +209,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     const coverflow = effect === "coverflow";
     const per = React.useMemo(() => {
       if (!coverflow) return resolvePerView(slidesPerView ?? 1);
-      // Coverflow used to hard-code 1.6 and silently ignore `slidesPerView`.
-      // It now honours it, keeping 1.6 only as the default. Clamped to 1: a
-      // centre slide wider than the viewport has nothing to fan out from.
+      // Clamped to 1: a centre slide wider than the viewport has nothing to fan out from.
       if (slidesPerView === undefined) {
         return { base: COVERFLOW_PER, sm: COVERFLOW_PER, md: COVERFLOW_PER, lg: COVERFLOW_PER };
       }
@@ -268,20 +221,16 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
         lg: Math.max(resolved.lg, 1),
       };
     }, [slidesPerView, coverflow]);
-    // Whole slides only: coverflow's default `per` is 1.6, and a fractional clone
-    // count slices the clone arrays at a fraction. Coverflow also needs a
-    // neighbour on BOTH sides of the active slide, hence at least two.
+    // Whole slides only (a fractional `per` like 1.6 would slice clones mid-array); coverflow
+    // needs a neighbour on BOTH sides, hence at least two.
     const cloneCount = Math.min(
       Math.max(Math.ceil(Math.max(per.base, per.sm, per.md, per.lg)), coverflow ? 2 : 1),
       Math.max(count, 1),
     );
     const canLoop = loop && count > 1;
-    // Bound the non-looping API by whichever slidesPerView is actually active
-    // at the current viewport, not just the mobile `base` value, so it stays
-    // in sync with the CSS breakpoint that really controls visible slide count.
     const activePer = useActivePer(per);
-    // Coverflow centres the active slide, so every slide - the last included -
-    // can be active; only the flat preset stops early to keep the final page full.
+    // Coverflow centres the active slide, so any slide can be active; the flat preset stops early
+    // to keep the final page full.
     const nonLoopMaxIndex = coverflow ? Math.max(count - 1, 0) : Math.max(count - Math.max(activePer, 1), 0);
     const reduceMotion = usePrefersReducedMotion();
 
@@ -299,10 +248,8 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     const [tabHidden, setTabHidden] = React.useState(false);
     const trackRef = React.useRef<HTMLDivElement>(null);
 
-    // Keep `display` aligned when the active index changes from outside (a
-    // controlled `index` prop), adjusting during render rather than in an effect.
-    // Internal moves already keep the two in sync, so this only fires for external
-    // changes (https://react.dev/learn/you-might-not-need-an-effect).
+    // Realign `display` during render (not an effect) when a controlled `index` changes from
+    // outside; internal moves already keep the two in sync.
     const [prevActive, setPrevActive] = React.useState(active);
     if (prevActive !== active) {
       setPrevActive(active);
@@ -339,13 +286,9 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
 
     const next = React.useCallback(() => go(1), [go]);
     const previous = React.useCallback(() => go(-1), [go]);
-    // Indicator dots need the same animated slide as next/previous, not a
-    // jump. Unlike `go`, this can move more than one position at once, so it
-    // computes the shortest signed delta (wrapping through whichever clone
-    // edge is nearer) and drives `display` directly - `commitIndex` alone
-    // only ever touched `active`, leaving the render-time active/display
-    // reconciliation below to snap the track with `animate(false)` instead
-    // of sliding it.
+    // Dots animate like next/previous: take the shortest signed delta (wrapping via the nearer
+    // clone edge) and drive `display` directly - `commitIndex` alone let the render-time
+    // reconciliation snap the track instead of sliding it.
     const goTo = React.useCallback(
       (i: number) => {
         if (!canLoop) {
@@ -366,13 +309,11 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
 
     React.useImperativeHandle(ref, () => ({ next, previous, goTo }), [next, previous, goTo]);
 
-    // After a looped transition into the clone region, jump (without animation)
-    // back to the equivalent real slide so infinite mode never visibly jumps.
+    // After a looped transition into the clone region, snap back to the equivalent real slide.
     const handleTransitionEnd = React.useCallback(
       (event?: React.TransitionEvent) => {
-        // Only the track's own transition. In coverflow every slide's transform
-        // transition bubbles up here too (N+1 calls per move), and so would a
-        // slide's content - a Card's hover shadow could trigger a clone reset.
+        // Track's own transition only: coverflow slides (N+1 calls per move) and slide content
+        // (a Card's hover shadow) bubble here too and could trigger a clone reset.
         if (event && event.target !== event.currentTarget) return;
         if (!canLoop) return;
         const real = display - cloneCount;
@@ -395,19 +336,15 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
       return () => cancelAnimationFrame(raf);
     }, [animate]);
 
-    // Under `prefers-reduced-motion` the track has no transition, so the
-    // browser never fires `transitionend` - and in loop mode that event is
-    // what commits `active` and pulls the track back out of the clone
-    // region. Settle synchronously instead whenever `display` moves.
+    // Reduced motion: no transition means no `transitionend`, which loop mode relies on to commit
+    // `active` and leave the clone region - so settle synchronously when `display` moves.
     React.useEffect(() => {
       if (!reduceMotion) return;
       handleTransitionEnd();
     }, [reduceMotion, display, handleTransitionEnd]);
 
-    // Single autoplay timer, re-armed only by the inputs that should change its
-    // cadence. `go` is read through a ref so an active-index update after each
-    // transition (which changes `go`'s identity) can't restart the interval and
-    // stack extra delay onto every tick.
+    // One autoplay timer. `go` is read via a ref: its identity changes after every transition, and
+    // re-arming the interval on that would stack extra delay onto each tick.
     const goRef = React.useRef(go);
     React.useEffect(() => {
       goRef.current = go;
@@ -418,9 +355,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
       return () => window.clearInterval(id);
     }, [autoplay, paused, manuallyPaused, tabHidden, reduceMotion, count, autoplayInterval]);
 
-    // If the viewport shrinks to a breakpoint with fewer visible slides, pull
-    // an out-of-range active index back to the new (smaller) max so it can't
-    // point past the last valid non-looping position.
+    // Clamp `active` when a narrower breakpoint lowers the non-looping max.
     React.useEffect(() => {
       if (canLoop) return;
       if (active > nonLoopMaxIndex) setActive(nonLoopMaxIndex);
@@ -438,8 +373,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
       : slides;
     const realIndex = active;
 
-    // Coverflow offsets the track by half the leftover width so the active
-    // slide sits centred with a neighbour peeking on each side.
+    // Coverflow offsets the track by half the leftover width to centre the active slide.
     const peek = coverflow ? " + (100% - 100% / var(--fuji-cv-per)) / 2" : "";
     const drag = " + var(--fuji-cv-drag, 0px)";
     const translate =
@@ -449,14 +383,9 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
 
     const showProgress = autoplay && !reduceMotion && !paused && !manuallyPaused && !tabHidden && count > 1;
 
-    // Pointer swipe. The track follows the pointer 1:1 while it is down
-    // (written straight to the DOM - a React state update per pointermove
-    // is wasteful and, for coverflow, every slide's fan transform has to
-    // move with it), then snaps to the nearest slide on release on the same
-    // curve as a button press. `--fuji-cv-drag` is the live pixel offset the
-    // track's transform adds; coverflow slides also get their fractional
-    // `--fuji-cv-offset` so the fan rotates continuously, as in the
-    // reference.
+    // Swipe: the track follows the pointer 1:1 via `--fuji-cv-drag` written to the DOM (no state per
+    // pointermove), plus a fractional `--fuji-cv-offset` per coverflow slide so the fan rotates
+    // continuously; release snaps to the nearest slide.
     const pointerStart = React.useRef<number | null>(null);
     const viewportRef = React.useRef<HTMLDivElement>(null);
     const dragPx = React.useRef(0);
@@ -474,8 +403,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
         dragPx.current = px;
         track.style.setProperty("--fuji-cv-drag", `${px}px`);
         if (!coverflow) return;
-        // `viewportWidth` is read once at pointerdown - reading `clientWidth`
-        // here, after the write above, would force a layout per move.
+        // `viewportWidth` is read at pointerdown: `clientWidth` here would force a layout per move.
         const slideWidth = viewportWidth.current / Math.max(activePerRef.current, 1);
         const fraction = slideWidth > 0 ? px / slideWidth : 0;
         const slides = track.children;
@@ -490,27 +418,19 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
     );
     const viewportWidth = React.useRef(0);
 
-    // A press that never moved 4px (so never took pointer capture) and then
-    // left the viewport would otherwise leave autoplay paused and a stale
-    // start point behind.
+    // A press that never moved 4px (no capture) then left would leave autoplay paused.
     const cancelPress = () => {
       if (pointerStart.current === null || viewportRef.current?.hasAttribute("data-swiping")) return;
       pointerStart.current = null;
       setPaused(false);
     };
 
-    /**
-     * Ends a drag. `commit` is false when the browser took the gesture away
-     * from us (`pointercancel`), where the right answer is to snap back to the
-     * current slide rather than act on a half-finished swipe.
-     */
+    /** Ends a drag. `commit` is false on `pointercancel`: snap back, don't act on half a swipe. */
     const endDrag = (event: React.PointerEvent, commit = true) => {
       if (pointerStart.current === null) return;
       const viewport = viewportRef.current;
-      // The last offset we actually applied, NOT `event.clientX` - a
-      // `pointercancel` carries no meaningful coordinate (Chrome reports 0),
-      // which read as a drag all the way to the viewport's left edge and threw
-      // the carousel several slides forward.
+      // Last applied offset, NOT `event.clientX`: `pointercancel` reports 0 in Chrome, which read
+      // as a drag to the left edge and threw the carousel several slides forward.
       const px = dragPx.current;
       pointerStart.current = null;
       viewport?.removeAttribute("data-swiping");
@@ -605,16 +525,10 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
           onPointerUp={onPointerUp}
           onPointerCancel={(event) => endDrag(event, false)}
           onPointerLeave={cancelPress}
-          // Slides are usually images or links, which the browser natively
-          // drags. That gesture takes the pointer stream away from us
-          // (`dragstart` then `pointercancel` a few pixels in), so a swipe
-          // died almost as soon as it began and the carousel could only be
-          // driven by its controls. Consumers can still opt a child back in
-          // with their own `draggable`.
+          // Native image/link drag fires `dragstart` then `pointercancel` a few px in, killing the
+          // swipe. Children can opt back in with their own `draggable`.
           onDragStart={(event) => event.preventDefault()}
-          // While a clone reset snaps the track, the coverflow slides must
-          // snap with it - their own transform transition would otherwise
-          // re-animate the whole fan after every loop wrap.
+          // Coverflow slides snap with a clone reset, or the fan re-animates after every wrap.
           data-resetting={animate ? undefined : ""}
           className={cn(
             "fuji-carousel fj:rounded-fuji-panel fj:outline-none fj:focus-visible:ring-2 fj:focus-visible:ring-fuji-focus-ring",
@@ -623,18 +537,13 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
         >
           <div
             ref={trackRef}
-            // Announced only when the carousel is NOT advancing on its own.
-            // With autoplay running this would interrupt whatever the user is
-            // reading every few seconds, which the WAI-ARIA carousel pattern
-            // calls out specifically; once the user (or `autoplay={false}`)
-            // puts the carousel under manual control, a slide change is a
-            // direct result of their action and should be announced.
+            // Silent while autoplaying (WAI-ARIA carousel pattern: don't interrupt every few
+            // seconds); under manual control a slide change is the user's action, so announce it.
             aria-live={autoplay && !manuallyPaused ? "off" : "polite"}
             className="fuji-carousel-track fj:flex fj:touch-pan-y"
             style={{
               transform: `translateX(${translate})`,
-              // `.fuji-carousel-track` owns the animated transition; only
-              // the no-animation clone reset (and reduced motion) override it.
+              // CSS owns the transition; only clone resets and reduced motion override it.
               transition: animate && !reduceMotion ? undefined : "none",
             }}
             onTransitionEnd={handleTransitionEnd}
@@ -645,12 +554,8 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
               return (
                 <div
                   key={childIndex}
-                  // Set as a real DOM property via ref rather than the JSX
-                  // `inert` attribute: React 19 treats it as a strict
-                  // boolean (an empty string reads as `false`), while
-                  // React 18 doesn't recognize it as boolean at all and
-                  // warns - assigning the DOM property directly sidesteps
-                  // both, since it's supported natively either way.
+                  // `inert` set as a DOM property: React 19 treats the JSX prop as strict boolean
+                  // ("" is false) and React 18 warns on it; the DOM property works in both.
                   ref={(node) => {
                     if (node) node.inert = isClone;
                   }}
@@ -724,9 +629,7 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
                   aria-label={`Go to slide ${dotIndex + 1}`}
                   aria-current={isActive}
                   onClick={() => goTo(dotIndex)}
-                  // The visual dot is 6px; the BUTTON is the hit target. Without
-                  // this padding the targets were 6px tall - a quarter of the
-                  // 24px minimum, and unusable with a thumb.
+                  // The dot is 6px; padding makes the button meet the 24px minimum target.
                   className={cn(
                     NATIVE_CONTROL_RESET,
                     "fj:group fj:flex fj:cursor-pointer fj:items-center fj:px-1 fj:py-2.5",
@@ -765,12 +668,8 @@ const SteppedCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "co
 );
 
 /**
- * Always-moving marquee: the slide set is duplicated once and animated with a
- * scoped, linear, infinite CSS keyframe (no JS timers, no discrete "step then
- * pause" position), so it never reads as stopping. The `-100% / var(--fuji-cv-per)`
- * unit matches the translate convention SteppedCarousel uses for one
- * slide-width, so travelling `count` of those units advances exactly one full
- * lap before the duplicated content makes the wrap invisible.
+ * Marquee: a duplicated slide set on a linear infinite keyframe (no JS timers). `count` slide-widths
+ * (`-100% / var(--fuji-cv-per)`, as in SteppedCarousel) is one lap, so the duplicate hides the wrap.
  */
 const ContinuousCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, "continuous">>(
   function ContinuousCarousel(
@@ -784,9 +683,7 @@ const ContinuousCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, 
     },
     ref,
   ) {
-    // Discrete-mode-only props are accepted (so callers can share a single
-    // prop object with SteppedCarousel usages) but have no effect here; strip
-    // them so they don't leak onto the wrapper <div> below.
+    // Stepped-only props are accepted (shared prop objects) but stripped so they don't hit the DOM.
     const props = { ...rest };
     delete props.index;
     delete props.defaultIndex;
@@ -850,8 +747,7 @@ const ContinuousCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, 
             style={
               running
                 ? {
-                    // Shared, global keyframe (tokens.css) - see its own comment for why
-                    // this doesn't need a per-instance name like `--fuji-cv-per` does.
+                    // Global keyframe in tokens.css; its comment explains why no per-instance name.
                     animation: `fuji-cv-marquee ${durationMs}ms linear infinite`,
                     animationPlayState: paused || manuallyPaused || tabHidden ? "paused" : "running",
                   }
@@ -863,8 +759,7 @@ const ContinuousCarousel = React.forwardRef<CarouselHandle, Omit<CarouselProps, 
               return (
                 <div
                   key={childIndex}
-                  // See the equivalent ref in SteppedCarousel above for why
-                  // `inert` is set as a DOM property here instead of a JSX prop.
+                  // `inert` as a DOM property for React 18/19 - see SteppedCarousel.
                   ref={(node) => {
                     if (node) node.inert = isClone;
                   }}

@@ -28,13 +28,13 @@ export const WithBounds: Story = {
   },
 };
 
-/** `minDate={new Date()}` disables the past but keeps today selectable - bounds compare by calendar day. */
+/** `minDate={new Date()}` disables the past but keeps today: bounds compare by calendar day. */
 export const NoPastDates: Story = {
   name: "No past dates",
   render: () => <Calendar minDate={new Date()} />,
 };
 
-/** `markedDates` dots the days that have something on them; `markedDateLabel` is announced with each marked day. */
+/** `markedDates` dots busy days; `markedDateLabel` is announced with each marked day. */
 export const MarkedDates: Story = {
   render: () => {
     const today = new Date();

@@ -21,9 +21,8 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
   /** Required - icon-only controls must still have an accessible name. */
   "aria-label": string;
   /**
-   * Plays a pointer-origin ripple on press. On by default, matching Button -
-   * a press should feel the same on both. Pass `false` to suppress it. Does
-   * nothing under `prefers-reduced-motion: reduce`.
+   * Plays a pointer-origin ripple on press. On by default, matching Button; pass `false` to
+   * suppress it. Does nothing under `prefers-reduced-motion: reduce`.
    */
   ripple?: boolean;
   /** The icon. Required - there is nothing else to render. */

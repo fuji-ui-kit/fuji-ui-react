@@ -93,10 +93,24 @@ cluster of a real board.
 
 ## Mirroring the real keyboard
 
-`captureKeys` holds a cap down while its physical key is held.
+The two keyboards work side by side out of the box: a real key sends its cap
+down, travelling and clicking exactly as a press on that cap would, and Shift
+and Caps Lock are one shared modifier across both.
+
+It listens only while the board is _engaged_ - a floating board while it is
+open, an in-flow board while focus is inside it - so a page carrying several
+boards does not light and click every one of them on a keystroke meant for
+something else. Click or tab into an in-flow board to engage it.
+
+A mirrored press never calls `onKeyPress`: the real key has already reached
+whatever had focus, and reporting it again would type every character twice.
 
 ```tsx
-<Keyboard layout="tkl" captureKeys />
+// On by default - this is what a board already does.
+<Keyboard layout="tkl" />
+
+// Off, for a board that must never react to the real keyboard.
+<Keyboard layout="tkl" captureKeys={false} />
 ```
 
 ## Modifiers
@@ -108,18 +122,44 @@ The two cancel, so Shift on a locked board types lowercase.
 
 Shift armed by clicking is sticky - it applies to the next cap and lets go,
 which is how every on-screen keyboard behaves, since there is nothing to hold
-down. Under `captureKeys` the physical Shift shares the same state and stays
+down. While the board is engaged the physical Shift shares the same state and stays
 engaged while it is actually held.
 
 ```tsx
 <Keyboard
-  captureKeys
   onKeyPress={(key) => {
     // "!" after Shift, "A" under Caps Lock, "a" with neither.
     if (key.value) setText((value) => value + key.value);
   }}
 />
 ```
+
+## Shortcuts: ⌘, Ctrl and Alt
+
+⌘, Ctrl and Alt latch the same way: click ⌘ and it lights, then the next cap
+reports with `modifiers.meta` set and spends the latch. A physically held key
+counts too. Under ⌘ or Ctrl a cap reports no `value` - a shortcut types
+nothing - so branch on the second argument for select all, copy and paste.
+
+```tsx
+<Keyboard
+  onKeyPress={(key, modifiers) => {
+    const command = modifiers.meta || modifiers.ctrl;
+    if (command && key.code === "KeyA") field.current?.select();
+    else if (command && key.code === "KeyC") void navigator.clipboard.writeText(selectedText());
+    else if (command && key.code === "KeyV") void navigator.clipboard.readText().then(insert);
+    else if (key.code === "Backspace") deleteBackward();
+    else if (key.value) insert(key.value);
+  }}
+/>
+```
+
+## Holding a cap
+
+A held cap repeats like a real key: one press, a 400ms pause, then twenty a
+second until it is released or the pointer slides off. Modifiers and toggles
+(Shift, Caps Lock, ⌘, Ctrl, Alt, Fn, Esc) never repeat. The click that ends a
+hold reports nothing extra, so `onKeyPress` needs no special handling.
 
 ## Action caps
 
@@ -145,6 +185,22 @@ API - no asset, no dependency, nothing to fail to load. Off by default.
 
 ```tsx
 <Keyboard sound />
+```
+
+`soundToggle` adds the board's own control for it, in a strip above the caps:
+a speaker glyph and a lamp lit in the board's `tone`, the same signal a latched
+modifier gives. Use it wherever the board types at someone who should be able
+to silence it without the app wiring a control of its own.
+
+```tsx
+<Keyboard soundToggle defaultSound />
+```
+
+The state follows the usual controlled/uncontrolled pair, so an app that
+already owns a "keyboard sounds" preference keeps owning it:
+
+```tsx
+<Keyboard soundToggle sound={prefs.keySounds} onSoundChange={setKeySounds} />
 ```
 
 ## Floating over the page
