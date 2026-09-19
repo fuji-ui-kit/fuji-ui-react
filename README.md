@@ -12,7 +12,7 @@ combination rendered.
 
 Fuji is a themeable, accessible React component system: light or dark theme,
 an optional glass material, cornered or soft radius, and regular or floating
-elevation - all driven by a single provider. It ships 89 components (Button
+elevation - all driven by a single provider. It ships 86 components (Button
 through DataTable, Dialog, Carousel, BarChart...), a compiled stylesheet, and
 full TypeScript types.
 

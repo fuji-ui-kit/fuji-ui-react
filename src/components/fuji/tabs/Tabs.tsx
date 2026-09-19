@@ -9,11 +9,8 @@ export const TabsRoot = Base.Root;
 
 export interface TabsListProps extends React.ComponentPropsWithoutRef<typeof Base.List> {
   /**
-   * `"underline"` (default): a 2px bar under the active tab. `"pill"`: the
-   * list is a white pill container and the active tab is a raised black
-   * tile that slides between positions - the same selected-object language
-   * as SegmentedControl, for tab bars that are navigation rather than
-   * document sections.
+   * `"underline"` (default): a 2px bar under the active tab. `"pill"`: a white pill list with a
+   * sliding raised black tile, as in SegmentedControl; for tab bars that navigate.
    */
   variant?: "underline" | "pill";
 }
@@ -76,13 +73,9 @@ export const TabsPanel = React.forwardRef<HTMLDivElement, React.ComponentPropsWi
     return (
       <Base.Panel
         ref={ref}
-        // Base UI keeps an inactive panel mounted until its exit animation
-        // finishes, which it detects via requestAnimationFrame. This panel
-        // has no exit animation, but on a tab whose rAF is throttled (a
-        // backgrounded tab, some automated browsers) that detection never
-        // resolves and the inactive panel stays visible indefinitely. Its
-        // `tabindex` is set to -1 synchronously with the tab switch, so hide
-        // on that instead of waiting on Base UI's animation-driven unmount.
+        // Base UI unmounts inactive panels after an rAF-detected exit animation, which never
+        // resolves when rAF is throttled (background tabs, some automated browsers). `tabindex`
+        // turns -1 synchronously on switch, so hide on that instead.
         className={cn("fj:pt-4 fj:outline-none fj:[&[tabindex='-1']]:hidden", className)}
         {...props}
       />

@@ -6,10 +6,8 @@ import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface FloatingActionBarAction {
   /**
-   * Stable identity for the action, used as its React key. Optional: without
-   * it the key falls back to `label` plus position, so two actions that share
-   * a label no longer collide. Set it when actions are added, removed or
-   * reordered while the dial is open, so each keeps its own DOM node.
+   * Stable React key for the action; falls back to `label` plus position. Set it when actions are
+   * added, removed or reordered while open, so each keeps its own DOM node.
    */
   id?: string;
   /** Icon element. Sized by the bar, so pass an unsized icon. */
@@ -35,38 +33,15 @@ export interface FloatingActionBarProps extends Omit<React.HTMLAttributes<HTMLDi
   /** Called whenever the dial opens or closes, including via Escape or an outside press. */
   onOpenChange?: (open: boolean) => void;
   /**
-   * Which way the actions fan out.
-   *
-   * `"auto"` (default) picks the side with room: a dial near the top of the
-   * viewport opens downwards, one near the bottom opens upwards. Set `"up"` or
-   * `"down"` to force it.
+   * Which way the actions fan out. `"auto"` (default) picks the side with room in the viewport;
+   * `"up"` or `"down"` forces it.
    */
   direction?: "up" | "down" | "auto";
 }
 
 /**
- * A speed dial: a circular trigger that fans a column of labelled actions out
- * from itself (the reference is motion.dev's floating action button).
- *
- * The column is absolutely positioned against the trigger, never part of the
- * layout flow. That is load-bearing, not an implementation detail: while it
- * was a flex sibling, opening the dial grew the container and shoved the
- * trigger across the page - the one element that must stay put, since the
- * pointer is already on it. Positioning it out of flow means opening changes
- * nothing about the trigger's box, and the dial can be dropped anywhere
- * without reserving space for its own expansion.
- *
- * Two details carry the animation, and both are easy to leave out:
- *
- * 1. **The stagger.** Actions animate in nearest-the-trigger first, so the
- *    column unfurls from the button rather than appearing at once. On close
- *    the order reverses, so it furls back into the trigger.
- * 2. **The taper.** Each step further out is slightly smaller. That gradient
- *    is what gives the column depth; without it a stack of identical circles
- *    reads as a list.
- *
- * Not built on Popover deliberately: the actions belong to the trigger, and a
- * portaled popup would cross-fade a separate surface in and lose that.
+ * Speed dial whose actions are positioned out of flow, so opening never moves the trigger. Animated
+ * by a stagger and a per-step taper; not a Popover, which would portal the actions away from it.
  */
 
 /** Per-step delay of the stagger. Long enough to read, short enough not to drag. */
@@ -150,23 +125,14 @@ export const FloatingActionBar = React.forwardRef<HTMLDivElement, FloatingAction
         ref={setRefs}
         data-open={open ? "" : undefined}
         data-side={resolved}
-        // Deliberately unpositioned. This carried `relative`, which competed
-        // with a consumer placing the dial via `className="fixed bottom-6
-        // right-6"`: Fuji's class lives in its own cascade layer, so which
-        // `position` won depended on the page's layer order (see
-        // docs/theming.md), and the dial could land in the document flow
-        // instead of the corner. With nothing to compete with, positioning
-        // the root is the consumer's in any setup; the anchor the column
-        // needs is the wrapper below.
+        // Deliberately unpositioned: a `relative` here competed via cascade-layer order with a
+        // consumer's `className="fixed bottom-6 right-6"`. The column's anchor is the wrapper below.
         className={cn("fj:inline-flex fj:w-fit", className)}
         {...props}
       >
         <div
-          // The column's positioning context. Sized to the trigger alone - the
-          // column is out of flow, so this box never changes size and the
-          // trigger never moves. `data-open` here too, because base.css
-          // animates `[data-open] > * > .fuji-fab-action` (this wrapper is
-          // that `[data-open]` parent now).
+          // The column's positioning context, sized to the trigger alone so it never moves.
+          // `data-open` here too: base.css animates `[data-open] > * > .fuji-fab-action`.
           data-open={open ? "" : undefined}
           className="fj:relative fj:inline-flex"
         >

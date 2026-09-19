@@ -5,16 +5,8 @@ import userEvent from "@testing-library/user-event";
 import { Input } from "./Input";
 
 /**
- * The slotted branch's visible box is a plain `<div>`, not a Base UI
- * element - it can only ever pick up an ancestor `<FormField invalid>`'s
- * state by reacting to the real `<input>` inside it via `:has()` (see
- * Input.tsx), not by carrying `data-invalid` itself. Pull the
- * `has-[...]:border-fuji-fire` utility actually shipped on `el` (there
- * should be exactly one) and ask the DOM whether the selector it compiles to
- * - `:has(<the bracketed inner selector>)` - matches `el` as currently
- * rendered, instead of merely checking that a class string is present or
- * that `:has([data-invalid])` matches regardless of whether that class ships
- * at all.
+ * Whether the `has-[...]:border-fuji-fire` class shipped on `el` actually matches it in the DOM.
+ * The slotted box is a plain `<div>` that can only react to its inner `<input>` via `:has()`.
  */
 function invalidStylingApplies(el: Element): boolean {
   const relevant = el.className.split(/\s+/).filter((c) => /^fj:has-\[.+\]:border-fuji-fire$/.test(c));
@@ -61,12 +53,8 @@ describe("Input", () => {
     expect(input).toHaveAttribute("data-invalid", "");
   });
 
-  // The slotted branch (startSlot/endSlot/clearable) renders a different
-  // element tree - a plain `<div>` wrapper carries the visible border, the
-  // `<input>` inside it is unstyled - so its own `invalid` prop needs to
-  // reach the wrapper independently of the unslotted branch above. The
-  // wrapper never carries `data-invalid` itself (see Input.tsx); it reacts
-  // to the real `<input>`, which does.
+  // The slotted branch's border sits on a plain `<div>` wrapper, so its own `invalid` prop must
+  // reach it independently, via the inner `<input>` (see Input.tsx).
   it("visually flags the wrapper as invalid when rendering a slotted variant", () => {
     render(<Input aria-label="Amount" invalid startSlot={<span>$</span>} />);
     const input = screen.getByRole("textbox", { name: "Amount" });
@@ -124,10 +112,8 @@ describe("Input", () => {
   it.each(["sm", "md", "lg"] as const)(
     "floors the %s field root at its control height, on both render branches",
     (size) => {
-      // Inside an overflowing flex column (a Sidebar) the root's automatic
-      // minimum height is one line of text, and the field collapsed to a 19px
-      // sliver. The floor is a min-height rather than `shrink-0`: every field
-      // is `w-full`, and `shrink-0` in a flex row pushed its neighbours out.
+      // In an overflowing flex column the field collapsed to a 19px sliver. The floor is a
+      // min-height, not `shrink-0`, which pushed flex-row neighbours out.
       const floor = `fj:min-h-[var(--fuji-control-h-${size})]`;
       const { unmount } = render(<Input aria-label="Plain" size={size} />);
       const plain = screen.getByRole("textbox", { name: "Plain" });

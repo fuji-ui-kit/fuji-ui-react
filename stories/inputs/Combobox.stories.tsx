@@ -45,9 +45,7 @@ export const Invalid: Story = {
 };
 
 function ControlledCombobox() {
-  // Combobox's controlled `value` is the selected item object itself (not its
-  // string `.value`) - Select uses a string-keyed model, Combobox does not,
-  // so the two aren't interchangeable here.
+  // Combobox's `value` is the item object itself, unlike Select's string-keyed model.
   const [value, setValue] = React.useState<ComboboxItem | null>(FRAMEWORKS[0]);
   return (
     <div className="flex flex-col gap-2">

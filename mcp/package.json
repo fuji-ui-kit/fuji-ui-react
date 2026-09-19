@@ -1,6 +1,6 @@
 {
   "name": "@fujiui/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for @fujiui/react - gives a coding agent an accurate, version-matched view of the component library.",
   "mcpName": "io.github.fuji-ui-kit/fuji-ui",
   "license": "MIT",

@@ -55,9 +55,7 @@ describe("ChatBubble", () => {
     expect(screen.getByText("Be there in 5")).toBeInTheDocument();
   });
 
-  // The sender is the one piece of grouped metadata that can't just be
-  // dropped: a sighted reader infers it from the run's shape, a linear
-  // screen-reader pass has nothing to infer from.
+  // A sighted reader infers a grouped sender from the run's shape; a screen-reader pass cannot.
   it("keeps the sender announced (visually hidden) when grouped", () => {
     render(
       <ChatBubble grouped sender="Priya Natarajan">
@@ -75,14 +73,22 @@ describe("ChatBubble", () => {
         Be there in 5
       </ChatBubble>,
     );
-    // The visible avatar content is suppressed while grouped...
-    expect(withAvatar.textContent).not.toContain("PN");
-    // ...but a same-size placeholder still occupies the row so later bubbles
-    // in the run don't drift out of alignment. Queried by role/attribute
-    // rather than a Tailwind class name, which is an internal styling detail.
-    const placeholder = withAvatar.querySelector('span[aria-hidden="true"]');
-    expect(placeholder).toBeInTheDocument();
-    expect(placeholder).not.toHaveTextContent("PN");
+    // Hidden in place, not swapped for a guessed-size placeholder: only its own box matches the run.
+    const slot = withAvatar.querySelector('span[aria-hidden="true"]');
+    expect(slot).toBeInTheDocument();
+    expect(slot).toHaveTextContent("PN");
+    // Hidden from sight and from assistive technology, but still occupying
+    // its column so later bubbles in the run don't drift out of alignment.
+    expect(slot?.className).toEqual(expect.stringContaining("invisible"));
+  });
+
+  it("leaves the avatar visible and announced when not grouped", () => {
+    const { container } = render(
+      <ChatBubble avatar={<Avatar alt="Priya Natarajan" fallback="PN" />}>Be there in 5</ChatBubble>,
+    );
+    const slot = container.querySelector("span");
+    expect(slot).not.toHaveAttribute("aria-hidden");
+    expect(slot?.className).not.toEqual(expect.stringContaining("invisible"));
   });
 
   it("forwards a ref to the root element", () => {

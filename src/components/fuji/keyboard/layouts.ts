@@ -1,10 +1,6 @@
 /**
- * Key data for `Keyboard`, plus the grid resolver that turns authored rows
- * into absolute placements.
- *
- * Codes are real `KeyboardEvent.code` values wherever one exists, so
- * `captureKeys` can light a cap straight from a physical keydown without a
- * translation table. `Fn` is the one exception - no browser reports it.
+ * Key data and grid resolver for `Keyboard`. Codes are real `KeyboardEvent.code` values, so
+ * `captureKeys` needs no translation table - except `Fn`, which no browser reports.
  */
 
 /** A single cap on an on-screen keyboard. */
@@ -228,17 +224,10 @@ const FULL_ROWS: KeyboardKeyDef[][] = [
   ],
 ];
 
-// Phone: ten units wide, five rows - narrow enough that an interactive cap
-// still clears the WCAG 2.5.8 24x24 target floor on a phone-width docked
-// board. `full` (the default) and `tkl` fail that floor even worse than
-// `compact` does: at a 375px viewport, in flow, full's nineteen columns render
-// a 14.7px cap and tkl's/compact's sixteen render 18.2px, all short of 24px;
-// docked (`floating`, size="md"), compact's cap is 16.7px - iOS's own keyboard
-// uses ten columns, which is what this layout mirrors. `numpad` (27px) and
-// `phone` itself (31.5px in flow, 29.1px docked) clear the floor. No
-// digit-row secondaries and no `?123` symbol switch (no such
-// `KeyboardEvent.code` exists, and the component has no symbol mode) - this
-// board reports no shifted symbols at all.
+// Phone: ten units wide like iOS, so caps clear the WCAG 2.5.8 24x24 floor at 375px (31.5px in flow,
+// 29.1px docked; numpad 27px). full renders 14.7px, tkl/compact 18.2px (16.7px docked, size="md").
+// No shifted symbols and no `?123` switch: no such `KeyboardEvent.code` exists and there is no
+// symbol mode.
 const PHONE_ROWS: KeyboardKeyDef[][] = [
   [
     k("Digit1", "1"),
@@ -267,12 +256,9 @@ const PHONE_ROWS: KeyboardKeyDef[][] = [
   ],
 ];
 
-// The standalone numpad is what a PIN or OTP keypad is built from, and a
-// keypad with no way to delete is unusable - so its top-left cap is Backspace
-// rather than the Num Lock of a physical pad, which on a drawn board types
-// nothing and toggles nothing. Same glyph and name as the phone board's
-// Backspace. `full` keeps its Num Lock: there the main block already has a
-// Backspace, and the board is a picture of the real hardware.
+// The standalone numpad backs PIN/OTP keypads, which need a delete, so its top-left cap is Backspace
+// (same glyph/name as phone's) instead of a drawn Num Lock that does nothing. `full` keeps Num Lock:
+// its main block already has Backspace and it depicts real hardware.
 const NUMPAD_ROWS: KeyboardKeyDef[][] = [
   [
     m("Backspace", "⌫", 1, { name: "Backspace" }),
@@ -322,13 +308,8 @@ function isFree(taken: Set<string>, column: number, span: number, row: number, r
 }
 
 /**
- * Places authored rows onto a quarter-unit grid.
- *
- * Quarter units because every real cap width - 1.25u, 1.5u, 1.75u, 2.25u, the
- * 6.25u space bar - is a whole number of them, so no cap ever lands on a
- * fractional column. Rows are laid left to right, and a cap skips past any
- * column a taller cap from an earlier row already occupies: that is what puts
- * the numpad's `4 5 6` beside the two-unit `+` instead of under it.
+ * Places rows on a quarter-unit grid, since every real cap width (1.25u...6.25u) is whole quarters.
+ * A cap skips columns a taller cap above already occupies - that puts numpad `4 5 6` beside `+`.
  */
 export function resolveLayout(rows: KeyboardKeyDef[][]): ResolvedLayout {
   const taken = new Set<string>();

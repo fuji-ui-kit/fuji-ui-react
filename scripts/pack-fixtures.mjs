@@ -1,20 +1,7 @@
 #!/usr/bin/env node
 /*
- * Packs the current working tree into `fixtures/fuji-pack.tgz`, the tarball
- * every fixture app installs from.
- *
- * The fixtures exist to catch things only the PUBLISHED artifact can show -
- * a missing `exports` entry, a `"use client"` that didn't survive the build,
- * Tailwind preflight colliding with Fuji's compiled CSS - so they have to
- * install a real pack, not `file:../..` (which would resolve to the source
- * tree and test nothing about packaging).
- *
- * The filename is deliberately version-less. `npm pack` produces
- * `fujiui-react-<version>.tgz`, and referencing that from a fixture's
- * package.json bakes the version into a committed lockfile - which is exactly
- * how the fixtures came to be pinned to a `0.1.0-alpha.0` tarball that no
- * longer existed. A stable name means the lockfiles stay valid across every
- * release.
+ * Packs the tree into `fixtures/fuji-pack.tgz`: fixtures test the PUBLISHED artifact, so not
+ * `file:../..`. Version-less so committed lockfiles survive releases instead of pinning stale ones.
  */
 import { execFileSync } from "node:child_process";
 import { readdirSync, renameSync, rmSync, existsSync } from "node:fs";

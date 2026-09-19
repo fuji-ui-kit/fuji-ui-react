@@ -1,18 +1,7 @@
 #!/usr/bin/env node
-// Seeds `registry/` from the documentation site.
-//
-// Categories, one-line summaries, search keywords and usage examples are the
-// parts of a component's description that no script can derive from source -
-// somebody wrote them. They were written in the website repo, which inverts the
-// source-of-truth rule in AGENTS.md: the library is a dependency of the site,
-// so the site cannot be where the library's own description lives, and nothing
-// shipped in the npm package could reach it.
-//
-// This moves them here once. It is kept rather than deleted so that when the
-// site gains a component page the import becomes a diff to review rather than
-// an authoring task - but `registry/` is the source of truth from now on, and
-// re-running this will overwrite hand edits. Check `git diff` before accepting.
-//
+// Seeds `registry/` (categories, summaries, keywords, examples) from the docs site, which as a
+// consumer can't own the library's description. Kept so new site pages import as a reviewable diff,
+// but `registry/` is the source of truth: re-running overwrites hand edits, so check `git diff`.
 // Usage: node scripts/seed-registry-metadata.mjs
 import fs from "node:fs";
 import path from "node:path";
@@ -31,12 +20,8 @@ if (!fs.existsSync(SITE)) {
 }
 
 /**
- * Runs a TypeScript data module and returns its exports.
- *
- * Regex over the source would be wrong: these modules use shared consts and
- * spread helpers that have to actually execute. Both are import-free once the
- * types are erased, so transpiling to a `data:` URL is enough and avoids adding
- * a TS loader as a devDependency.
+ * Runs a TS data module (its consts and spreads must execute, so no regex). They're import-free
+ * once types are erased, so a transpiled `data:` URL works without a TS loader dependency.
  */
 async function importModule(file) {
   const { outputText } = ts.transpileModule(fs.readFileSync(file, "utf8"), {
@@ -127,11 +112,7 @@ function collectExamples() {
 }
 
 const { COMPONENT_CATALOG } = await importModule(path.join(SITE, "src", "content", "component-catalog.ts"));
-/**
- * `CATEGORY_ORDER` is read syntactically rather than imported: its module
- * imports a relative specifier that a `data:` URL cannot resolve, and the value
- * itself is a literal array.
- */
+/** Read syntactically: its module has a relative import a `data:` URL can't resolve. */
 const ORDER = (() => {
   const file = path.join(SITE, "src", "content", "component-registry.ts");
   const source = sourceFile(file);
@@ -182,10 +163,7 @@ let written = 0;
 let kept = 0;
 let elided = 0;
 for (const [slug, list] of [...examples].sort(([a], [b]) => a.localeCompare(b))) {
-  // Never overwrite a file that already exists. These are hand-finished after
-  // seeding - elided snippets expanded, prose tightened - and clobbering that
-  // silently is exactly the accident this script would otherwise cause every
-  // time it runs. Delete a file to re-seed it.
+  // Never overwrite existing files: they're hand-finished after seeding. Delete one to re-seed it.
   const target = path.join(REGISTRY, "examples", `${slug}.md`);
   if (fs.existsSync(target)) {
     kept += 1;

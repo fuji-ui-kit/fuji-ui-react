@@ -34,9 +34,8 @@ export const Avatar = React.forwardRef<HTMLSpanElement, AvatarProps>(function Av
     <Base.Root
       ref={ref}
       className={cn(
-        // `shadow-fuji-control` is what makes Avatar answer to the elevation
-        // axis: without a --fuji-shadow-* token it rendered identically in
-        // `regular` and `floating`, so the setting was a no-op for it.
+        // `shadow-fuji-control` makes Avatar answer to the elevation axis; without a shadow token
+        // `regular` and `floating` rendered identically.
         "fj:box-border fj:flex fj:shrink-0 fj:items-center fj:justify-center fj:overflow-hidden fj:rounded-full fj:font-medium fj:shadow-fuji-control",
         softClasses(tone),
         SIZE_CLASSES[size],

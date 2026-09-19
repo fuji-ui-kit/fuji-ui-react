@@ -15,12 +15,8 @@ export interface AvatarGroupProps extends React.HTMLAttributes<HTMLDivElement> {
 const SIZE_CLASSES: Record<ComponentSize, string> = { sm: "fj:size-8", md: "fj:size-10", lg: "fj:size-12" };
 
 /**
- * The ring separating stacked avatars is painted in the colour of the surface
- * behind them, so it reads as each avatar being cut out of the one beneath.
- * A visible colour here (this used `--fuji-border-strong`) instead draws a
- * grey arc across every neighbour, which is what made the overlap look messy
- * rather than deliberate. `--fuji-avatar-group-ring` lets a group sitting on
- * something other than a Card correct it in one place.
+ * The ring between stacked avatars uses the surface colour behind them so each reads as cut out;
+ * a visible colour drew grey arcs over neighbours. Override via `--fuji-avatar-group-ring`.
  */
 const RING = "fj:ring-2 fj:ring-[color:var(--fuji-avatar-group-ring,var(--fuji-surface))]";
 
@@ -38,9 +34,7 @@ export const AvatarGroup = React.forwardRef<HTMLDivElement, AvatarGroupProps>(fu
         <Avatar
           key={index}
           size={size}
-          // Earlier avatars sit above later ones, so the stack reads
-          // left-to-right and the "+N" tucks under the last face instead of
-          // covering it.
+          // Earlier avatars stack above later ones, so "+N" tucks under the last face.
           style={{ zIndex: visible.length - index }}
           className={cn("fj:relative", RING)}
           {...avatar}

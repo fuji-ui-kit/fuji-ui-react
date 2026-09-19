@@ -19,22 +19,15 @@ export function useControllableState<T>({
   const current = isControlled ? (value as T) : uncontrolled;
 
   const onChangeRef = useRef(onChange);
-  // `useInsertionEffect`, not `useEffect`: this is the shape React's own docs
-  // use for the `useEffectEvent` polyfill. Passive effects can be deferred
-  // past a commit under concurrent rendering, which leaves an effect-updated
-  // ref still holding the *previous* render's handler when an event fires in
-  // between - so a parent that swaps `onChange` and immediately triggers the
-  // control gets the old callback. Insertion effects run synchronously during
-  // commit, before that window opens.
+  // `useInsertionEffect` (React's own `useEffectEvent` polyfill shape): a passive effect can be
+  // deferred past commit under concurrent rendering, so a parent that swaps `onChange` and fires
+  // the control at once would get the old callback. Insertion effects run synchronously in commit.
   useInsertionEffect(() => {
     onChangeRef.current = onChange;
   });
 
-  // Dev-only: switching a component between controlled and uncontrolled
-  // silently changes which value wins, and the symptom (an input that stops
-  // responding, or one that ignores its own prop) never points back here.
-  // React warns about this for its own inputs; Fuji's controls are built on
-  // this hook instead, so the warning has to live here.
+  // Dev-only controlled<->uncontrolled warning: the symptom (an input that stops responding or
+  // ignores its prop) never points back here, and React only warns for its own inputs.
   const wasControlled = useRef(isControlled);
   if (process.env.NODE_ENV !== "production" && wasControlled.current !== isControlled) {
     wasControlled.current = isControlled;

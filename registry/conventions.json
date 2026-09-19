@@ -55,6 +55,13 @@
       "good": "import \"@fujiui/react/styles.css\";",
       "bad": "// relying on the consuming app's own Tailwind build to produce Fuji's classes",
       "source": "SPEC.md §8"
+    },
+    {
+      "id": "theme-via-provider",
+      "rule": "Change the appearance through FujiProvider (setTheme / setMaterial from useFujiConfig, or controlled props), never by toggling a `.dark` class or writing data-fuji-* attributes yourself - the provider owns them and overwrites them. There is no theme=\"system\"; follow the OS by passing a controlled theme.",
+      "good": "const { theme, setTheme } = useFujiConfig();\n<Switch checked={theme === \"dark\"} onCheckedChange={(on) => setTheme(on ? \"dark\" : \"light\")} label=\"Dark mode\" />",
+      "bad": "document.documentElement.classList.toggle(\"dark\");",
+      "source": "SPEC.md §2"
     }
   ]
 }

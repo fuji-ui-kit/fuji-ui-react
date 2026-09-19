@@ -97,14 +97,25 @@ project folder, so name yours:
 | `list_components(category?, query?)` | What exists                                                       |
 | `get_component(name)`                | How to use one - props, allowed values, defaults, parts, examples |
 | `review_usage(code)`                 | Whether what you wrote is correct                                 |
+| `get_appearance(topic?, group?)`     | Dark mode, glass, persistence, and theming your own markup        |
 
 `get_component` for `FujiProvider` also returns the steps for setting Fuji up in
 an app: the stylesheet import, and where the provider goes in Next.js and Vite.
 
+`get_appearance` answers what comes right after: filling the page in dark mode
+(`page`), a light/dark toggle (`toggle`), following the OS (`system`),
+remembering the choice without a flash on reload (`persist`), glass and its
+backdrop (`glass`), making your own markup and Tailwind's `dark:` variant follow
+the provider (`own-markup`), and the design tokens with each theme's and
+material's value (`tokens`, one `group` at a time). Omit `topic` for the list.
+Needs a `@fujiui/react` whose registry ships the recipes; older ones get a
+pointer to `docs/theming.md`.
+
 `review_usage` is the one that raises output quality. A documentation dump is a
 commodity; checking against contracts an agent gets wrong in predictable ways is
 not. It catches subpath imports, per-component `theme`/`material`/`radius`/
-`elevation` props, the removed `glassTint` prop, string icon names, runtime-built
+`elevation` props, the removed `glassTint` prop, theme switching that bypasses the provider (a
+`.dark` class, hand-written `data-fuji-*`, `theme="system"`), string icon names, runtime-built
 Tailwind class names, icon-only controls with no accessible name, dot-access
 sub-parts inside a Server Component, invalid prop values, and imports of
 components the package does not export. Every finding names the rule it breaks
@@ -201,13 +212,15 @@ here are chosen for that:
 
 | call                                       | tokens   |
 | ------------------------------------------ | -------- |
-| tool schemas and instructions, per session | ~680     |
+| tool schemas and instructions, per session | ~950     |
 | `list_components` (filtered)               | 55-350   |
 | `list_components` (everything)             | ~2.3k    |
 | `get_component`                            | ~200-950 |
 | `get_component` for `FujiProvider`         | ~1.4k    |
 | `review_usage` (clean code)                | ~10      |
 | `review_usage` (nine violations)           | ~420     |
+| `get_appearance` (list, or one recipe)     | ~250-420 |
+| `get_appearance` tokens, one group         | ~100-2k  |
 
 Listings read the registry's precomputed `index`; returning the full
 `components` array instead would cost ~47k tokens to answer the same question.

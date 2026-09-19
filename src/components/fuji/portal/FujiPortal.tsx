@@ -16,12 +16,8 @@ export interface FujiPortalProps {
 }
 
 /**
- * Renders `children` into `document.body` (or `container`) while re-stamping
- * the active theme/material/radius/elevation on a wrapper node, so CSS
- * variables resolve correctly for content that lives outside the provider's
- * DOM subtree. Must emit every axis `usePortalThemeAttrs` does (the parallel
- * mechanism for Base UI's own portals) - omitting `data-fuji-material` would
- * render a portal as solid inside a glass app.
+ * Portals `children` to `document.body`/`container`, re-stamping theme attrs so CSS variables
+ * resolve. Must emit every axis `usePortalThemeAttrs` does (no `data-fuji-material` = solid glass).
  */
 export function FujiPortal({ children, container }: FujiPortalProps) {
   const { theme, material, radius, elevation } = useFujiConfig();

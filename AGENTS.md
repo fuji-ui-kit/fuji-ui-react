@@ -42,7 +42,8 @@ documentation. Do not copy claims between docs without verifying them against
 
 ## Repository map
 
-- `src/components/fuji/<component>/` - one directory per component (82 of them),
+- `src/components/fuji/<component>/` - one directory per component (82 of them -
+  fewer than the 86 components, because a few directories export more than one),
   each with its implementation plus an `index.ts` barrel.
 - `src/components/fuji/lib/` - **internal** shared helpers:
   `appearance.ts` (the variant × appearance class recipe),

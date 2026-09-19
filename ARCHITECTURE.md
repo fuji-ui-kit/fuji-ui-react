@@ -163,7 +163,7 @@ size. Measured against the current data:
 
 | what a tool hands back             | tokens                   |
 | ---------------------------------- | ------------------------ |
-| `index` (all 89 components)        | ~3.8k                    |
+| `index` (all 89 entries)           | ~3.8k                    |
 | `index`, filtered to one category  | 200-950                  |
 | `components` array, whole          | **~47k**                 |
 | one `components` entry             | ~440 median, ~1.7k worst |

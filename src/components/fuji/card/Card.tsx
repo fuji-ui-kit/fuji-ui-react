@@ -9,11 +9,8 @@ export type CardEffect = "none" | "lift" | "tilt";
 export type CardPadding = "none" | "sm" | "md" | "lg";
 
 /**
- * Padding is carried by `--fuji-card-padding` rather than a `p-*` class so
- * `Card.Media` can cancel exactly the padding its card has (its negative
- * margins read the same variable). Full class strings, never templated -
- * Tailwind's scanner is static. `md` is the original `p-5` (1.25rem on the
- * 0.25rem spacing scale); `sm` is `p-3`, `lg` is `p-6`.
+ * Padding lives in `--fuji-card-padding`, not `p-*`, so `Card.Media`'s negative margins cancel exactly
+ * it. Full class strings, never templated - Tailwind's scanner is static. md 1.25rem = `p-5`.
  */
 const PADDING_CLASSES: Record<CardPadding, string> = {
   none: "fj:[--fuji-card-padding:0px]",
@@ -24,36 +21,18 @@ const PADDING_CLASSES: Record<CardPadding, string> = {
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * Hover treatment for a clickable card. Defaults to `"none"`.
-   *
-   * - `"lift"` - scales up slightly, tips a degree and deepens its shadow.
-   *   Pure CSS, works in a Server Component.
-   * - `"tilt"` - tracks the pointer and tilts in 3D towards it, springing
-   *   back on leave. Needs a client boundary (see `CardTilt`), and is skipped
-   *   for touch pointers and under `prefers-reduced-motion: reduce`.
+   * Hover treatment. Defaults to `"none"`. `"lift"`: scale, tip and shadow in pure CSS (server-safe).
+   * `"tilt"`: 3D lean to the pointer (max 3deg), client-only (`CardTilt`), off for touch/reduce.
    */
   effect?: CardEffect;
   /**
-   * @deprecated Use `effect="lift"`. Kept working so 0.2.x code keeps
-   * behaving as it did; `effect` wins if both are given.
-   */
-  /**
    * Legacy hover switch, equivalent to `effect="lift"`.
-   *
-   * @deprecated Use `effect`. This still works, but `effect` wins when both are
-   * set - so `effect="none"` opts a card back out.
+   * @deprecated Use `effect`, which wins when both are set (so `effect="none"` opts back out).
    */
   interactive?: boolean;
   /**
-   * Inner padding. Default `"md"` (20px, unchanged from before this prop).
-   *
-   * `"none"` is for flush content - an edge-to-edge image, a table or list
-   * with its own row padding. A `className="p-0"` only wins when the app's
-   * cascade layers rank Fuji's below its utilities (see
-   * `docs/theming.md`), and even then leaves `Card.Media` cancelling 20px
-   * that is no longer there; this prop works regardless of stylesheet order,
-   * and `Card.Media` follows it, so media still bleeds to the edge at any
-   * padding.
+   * Inner padding. Default `"md"` (20px); `"none"` for flush content. Unlike `className="p-0"` it works
+   * regardless of cascade-layer order (docs/theming.md), and `Card.Media` still bleeds to the edge.
    */
   padding?: CardPadding;
 }
@@ -68,25 +47,16 @@ export const CardRoot = React.forwardRef<HTMLDivElement, CardProps>(function Car
     <Root
       ref={ref}
       className={cn(
-        // A consumer-supplied fixed/percentage width (very common on Card -
-        // e.g. `className="w-80"`) combines with this border+padding; without
-        // preflight's universal box-sizing:border-box, that width would be
-        // exceeded by the border+padding instead of including them.
+        // `box-border`: without preflight, a consumer width like `w-80` would exclude border+padding.
         "fj:box-border fuji-glass-surface fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:bg-fuji-surface fj:p-[var(--fuji-card-padding)] fj:shadow-fuji-card",
         PADDING_CLASSES[padding],
-        // `scale` and `rotate` are named explicitly: Tailwind v4 emits those
-        // as their own CSS properties, NOT as the `transform` shorthand, so
-        // listing `transform` alone left the hover tilt un-transitioned - the
-        // shadow eased while the card snapped.
+        // Tailwind v4 emits `scale`/`rotate` as their own properties, not `transform`; without them
+        // listed the shadow eased while the card snapped.
         "fj:transition-[background-color,border-color,box-shadow,transform,scale,rotate] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
         resolved === "lift" && [
           "fj:relative fj:z-0 fj:cursor-pointer fj:transform-gpu fj:duration-[300ms] fj:hover:z-10 fj:hover:border-fuji-border-strong fj:hover:shadow-fuji-panel",
-          // The moving half is gated behind `motion-safe` rather than undone
-          // afterwards by `motion-reduce`. A `motion-reduce:scale-100` loses
-          // on specificity every time - `.fj\:hover\:scale-105:hover` carries
-          // a pseudo-class and a media query adds none - so the card still
-          // scaled and tipped for a reduced-motion visitor. Gating means the
-          // rule is never emitted for them at all.
+          // Gated by `motion-safe`, not undone by `motion-reduce`: `motion-reduce:scale-100` loses
+          // on specificity to `.fj\:hover\:scale-105:hover`, so reduced-motion users still moved.
           "fj:motion-safe:hover:scale-105 fj:motion-safe:hover:-rotate-1",
           "fj:active:z-0 fj:active:shadow-fuji-card fj:motion-safe:active:scale-[1.02] fj:motion-safe:active:rotate-0",
           "fj:motion-reduce:transition-none",
@@ -108,23 +78,15 @@ export const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<
 
 export interface CardMediaProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * Which edge(s) the media bleeds to. "top"/"bottom" cancel padding on
-   * three sides, leaving room for further `Card.Header`/`Content`/`Footer`
-   * below or above. "full" cancels all four sides and rounds every corner -
-   * for a card that's entirely media (e.g. a photo with `Card.Overlay` text
-   * baked in, and nothing else). Default "top".
+   * Edge(s) the media bleeds to: "top"/"bottom" cancel padding on three sides; "full" on all four,
+   * rounding every corner, for an all-media card. Default "top".
    */
   position?: "top" | "bottom" | "full";
 }
 
 /**
- * Full-bleed media area - cancels `CardRoot`'s own padding (whatever its
- * `padding` prop is, through `--fuji-card-padding`) on the relevant
- * edge and clips its content to match the card's own corner radius, so an
- * `<Image>` (or any media) reaches the card's outer edge instead of sitting
- * inset inside the padded body. `position: relative` so `Card.Overlay` (or
- * any absolutely-positioned child - a badge, an avatar) can pin itself
- * against the media instead of the whole card.
+ * Full-bleed media: cancels the card's padding (`--fuji-card-padding`) on its edge(s) and clips to the
+ * card's radius. `position: relative` so `Card.Overlay` or a badge pins to the media, not the card.
  */
 export const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(function CardMedia(
   { position = "top", className, ...props },
@@ -135,8 +97,7 @@ export const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(functi
       ref={ref}
       className={cn(
         "fj:relative fj:overflow-hidden",
-        // The fallback keeps the original 20px bleed for a Card.Media placed
-        // outside a Card (or inside a custom surface) that sets no variable.
+        // The fallback keeps a 20px bleed outside a Card, where no variable is set.
         position === "full" && "fj:-m-[var(--fuji-card-padding,1.25rem)] fj:rounded-fuji-panel",
         position === "top" &&
           "fj:-mx-[var(--fuji-card-padding,1.25rem)] fj:-mt-[var(--fuji-card-padding,1.25rem)] fj:mb-4 fj:rounded-t-fuji-panel",
@@ -150,10 +111,8 @@ export const CardMedia = React.forwardRef<HTMLDivElement, CardMediaProps>(functi
 });
 
 /**
- * Gradient scrim + content pinned to the bottom of a `Card.Media` (or any
- * `position: relative` media wrapper) - the "photo with a caption baked into
- * the image" pattern. Text is fixed white regardless of theme, since it
- * always sits on a photo, not a themed surface.
+ * Gradient scrim + content pinned to the bottom of a `Card.Media` - a caption baked into a photo.
+ * Text is fixed white regardless of theme, since it always sits on a photo.
  */
 export const CardOverlay = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   function CardOverlay({ className, ...props }, ref) {

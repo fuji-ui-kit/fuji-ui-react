@@ -43,23 +43,15 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
       ref={ref}
       id={inputId}
       className={cn(
-        // `box-border` matters: this package ships no preflight, so without
-        // it the 40px was the CONTENT width and the border/padding grew the
-        // track to 46px - and the thumb's fixed 16px travel then left it
-        // flush-left when off but 8px short of the right edge when on.
-        // Track 44x24 with 2px padding leaves a 40x20 well; the 20px thumb
-        // travels exactly the 20px of spare width, so both ends match.
+        // `box-border`: with no preflight, border/padding grew the track to 46px and the thumb
+        // stopped 8px short when on. 44x24 track, 2px padding = 40x20 well; the 20px thumb travels
+        // exactly the 20px spare, so both ends match.
         "fj:box-border fj:flex fj:h-6 fj:w-11 fj:shrink-0 fj:cursor-pointer fj:items-center fj:rounded-full fj:border-0 fj:bg-fuji-surface-strong fj:p-0.5",
         "fj:transition-colors fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease)]",
         TONE_CLASSES[tone],
         "fj:focus-visible:outline fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring",
-        // `Base.Root` renders a `<span role="switch">`, not a native form
-        // control - the real `disabled` attribute lives on Base UI's
-        // visually-hidden `<input>` beside it, so a `disabled:` pseudo-class
-        // here can never match and the track rendered pixel-identical whether
-        // enabled or disabled. Base UI does mirror the disabled state onto
-        // this element as `data-disabled`, so the attribute variant is the
-        // one that actually fires.
+        // `Base.Root` is a `<span role="switch">`; `disabled` lives on the hidden `<input>`, so
+        // `disabled:` never matches. Base UI mirrors it here as `data-disabled`.
         "fj:data-[disabled]:cursor-not-allowed fj:data-[disabled]:opacity-45",
         className,
       )}
@@ -68,19 +60,11 @@ export const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(function 
       <Base.Thumb
         className={cn(
           "fj:size-5 fj:rounded-full fj:bg-white",
-          // A plain, uniformly-colored circle looks identical at any
-          // rotation, so `rotate-[220deg]` alone was an invisible effect - a
-          // real "roll" needs some asymmetric detail on the thumb's face to
-          // reveal the spin. This inset bevel (an off-center highlight/
-          // shadow, like a glossy bead) rotates together with the thumb as
-          // one painted unit, so the highlight visibly sweeps around the
-          // thumb as it slides - not just a solid dot shifting sideways.
+          // A uniform circle hides `rotate-[220deg]`; this off-center inset bevel rotates with the
+          // thumb, so the highlight visibly sweeps as it slides.
           "fj:shadow-[var(--fuji-switch-thumb-shadow)]",
-          // "Rolling" thumb: the translate and a partial spin play together
-          // (both driven by the same token-based duration/easing, so
-          // `prefers-reduced-motion: reduce` - which collapses that token to
-          // 0ms globally - removes both at once with no separate override
-          // needed here).
+          // "Rolling" thumb: translate + spin share the duration token, which
+          // `prefers-reduced-motion: reduce` collapses to 0ms, removing both at once.
           "fj:transition-[translate,rotate,background-color] fj:duration-[var(--fuji-duration-base)] fj:ease-[var(--fuji-ease-spring)]",
           "fj:data-[checked]:translate-x-5 fj:data-[checked]:rotate-[220deg]",
           TONE_THUMB_CLASSES[tone],

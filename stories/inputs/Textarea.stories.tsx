@@ -42,9 +42,8 @@ export const ReadOnly: Story = {
 };
 
 /**
- * `rows` drops the size's minimum height, so `rows={1}` is a one-line
- * composer. Pair it with `field-sizing: content` (or your own auto-grow) to
- * let it grow as the message does.
+ * `rows` drops the size's min height, so `rows={1}` is a one-line composer; add
+ * `field-sizing: content` (or your own auto-grow) to let it grow.
  */
 export const OneLine: Story = {
   args: { rows: 1, placeholder: "Message…", style: { fieldSizing: "content", maxHeight: "10rem" } },

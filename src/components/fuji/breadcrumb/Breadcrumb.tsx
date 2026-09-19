@@ -22,15 +22,8 @@ export interface BreadcrumbProps extends React.HTMLAttributes<HTMLElement> {
   /** The trail, root first. The last entry renders as the current page rather than a link. */
   items: BreadcrumbItem[];
   /**
-   * Renders the anchor element for each linked ancestor - pass Next's `Link`
-   * to get client-side navigation. (The last entry is the current page and is
-   * never a link; it keeps `aria-current="page"` on its own element.)
-   *
-   * The third argument carries what Fuji's own anchor gets: `href`, the link
-   * `className` and `children`, so `(item, children, props) => <Link {...props} />`
-   * is a complete link. Returning a single element without spreading them is
-   * also fine - they are applied to it for you, filling in only what it does
-   * not set itself.
+   * Renders each linked ancestor's anchor (e.g. Next's `Link`); the current page is never a link. The
+   * third argument holds Fuji's anchor props (`href`, `className`, `children`), merged in if not spread.
    */
   renderLink?: (
     item: BreadcrumbItem,

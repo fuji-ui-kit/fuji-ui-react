@@ -6,9 +6,7 @@ interface Photo {
   caption: string;
 }
 
-// Lorem Picsum's numeric-ID endpoint is deterministic (the same ID always
-// returns the same photo), unlike its random endpoint - stable enough for a
-// story that should look the same on every reload.
+// Picsum's numeric-ID endpoint always returns the same photo, so stories look stable on reload.
 const PHOTOS: Photo[] = [
   { id: 1015, caption: "River valley, Norway" },
   { id: 1018, caption: "Mountain lake at dawn" },
@@ -37,9 +35,7 @@ const meta = {
   component: Carousel,
   tags: ["autodocs"],
   args: {
-    // Every story below supplies its own real slides via `render` - this
-    // stub only exists to satisfy `children`'s required-prop type; it is
-    // never actually rendered.
+    // Satisfies the required `children` type; every story renders its own slides.
     children: null,
     "aria-label": "Featured destinations",
     autoplay: false,

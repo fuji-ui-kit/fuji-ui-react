@@ -26,17 +26,9 @@ import {
 import type { ComponentAppearance, ComponentTone } from "../types";
 
 /**
- * `NATIVE_CONTROL_RESET` is applied first by 31 components and carries
- * `border-0`/`bg-transparent`; each component then sets its own `border`/`bg-*`
- * later in the same `cn()` call. Those pairs conflict, and `cn`'s tailwind-merge
- * pass is what resolves them to the later class.
- *
- * Dropping that merge pass (an attractive ~10 kB saving) leaves both classes on
- * the element, at which point stylesheet source order decides - which silently
- * rendered every `contained` Button transparent, with no test failing. This
- * asserts the rendered markup never carries two classes from the same conflict
- * group, so the breakage is caught at the class level rather than by eye.
- */
+ * `cn`'s tailwind-merge resolves `NATIVE_CONTROL_RESET`'s `border-0`/`bg-transparent` against each
+ * component's later `border`/`bg-*`; without it every `contained` Button went transparent, no test
+ * failing. Asserts rendered markup never carries two classes from one conflict group. */
 const CONFLICT_GROUPS: Array<{ name: string; match: (cls: string) => boolean }> = [
   { name: "background", match: (c) => /^fj:bg-/.test(c) },
   { name: "border-width", match: (c) => c === "fj:border" || c === "fj:border-0" },

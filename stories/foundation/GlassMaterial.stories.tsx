@@ -10,9 +10,8 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Reads back what the browser has actually resolved, so "is the glass working?"
- * can be answered by looking rather than by opening devtools. A flat-looking
- * panel has only a few possible causes and they are all visible here.
+ * Reads back what the browser resolved, so "is the glass working?" needs no devtools - every
+ * cause of a flat-looking panel shows here.
  */
 function Readout() {
   const [rows, setRows] = React.useState<Array<[string, string, boolean]>>([]);
@@ -76,9 +75,8 @@ function Readout() {
 }
 
 /**
- * The overlay tier over a deliberately high-detail backdrop. A real blur is
- * obvious here in a way it never is over a smooth gradient - if the pattern
- * behind the panel is legible-but-softened, the material is working.
+ * The overlay tier over a high-detail backdrop, where blur is obvious as it never is over a
+ * gradient: a legible-but-softened pattern means the material works.
  */
 export const OverlayOverDetail: Story = {
   name: "Overlay over a detailed backdrop",
@@ -209,11 +207,8 @@ function PortalProbeReadout() {
 }
 
 /**
- * Three panels with the identical glass class over the same striped backdrop:
- * inline (control), a real Base UI portaled Popover, and a bare createPortal
- * panel. Whichever of the three loses its blur narrows the cause to one layer,
- * and the readout prints every backdrop-root-creating property in the popup's
- * ancestor chain from the affected browser itself.
+ * The same glass inline (control), in a portaled Popover, and in a bare createPortal - whichever
+ * loses its blur names the layer; the readout lists backdrop-root properties up the ancestors.
  */
 export const PortalProbe: Story = {
   name: "Portal probe (diagnosis)",
@@ -261,18 +256,9 @@ export const PortalProbe: Story = {
             createPortal(
               <div
                 data-manual-portal=""
-                // Portaled to body = outside the provider's DOM, so the theme
-                // attrs must ride on the element itself (what
-                // usePortalThemeAttrs does for real components). Without them
-                // this panel resolves the :root light fallback - white, no
-                // filter - which the first run of this probe demonstrated.
-                // Glass is the `material` axis, not `theme` - but glass has no
-                // separate tint of its own, so `data-fuji-theme` doubles as
-                // the glass tint too (`[data-fuji-material="glass"]
-                // [data-fuji-theme="light"]` is the light-tinted surface),
-                // which is why getting it right here matters even more than
-                // for other tokens. `data-fuji-material="glass"` is what
-                // makes the glass selectors match at all.
+                // Portaled outside the provider, so the attrs ride on the element (as
+                // usePortalThemeAttrs does); without them it falls back to :root light, no filter.
+                // `data-fuji-theme` also sets the glass tint; `data-fuji-material` enables glass.
                 data-fuji-theme="dark"
                 data-fuji-material="glass"
                 data-fuji-radius="cornered"
@@ -292,12 +278,8 @@ export const PortalProbe: Story = {
 };
 
 /**
- * Five candidate overlay recipes over the same busy backdrop, plus the real
- * portaled Popover running the current tokens. Recipe 1 uses no
- * backdrop-filter at all - plain alpha compositing, which cannot fail in any
- * browser - so if 2-5 look like slabs while 1 shows the stripes, the
- * browser is not sampling the backdrop for filtered panels and the tokens
- * must lean on tint rather than blur.
+ * Five overlay recipes plus the real Popover over a busy backdrop. Recipe 1 has no backdrop-filter;
+ * if only it shows the stripes, the browser isn't sampling backdrops and tokens must lean on tint.
  */
 export const RecipePicker: Story = {
   name: "Recipe picker",

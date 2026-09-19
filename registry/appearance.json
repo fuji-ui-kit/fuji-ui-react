@@ -1,0 +1,108 @@
+{
+  "recipes": [
+    {
+      "id": "page",
+      "title": "Paint the whole page",
+      "summary": "FujiProvider paints only its own wrapper, so a short page or the area past it stays the browser's white in dark mode.",
+      "steps": [
+        "Give the root provider a full-height class, so its themed background fills the viewport.",
+        "Add `persist` to the root provider (and the bootstrap script for SSR - see the `persist` recipe): it mirrors the appearance onto <html>, which then takes the theme background and color-scheme, so overscroll and scrollbars match too.",
+        "Never add a second full-page background of your own; `--fuji-background` already switches with the theme."
+      ],
+      "code": "<FujiProvider defaultTheme=\"dark\" persist className=\"min-h-dvh\">\n  <App />\n</FujiProvider>",
+      "gotchas": [
+        "Nested providers are isolated preview scopes: they never touch <html>, and only the root provider should set `persist`."
+      ]
+    },
+    {
+      "id": "toggle",
+      "title": "A light/dark toggle",
+      "summary": "Read and change the theme with useFujiConfig() from any component inside the provider.",
+      "steps": [
+        "Render the toggle inside FujiProvider - outside it, useFujiConfig() returns fixed defaults and a no-op setter.",
+        "Uncontrolled provider (`defaultTheme`) plus `setTheme` is the simplest form; the provider owns the state.",
+        "To own the state yourself, pass `theme` with `onThemeChange` instead - never both `theme` and `defaultTheme`."
+      ],
+      "code": "\"use client\";\nimport { Switch, useFujiConfig } from \"@fujiui/react\";\n\nexport function DarkModeSwitch() {\n  const { theme, setTheme } = useFujiConfig();\n  return (\n    <Switch\n      label=\"Dark mode\"\n      checked={theme === \"dark\"}\n      onCheckedChange={(on) => setTheme(on ? \"dark\" : \"light\")}\n    />\n  );\n}",
+      "gotchas": [
+        "Do not toggle a `.dark` class or write `data-fuji-theme` on <html> yourself: the provider owns those attributes and overwrites them on its next render.",
+        "`material`, `radius` and `elevation` work the same way: `setMaterial`, `setRadius`, `setElevation`."
+      ]
+    },
+    {
+      "id": "system",
+      "title": "Follow the operating system",
+      "summary": "There is no theme=\"system\" value. Read prefers-color-scheme and pass the result as a controlled theme.",
+      "steps": [
+        "Subscribe to the media query with useSyncExternalStore, so the theme updates live when the OS switches.",
+        "Pass it as the controlled `theme`; the server snapshot must be a fixed value so hydration matches."
+      ],
+      "code": "\"use client\";\nimport * as React from \"react\";\nimport { FujiProvider, type FujiTheme } from \"@fujiui/react\";\n\nconst query = \"(prefers-color-scheme: dark)\";\nconst subscribe = (onChange: () => void) => {\n  const list = window.matchMedia(query);\n  list.addEventListener(\"change\", onChange);\n  return () => list.removeEventListener(\"change\", onChange);\n};\n\nfunction useSystemTheme(): FujiTheme {\n  return React.useSyncExternalStore(\n    subscribe,\n    () => (window.matchMedia(query).matches ? \"dark\" : \"light\"),\n    () => \"light\",\n  );\n}\n\nexport function Providers({ children }: { children: React.ReactNode }) {\n  return (\n    <FujiProvider theme={useSystemTheme()} className=\"min-h-dvh\">\n      {children}\n    </FujiProvider>\n  );\n}",
+      "gotchas": [
+        "With server rendering a dark-OS visitor sees one light frame before hydration. To avoid it, offer an explicit choice instead and use the `persist` recipe."
+      ]
+    },
+    {
+      "id": "persist",
+      "title": "Remember the choice without a flash",
+      "summary": "`persist` saves theme, material, radius and elevation to localStorage; with SSR a pre-paint script applies them before hydration.",
+      "steps": [
+        "Set `persist` on the root provider only.",
+        "Client-only apps (Vite, CRA): nothing else - the provider applies the saved value before the first paint.",
+        "Server-rendered apps (Next.js): add the script from buildAppearanceBootstrapScript() to <head>, with the same defaults as the provider, and mark <html> suppressHydrationWarning and data-fuji-boot."
+      ],
+      "code": "// app/layout.tsx (Next.js)\nimport Script from \"next/script\";\nimport \"@fujiui/react/styles.css\";\nimport { buildAppearanceBootstrapScript, FujiProvider } from \"@fujiui/react\";\n\nconst DEFAULTS = { theme: \"light\", material: \"solid\", radius: \"cornered\", elevation: \"regular\" } as const;\nconst BOOTSTRAP = buildAppearanceBootstrapScript(DEFAULTS);\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\" data-fuji-boot=\"\" suppressHydrationWarning>\n      <head>\n        <Script id=\"fuji-appearance\" strategy=\"beforeInteractive\" dangerouslySetInnerHTML={{ __html: BOOTSTRAP }} />\n      </head>\n      <body>\n        <FujiProvider persist defaultTheme={DEFAULTS.theme} defaultMaterial={DEFAULTS.material} className=\"min-h-dvh\">\n          {children}\n        </FujiProvider>\n      </body>\n    </html>\n  );\n}",
+      "gotchas": [
+        "The script's defaults and the provider's default* props must match, or a first-time visitor flips between them.",
+        "Never hand-copy the script or its storage key (`fuji-appearance`): the export is kept in step with what `persist` writes."
+      ],
+      "guide": "docs/ssr.md"
+    },
+    {
+      "id": "glass",
+      "title": "Glass",
+      "summary": "material=\"glass\" layers translucency and blur over the active theme; the theme is the glass tint. It needs something behind it to show.",
+      "steps": [
+        "Turn it on at the provider: material=\"glass\" (or defaultMaterial / setMaterial). Keep theme as is - dark + glass and light + glass are both valid.",
+        "Put a backdrop behind it. Over the theme's flat background glass is correct but subtle; add the shipped `fuji-glass-atmosphere` class to a full-height wrapper, or your own photo or gradient.",
+        "Panels, sidebars, overlays and cards take the material; buttons, fields and other controls stay solid on purpose.",
+        "For one region in a different tint (a bright photo under a dark app), nest a provider with its own theme AND material - nested providers inherit no axes."
+      ],
+      "code": "<FujiProvider theme=\"dark\" material=\"glass\">\n  <div className=\"fuji-glass-atmosphere min-h-dvh\">\n    <App />\n  </div>\n</FujiProvider>",
+      "gotchas": [
+        "There is no glassTint prop and no theme=\"glass\" value; both were removed.",
+        "Under prefers-reduced-transparency, or where backdrop-filter is unsupported, glass falls back to opaque surfaces automatically.",
+        "Text over your own busy photo needs the stronger surfaces: prefer --fuji-surface or --fuji-surface-raised over --fuji-surface-subtle."
+      ],
+      "guide": "docs/theming.md"
+    },
+    {
+      "id": "own-markup",
+      "title": "Make your own markup follow the theme",
+      "summary": "Hard-coded colours (bg-white, text-gray-900) and Tailwind's dark: variant do not follow FujiProvider. Use the --fuji-* tokens.",
+      "steps": [
+        "Style app-owned elements with the tokens, which switch with theme and material: var(--fuji-background), var(--fuji-surface), var(--fuji-foreground), var(--fuji-foreground-muted), var(--fuji-border).",
+        "With Tailwind v4, map the tokens once so utilities like bg-fuji-surface exist in your own build (the package's compiled classes are prefixed and not meant for your markup).",
+        "If you use Tailwind's dark: variant, point it at Fuji's theme attribute so it follows the provider instead of the OS."
+      ],
+      "code": "/* app/globals.css - Tailwind v4 */\n@layer properties, theme, base, fuji, components, utilities;\n@import \"tailwindcss\";\n@import \"@fujiui/react/styles.css\";\n\n/* dark: follows FujiProvider's theme, not the OS */\n@custom-variant dark (&:where([data-fuji-theme=dark], [data-fuji-theme=dark] *));\n\n@theme inline {\n  --color-fuji-background: var(--fuji-background);\n  --color-fuji-surface: var(--fuji-surface);\n  --color-fuji-foreground: var(--fuji-foreground);\n  --color-fuji-foreground-muted: var(--fuji-foreground-muted);\n  --color-fuji-border: var(--fuji-border);\n}",
+      "gotchas": [
+        "Without Tailwind, use the variables directly: `.panel { background: var(--fuji-surface); color: var(--fuji-foreground); }`.",
+        "Tailwind v3: darkMode: [\"selector\", '[data-fuji-theme=\"dark\"]'] in tailwind.config does the same as the @custom-variant line.",
+        "Call get_appearance with topic \"tokens\" for the full token list and each theme's values."
+      ],
+      "guide": "docs/theming.md"
+    },
+    {
+      "id": "tokens",
+      "title": "Design tokens",
+      "summary": "Every --fuji-* custom property, grouped. Values switch per theme and material; pass `group` to list one group with its values.",
+      "steps": [
+        "Colour: --fuji-background, --fuji-surface(-subtle|-strong|-raised|-overlay), --fuji-foreground(-muted|-subtle), --fuji-border(-strong), and the tones --fuji-default|forest|sun|fire|water with -foreground, -soft and -border.",
+        "Reach for -raised when a fill carries text or an icon, -strong only for a bare fill (a track, a divider).",
+        "Override a token by redeclaring it on .fuji-theme-scope (or a narrower element); check contrast in both themes and both materials."
+      ],
+      "guide": "docs/theming.md"
+    }
+  ]
+}

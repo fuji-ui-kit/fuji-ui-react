@@ -57,10 +57,8 @@ const person = (id: number, name: string) => (
 const thumb = (id: number) => <img src={`https://picsum.photos/id/${id}/96/96`} alt="" />;
 
 /**
- * An activity inbox: `layout="inline"` runs the sender's name into the
- * event text, `avatar` + `badge` show who and what kind of event, `media`
- * is a thumbnail of the thing it happened to, and `unread` rows get the
- * leading dot. Group rows under headings and separate them with `divide-y`.
+ * Activity inbox: `layout="inline"` runs the name into the text, `avatar` + `badge` show who and
+ * what, `media` is a thumbnail, `unread` adds a dot. Group under headings with `divide-y`.
  */
 export const Inbox: Story = {
   name: "Inbox (activity feed)",
@@ -152,10 +150,7 @@ function AppIcon({ className, children }: { className: string; children: React.R
   );
 }
 
-/**
- * Alerts as cards: an app icon in the leading slot, title and sub-title,
- * the body beneath, and the sender's avatar as the trailing `media`.
- */
+/** Alerts as cards: app icon leading, title, sub-title and body, sender's avatar as `media`. */
 export const Alerts: Story = {
   name: "Alerts (cards)",
   render: () => (

@@ -18,10 +18,8 @@ export interface NotificationProps extends Omit<React.HTMLAttributes<HTMLDivElem
   /** When it happened - already formatted ("2h ago"), since this renders it verbatim. */
   timestamp?: React.ReactNode;
   /**
-   * `"stacked"` (default): title, then description, then timestamp on their
-   * own lines - an alert. `"inline"`: the title runs into the description
-   * and timestamp as one sentence ("**Ava** liked your post · 2h") - an
-   * activity feed.
+   * `"stacked"` (default): title, description, timestamp on separate lines (an alert). `"inline"`:
+   * one sentence, "**Ava** liked your post · 2h" (an activity feed).
    */
   layout?: "stacked" | "inline";
   /** A thumbnail of the thing the notification is about, on the trailing edge. */
@@ -31,10 +29,8 @@ export interface NotificationProps extends Omit<React.HTMLAttributes<HTMLDivElem
 }
 
 /**
- * Persistent list row for a notification centre/inbox - see `Toast` for
- * transient feedback. Composes as a list: stack rows in a column with
- * `divide-y`, group them under "Today"/"This week" headings, or give each
- * its own card.
+ * Persistent row for a notification centre/inbox (`Toast` is for transient feedback). Stack rows
+ * with `divide-y`, group under "Today"/"This week" headings, or card each one.
  */
 export const Notification = React.forwardRef<HTMLDivElement, NotificationProps>(function Notification(
   {

@@ -30,11 +30,8 @@ const STROKE_CLASSES: Partial<Record<StatusTone, string>> = {
 };
 
 /**
- * Circular determinate/indeterminate progress ring - plain SVG, no
- * dependency. The arc is thick with round caps over a faint track, the
- * percentage sits in the centre and scales with the ring, and the arc
- * draws in from empty on mount and eases to every new value on the spring
- * (both pure CSS - this stays a presentational, server-renderable component).
+ * Circular determinate/indeterminate progress ring in plain SVG, centred percentage, arc animated
+ * in pure CSS - so it stays a presentational, server-renderable component.
  */
 export const CircularProgress = React.forwardRef<HTMLSpanElement, CircularProgressProps>(
   function CircularProgress(

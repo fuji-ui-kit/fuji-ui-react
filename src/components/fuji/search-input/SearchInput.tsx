@@ -8,20 +8,15 @@ import { NATIVE_CONTROL_RESET } from "../lib/native-control-reset";
 
 export interface SearchInputProps extends Omit<InputProps, "type" | "startSlot" | "endSlot" | "clearable"> {
   /**
-   * Shows the "X" clear button once there is a value. Default true.
-   *
-   * `SearchInput` owns its clear UI end-to-end - `Input`'s own `endSlot` and
-   * `clearable` props are deliberately omitted above (not just unused) so a
-   * consumer can never pass an `endSlot` that silently replaces this button,
-   * or a `clearable` that renders a second, duplicate one alongside it.
+   * Shows the "X" clear button once there is a value. Default true. `Input`'s `endSlot` and
+   * `clearable` are omitted from the props so they can't replace or duplicate this button.
    */
   clearable?: boolean;
 }
 
 /**
- * Input with a search icon and a clear button once there is a value. The
- * clear button updates the DOM value directly and fires a native `input`
- * event, so both controlled and uncontrolled usage see the change.
+ * Input with a search icon and a clear button. Clearing sets the DOM value and fires a native
+ * `input` event, so controlled and uncontrolled usage both see it.
  */
 export const SearchInput = React.forwardRef<HTMLInputElement, SearchInputProps>(function SearchInput(
   { value, defaultValue, onChange, clearable = true, ...props },

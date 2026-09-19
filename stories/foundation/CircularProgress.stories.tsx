@@ -39,9 +39,8 @@ export const Sizes: Story = {
 };
 
 /**
- * A numeric `size` is the diameter in px; the stroke follows at a tenth of
- * it (override with `thickness`) and the centre label scales with the ring.
- * The arc draws in from empty on mount.
+ * Numeric `size` is the px diameter; stroke is a tenth of it (`thickness` overrides) and the label
+ * scales along. The arc draws in on mount.
  */
 export const Rings: Story = {
   name: "Rings (reference sizes)",

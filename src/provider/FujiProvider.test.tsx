@@ -107,14 +107,9 @@ describe("FujiProvider", () => {
     },
   );
 
-  // Landmine: tokens.css's glass `:not()` exclusion - the rule that keeps a
-  // nested opaque provider (e.g. the docs site's theme-comparison grid)
-  // opaque inside an otherwise-glass page - is keyed on
-  // `[data-fuji-material="solid"]`. It only works because a nested "solid"
-  // provider stamps that attribute explicitly, even though "solid" is also
-  // its own default; if the wrapper omitted default-valued attributes, that
-  // CSS exclusion would never match and the nested provider would go
-  // transparent along with the rest of the glass page.
+  // Landmine: tokens.css's glass `:not()` exclusion keeps a nested solid provider opaque inside a
+  // glass page by matching `[data-fuji-material="solid"]`, so the provider must stamp that attribute
+  // even at its default - or the nested provider goes transparent with the rest of the page.
   it('stamps data-fuji-material="solid" on a nested solid provider inside a glass provider', () => {
     const { container } = render(
       <FujiProvider defaultMaterial="glass">
@@ -146,15 +141,9 @@ describe("FujiProvider", () => {
     expect(screen.getByTestId("theme")).toHaveTextContent("dark");
   });
 
-  // Regression: `persist` must only ever apply a stored value from its
-  // post-mount effect, never during the initial render - reading storage
-  // there would make the client's first render (which does have `window`,
-  // unlike a real server) disagree with the server-rendered HTML, which is
-  // exactly the "identical first paint" guarantee docs/ssr.md promises.
-  // `renderToString` here stands in for the server (its output never depends
-  // on the browser globals it doesn't have anyway); `hydrateRoot` stands in
-  // for the client picking that HTML back up with storage already populated -
-  // the scenario a returning visitor actually hits.
+  // Regression: `persist` may apply storage only post-mount; reading it in the initial render
+  // would make the first client render disagree with the server HTML (docs/ssr.md).
+  // `renderToString` + `hydrateRoot` with storage pre-populated is a returning visitor's path.
   it("hydrates without a mismatch even when storage already holds a non-default value", () => {
     window.localStorage.setItem(
       "fuji-appearance",
@@ -185,9 +174,8 @@ describe("FujiProvider", () => {
     );
     expect(hydrationMismatch).toBe(false);
 
-    // The post-mount effect still reconciles to the stored value once
-    // mounted - persistence itself keeps working, it just no longer races
-    // the initial render.
+    // The post-mount effect still reconciles to the stored value; it just no longer races the
+    // initial render.
     expect(container).toHaveTextContent("dark");
 
     act(() => root.unmount());
@@ -215,12 +203,8 @@ describe("FujiProvider", () => {
 });
 
 /**
- * Landmine: content that lives outside the provider's own DOM subtree - Base
- * UI's own portals (Select, Dialog, Popover, ...) and consumer-authored
- * `FujiPortal` usage - has no themed ancestor to inherit CSS variables from,
- * so each mechanism re-stamps every `data-fuji-*` axis on its own portaled
- * root. Both must include `data-fuji-material`, or a portal opened inside a
- * glass app silently renders solid.
+ * Landmine: Base UI portals and `FujiPortal` content have no themed ancestor, so each re-stamps
+ * every `data-fuji-*` axis - including `data-fuji-material`, or a portal in a glass app renders solid.
  */
 describe("portal theme attributes", () => {
   function PortalAttrsProbe() {

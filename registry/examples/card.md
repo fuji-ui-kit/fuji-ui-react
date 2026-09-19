@@ -24,7 +24,7 @@ Scales up slightly, tips a degree and deepens its shadow. Pure CSS, so it works 
 
 ## Hover effect: tilt
 
-Tracks the pointer and tilts the card in 3D towards it, springing back when the pointer leaves.
+Tracks the pointer and leans the card gently towards it in 3D - at most 3deg at the corners - springing back when the pointer leaves.
 
 ```tsx
 <Card effect="tilt">

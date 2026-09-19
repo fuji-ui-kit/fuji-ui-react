@@ -13,10 +13,8 @@ export interface NativeSelectProps extends Omit<React.SelectHTMLAttributes<HTMLS
 }
 
 /**
- * Native `<select>` - use for progressive enhancement, iOS/Android native pickers, and simple cases.
- * Renders through Base UI's `Field.Control` (typed for `<input>`, hence the cast below) so it
- * auto-registers with an ancestor `FormField`/`Field.Root` the same way Input does - a bare
- * `<select>` here would leave `FormField.Label` with no control to point `htmlFor` at.
+ * Native `<select>` for progressive enhancement, mobile pickers and simple cases. Renders via
+ * `Field.Control` (hence the cast) so `FormField.Label` gets an `htmlFor` target, as with Input.
  */
 export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProps>(function NativeSelect(
   { size = "md", invalid, className, children, ...props },
@@ -27,14 +25,9 @@ export const NativeSelect = React.forwardRef<HTMLSelectElement, NativeSelectProp
       <Field.Control
         render={<select />}
         ref={ref as React.Ref<HTMLElement>}
-        // Spread instead of `data-invalid={invalid ? "" : undefined}`:
-        // `Field.Control` already mirrors an ancestor `<FormField invalid>`
-        // onto this same element as `data-invalid` automatically, and an
-        // explicit `undefined`-valued prop still occupies the key and wins
-        // the merge in `useRenderElement`, erasing that computed value
-        // whenever this `invalid` prop itself was left unset (see Input.tsx
-        // for the full mechanism, and FormField.tsx for the symptom).
-        // Omitting the key when falsy instead lets the ambient value through.
+        // Spread, not `data-invalid={invalid ? "" : undefined}`: an explicit `undefined` wins the
+        // merge and erases the `data-invalid` Field.Control mirrors from `<FormField invalid>`.
+        // Omitting the key lets it through (see Input.tsx / FormField.tsx).
         {...(invalid ? { "data-invalid": "" } : null)}
         aria-invalid={invalid}
         className={cn(fieldSurface({ size }), "fj:appearance-none fj:pr-8", className)}

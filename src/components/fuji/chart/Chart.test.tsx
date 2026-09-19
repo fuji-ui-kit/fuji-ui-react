@@ -18,14 +18,11 @@ describe("Chart data updates", () => {
     const before = linePath(container);
 
     rerender(<LineChart title="Signups" series={seriesOf([90, 40, 5])} />);
-    // The frame right after the change is still the old shape - that is the
-    // whole point. Snapping here is the bug this covers.
+    // The next frame is still the old shape: snapping is the bug this covers.
     expect(linePath(container)).toBe(before);
 
     await waitFor(() => expect(linePath(container)).not.toBe(before));
-    // ...and it arrives exactly, not approximately: the last frame is the data
-    // itself. Generous timeout - this waits on real animation frames, which
-    // jsdom throttles under a loaded suite.
+    // ...and arrives exactly. Generous timeout: jsdom throttles real frames under load.
     const target = render(<LineChart title="Signups" series={seriesOf([90, 40, 5])} />);
     await waitFor(() => expect(linePath(container)).toBe(linePath(target.container)), {
       timeout: 4000,

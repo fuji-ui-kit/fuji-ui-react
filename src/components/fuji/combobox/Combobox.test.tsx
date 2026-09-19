@@ -17,9 +17,7 @@ describe("Combobox", () => {
     expect(screen.getByLabelText("Letter")).not.toHaveAttribute("aria-invalid");
   });
 
-  // Regression: the chevron toggle is a raw <button> with no border/background
-  // of its own, so without Tailwind preflight it fell back to native OS
-  // button chrome (grey background, outset border) instead of a plain icon.
+  // Regression: the chevron is a raw <button>; without preflight it got native OS button chrome.
   it("resets native button chrome on the toggle button", () => {
     render(<Combobox items={items} aria-label="Letter" />);
     const toggle = screen.getByRole("button", { name: "Toggle options" });
@@ -28,13 +26,8 @@ describe("Combobox", () => {
     expect(toggle.className).toEqual(expect.stringContaining("appearance-none"));
   });
 
-  // Regression (Defect 2): `Base.InputGroup` (the `<div role="group">` that
-  // actually carries `data-[invalid]:border-fuji-fire`) suffered the same
-  // stomping bug as the Field.Control-based inputs: an explicit
-  // `data-invalid={invalid ? "" : undefined}` on the group won the merge
-  // over the `data-invalid` Base UI computes from an ancestor `<FormField
-  // invalid>`, erasing it whenever Combobox's own `invalid` prop was left
-  // unset. Fails before the fix; passes after.
+  // Regression: an explicit `data-invalid={undefined}` on `Base.InputGroup` (which carries the
+  // invalid border) won the merge and erased the value Base UI computes from `<FormField invalid>`.
   it("propagates data-invalid from an ancestor FormField without its own invalid prop", () => {
     render(
       <FormField invalid>

@@ -1,33 +1,7 @@
 #!/usr/bin/env node
 /*
- * Installs the packed `@fujiui/mcp` tarball the way `npx -y @fujiui/mcp` does -
- * into a directory this repository's node_modules cannot reach - and drives it
- * over stdio from each of the places real clients start it.
- *
- * Every scenario is a way the server worked from the repo and would have failed
- * for someone installing it from npm:
- *   - a dependency declared only in the root package.json (`mcp/` is not a
- *     workspace, so nothing but its own `dependencies` reaches a user). The
- *     install below is nested because a hoisted one hides exactly this: `zod`
- *     is also a dependency of the MCP SDK, so with it missing from
- *     mcp/package.json an ordinary install still resolves the server's
- *     `import "zod"` - to whatever version the SDK happened to ask for;
- *   - compiled tests or source maps shipping in the tarball;
- *   - Claude Code's user scope, which starts servers in ~/.claude and names the
- *     project only through CLAUDE_PROJECT_DIR;
- *   - a pnpm monorepo (Turborepo, Nx) opened at its root, where nothing is
- *     installed at the root and the package is linked into an app from the store;
- *   - a project that does not use Fuji, where the server must still start and
- *     say why its tools cannot answer;
- *   - a project on a release from before registry.json shipped;
- *   - the npx launch every install command in mcp/README.md uses, from an
- *     empty cache - npx has to infer the bin, whose name is not the package's;
- *   - a server.json (the MCP Registry listing) that no longer matches the
- *     package it lists.
- *
- * Dev-only: `scripts/` never ships. Needs `npm run build` first (for
- * dist/registry.json) and network access for the install. POSIX only, like the
- * CI job that runs it.
+ * Installs the packed `@fujiui/mcp` tarball outside the repo, like npx, and drives it over stdio
+ * from each place real clients start it. Needs `npm run build` and network; POSIX only.
  */
 import { execFileSync, spawn } from "node:child_process";
 import {
@@ -82,11 +56,8 @@ try {
   const stray = files.filter((file) => /\.test\.|\.map$|^package\/src\//.test(file));
   check("tarball has no tests, source maps or sources", stray.length === 0, stray.join("\n"));
 
-  // The MCP Registry listing is published by the same release and verified
-  // against the npm package: its `name` must equal `mcpName`, and a version
-  // that drifted from package.json would list a release that is not the one on
-  // npm. Checked here so it fails on the push that breaks it, not after
-  // `npm publish` has already gone out.
+  // The MCP Registry verifies server.json against the npm package; check it here so drift fails
+  // on the push, not after `npm publish`.
   const mcpManifest = JSON.parse(readFileSync(join(REPO, "mcp", "package.json"), "utf8"));
   const listing = JSON.parse(readFileSync(join(REPO, "mcp", "server.json"), "utf8"));
   check(
@@ -105,9 +76,8 @@ try {
     (listing.description ?? "").length <= 100,
   );
 
-  // 2. Install it where only its own `dependencies` can satisfy its imports:
-  // outside the repo, and nested, so a copy hoisted for another package cannot
-  // stand in for one the server forgot to declare.
+  // 2. Install outside the repo and nested, so only its own `dependencies` resolve: a hoisted
+  // install would let the SDK's `zod` hide a missing declaration.
   const tool = join(work, "tool");
   mkdirSync(tool);
   writeFileSync(join(tool, "package.json"), JSON.stringify({ name: "smoke-tool", private: true }));
@@ -122,8 +92,7 @@ try {
   const bin = join(tool, "node_modules", ".bin", "fuji-mcp");
   check("installs a fuji-mcp bin", existsSync(bin));
 
-  // 3. Projects to start it from. What a real install contributes is the
-  // library's package.json (for `exports` and the version) and the registry.
+  // 3. Projects to start it from: a real install contributes package.json and the registry.
   const manifest = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8"));
   function project(name, { version = manifest.version, registry = true } = {}) {
     const pkg = join(work, name, "node_modules", "@fujiui", "react");
@@ -138,18 +107,14 @@ try {
   const elsewhere = join(work, "dot-claude");
   mkdirSync(elsewhere);
 
-  // Inside Claude Code the real CLAUDE_PROJECT_DIR is set, and would make the
-  // scenarios below pass for the wrong reason.
+  // A real CLAUDE_PROJECT_DIR would make scenarios pass for the wrong reason.
   const baseEnv = { ...process.env };
   delete baseEnv.CLAUDE_PROJECT_DIR;
 
   async function scenario(label, { cwd, env = {}, args = [], launch = [bin] }, body) {
     console.log(`\n${label}`);
-    // Its own process group, so the whole tree can be stopped below. A launcher
-    // can run the server as a grandchild - npm 9's `npx`, the one Node 18.18
-    // ships, does - and killing only the direct child left that grandchild
-    // holding this script's pipes open: every check passed, the process never
-    // exited, and the CI job sat until its timeout.
+    // Own process group, so the kill below reaches a grandchild server (npm 9's npx), which
+    // otherwise held the pipes open until the CI timeout.
     const child = spawn(launch[0], [...launch.slice(1), ...args], {
       cwd,
       env: { ...baseEnv, ...env },
@@ -204,8 +169,7 @@ try {
       const tools = async () => (await request("tools/list", {})).result?.tools ?? [];
       await body({ instructions: init.result?.instructions ?? "", call, tools });
     } finally {
-      // End of input is how a stdio MCP server is told to stop, and it reaches
-      // every process sharing the pipe; the group kill covers one that ignores it.
+      // EOF stops a stdio server; the group kill covers one that ignores it.
       child.stdin.end();
       try {
         process.kill(-child.pid, "SIGTERM");
@@ -229,20 +193,29 @@ try {
       check("  review_usage flags a per-component theme prop", review.includes('"theme" prop'), review);
       const component = await call("get_component", { name: "Button" });
       check("  get_component answers", component.includes("@fujiui/react"), component);
-      // An adopting app starts from FujiProvider; without the stylesheet import
-      // every component renders unstyled with no error.
+      // Adopting apps start here; a missing stylesheet import fails silently.
+      const glass = await call("get_appearance", { topic: "glass" });
+      check(
+        "  get_appearance answers from the installed registry",
+        glass.includes("fuji-glass-atmosphere"),
+        glass,
+      );
       const provider = await call("get_component", { name: "FujiProvider" });
       check(
         "  FujiProvider carries the setup steps",
         provider.includes("@fujiui/react/styles.css"),
         provider.slice(0, 400),
       );
-      // Required by the Claude Connectors Directory, and read by clients deciding
-      // what to auto-approve.
+      // Required by the Connectors Directory; clients use it for auto-approval.
       const listed = await tools();
       check(
         "  every tool is marked read-only",
-        listed.length === 3 && listed.every((tool) => tool.annotations?.readOnlyHint === true),
+        // The exact set, so a new tool must be added here deliberately (and marked read-only).
+        listed
+          .map((tool) => tool.name)
+          .sort()
+          .join() === "get_appearance,get_component,list_components,review_usage" &&
+          listed.every((tool) => tool.annotations?.readOnlyHint === true),
         JSON.stringify(listed.map((tool) => [tool.name, tool.annotations])),
       );
     },
@@ -266,9 +239,8 @@ try {
     },
   );
 
-  // What every install command in mcp/README.md actually runs. `npx -y <path>`
-  // would execute the path as a program; `file:` is the local stand-in for the
-  // package name. The empty cache makes it a first launch, as for a new user.
+  // What mcp/README.md's install commands run: `file:` stands in for the name (a bare path would
+  // run as a program), and an empty cache makes npx infer the bin, whose name isn't the package's.
   await scenario(
     "launched through npx from an empty cache (what `npx -y @fujiui/mcp` does)",
     {
@@ -282,8 +254,7 @@ try {
     },
   );
 
-  // Claude Code names the repository root as the project. Under pnpm nothing is
-  // installed there: the package lives in the store and is linked into the app.
+  // Claude Code names the repo root as the project; pnpm only links the package into the app.
   const monorepo = join(work, "turborepo");
   mkdirSync(join(monorepo, "apps", "web", "node_modules", "@fujiui"), { recursive: true });
   writeFileSync(join(monorepo, "package.json"), JSON.stringify({ private: true }));

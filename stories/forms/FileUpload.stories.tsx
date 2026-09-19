@@ -13,14 +13,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// `FileUpload`'s root is a plain `flex flex-col` block - it intentionally sets
-// no width of its own, so it fills whatever container a consumer places it
-// in (the right default for a form control inside a form layout). Left
-// unconstrained in Storybook's wide canvas, that reads as "stretches full
-// width" - wrapping the default/representative examples in `inline-block`
-// sizes the story to the control's actual content instead. `FullWidth` below
-// shows the deliberate opposite, via ordinary composition (a `w-full`
-// wrapper), not a new prop.
+// `FileUpload` sets no width and fills its container, so `inline-block` sizes these stories to
+// content on the wide canvas. `FullWidth` shows the opposite with a `w-full` wrapper, not a prop.
 export const Default: Story = {
   render: (args) => (
     <div className="inline-block">
@@ -47,7 +41,7 @@ export const Disabled: Story = {
   ),
 };
 
-/** Sizing to a container is ordinary composition, not a dedicated prop - wrap it in a `w-full` element. */
+/** Filling a container is plain composition, not a prop: wrap it in a `w-full` element. */
 export const FullWidth: Story = {
   render: (args) => (
     <div className="w-full">

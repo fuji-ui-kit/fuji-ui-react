@@ -11,15 +11,9 @@ export default defineConfig([
     "coverage/**",
     "node_modules/**",
     "storybook-static/**",
-    // Agent worktrees live inside the repo, so linting from the main checkout
-    // otherwise reports every other branch's source - and their built `dist`
-    // output - as problems on this one. Each worktree lints itself.
+    // Agent worktrees live inside the repo; each lints itself.
     ".claude/worktrees/**",
-    // Build output, not source. `dist/**` above is anchored at the repo root,
-    // so a fixture that has been built (which is the whole point of the
-    // fixtures) otherwise drops a bundled, minified vendor file into the lint
-    // run - a thousand errors about single-letter variables in React's own
-    // shipped code.
+    // Built fixtures' bundled vendor code (`dist/**` above only matches the root).
     "fixtures/*/dist/**",
     ".gallery/**",
     "mcp/dist/**",
@@ -49,10 +43,8 @@ export default defineConfig([
     files: ["**/*.test.{ts,tsx}", "vitest.setup.ts"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
-      // Test fixtures stand in for arbitrary "asChild" children (e.g. a
-      // router Link); the actual shipped components already carry their own
-      // a11y checks, so anchor/link-shape linting on test-only markup isn't
-      // meaningful here.
+      // Test markup stands in for arbitrary `asChild` children (e.g. a router Link); shipped
+      // components carry their own a11y checks.
       "jsx-a11y/anchor-is-valid": "off",
     },
   },

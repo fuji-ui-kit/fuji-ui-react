@@ -48,10 +48,7 @@ export const ManyActions: Story = {
   },
 };
 
-/**
- * Controlled: the bar reports intent through `onOpenChange` and renders only
- * what the `open` prop says, so a page can coordinate it with other state.
- */
+/** Controlled: the bar reports intent via `onOpenChange` and shows only what `open` says. */
 function ControlledDemo(args: React.ComponentProps<typeof FloatingActionBar>) {
   const [open, setOpen] = React.useState(false);
   return (

@@ -48,17 +48,13 @@ export interface ChartBaseProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Lists the series names with their colour swatches under the plot. */
   legend?: boolean;
   /**
-   * Formats every printed figure - axis ticks, tooltips, the data table.
-   * When omitted, figures are formatted with `toLocaleString` in `locale`. Use it for currency, units or
-   * precision. Must return the same string on server and client.
+   * Formats every printed figure (ticks, tooltips, data table); omitted, `toLocaleString` in `locale`.
+   * Use it for currency, units or precision. Must return the same string on server and client.
    */
   formatValue?: (value: number) => string;
   /**
-   * BCP 47 locale for the default number formatting. Default `"en-US"` - a
-   * fixed locale rather than the runtime's own, because a server and a
-   * browser in different locales would otherwise print different figures
-   * ("1,234" vs "1.234") and fail hydration. Pass the user's locale
-   * explicitly to localize. Ignored when `formatValue` is given.
+   * BCP 47 locale for default formatting. Default `"en-US"`: fixed, so server and client can't print
+   * "1,234" vs "1.234" and fail hydration. Pass the user's locale; ignored with `formatValue`.
    */
   locale?: string;
   /** Forces the "no data" message even when `series` has content. */
@@ -67,9 +63,8 @@ export interface ChartBaseProps extends React.HTMLAttributes<HTMLDivElement> {
   loading?: boolean;
 }
 
-// The first series is "ink" - the theme's foreground - so it is black on
-// light, cream on dark and white on glass. `--fuji-default` (the raised
-// accent fill) is near-black under glass and vanished on the dark card.
+// Series 1 is the theme's foreground ink (black/cream/white); `--fuji-default` is near-black
+// under glass and vanished on the dark card.
 const SERIES_COLORS = [
   "var(--fuji-foreground)",
   "var(--fuji-forest)",
@@ -82,7 +77,7 @@ const DEFAULT_LOCALE = "en-US";
 
 const formatWithDefaultLocale = (value: number) => value.toLocaleString(DEFAULT_LOCALE);
 
-/** `formatValue` if given, else a fixed-locale `toLocaleString` - never the runtime default (see `locale`). */
+/** `formatValue`, else a fixed-locale `toLocaleString` - never the runtime's (see `locale`). */
 function useFormatValue(formatValue: ((value: number) => string) | undefined, locale: string) {
   return React.useMemo(
     () => formatValue ?? ((value: number) => value.toLocaleString(locale)),
@@ -286,10 +281,8 @@ function ChartFrame({
 }
 
 /**
- * Which point the tooltip is pinned to, rather than a snapshot of where that
- * point was. The rendered `HoveredPoint` is derived from it every render, so
- * the crosshair and tooltip travel with their point while a data change
- * animates instead of hanging at the old coordinates.
+ * The point the tooltip is pinned to, not its coordinates: `HoveredPoint` is derived every render,
+ * so crosshair and tooltip travel with the point during a data animation.
  */
 type PlotCursor = { series: number; point: number } | null;
 
@@ -304,17 +297,8 @@ type HoveredPoint = {
 };
 
 /**
- * Keyboard inspection for a chart plot.
- *
- * Every point and bar used to be its own tab stop: a three-series,
- * twelve-point line chart put thirty-six stops between the control before it
- * and the control after it, and each one announced a value already present in
- * the `sr-only` data table `ChartFrame` renders. The plot is now a single stop
- * (the WAI-ARIA graphics pattern), with arrow keys moving a cursor - left and
- * right along a series, up and down between series - and Escape releasing it.
- *
- * The accessible data has not moved: it is, and was, that `sr-only` table.
- * This is for a sighted keyboard user who wants the tooltip.
+ * Plot keyboard cursor for sighted users (AT reads the `sr-only` table): one tab stop, not 36 in a 3x12
+ * chart; left/right along a series, up/down between series, Escape releases.
  */
 function usePlotKeyboard(series: ChartSeries[], setCursor: (cursor: PlotCursor) => void) {
   const cursor = React.useRef({ series: 0, point: 0 });
@@ -354,21 +338,13 @@ function usePlotKeyboard(series: ChartSeries[], setCursor: (cursor: PlotCursor) 
 }
 
 /**
- * Shared by both plots: one tab stop, visible focus, no native outline drift.
- *
- * `min-w-0`, not a fixed minimum. This carried `min-w-[380px]`, which made
- * every line/bar plot at least 380px wide: in a card on a 320-375px phone the
- * plot overran the card's content box and could only be scrolled sideways
- * inside it. The SVG scales with its `viewBox`, so it now shrinks with its
- * container like any other image (figures get proportionally smaller; the
- * `sr-only` data table carries the exact values).
+ * Shared plot class. `min-w-0`, not a fixed minimum: `min-w-[380px]` overran cards on 320-375px
+ * phones; the SVG scales with its `viewBox` and the `sr-only` table carries exact values.
  */
 const PLOT_SVG_CLASS =
   "fj:h-auto fj:min-h-52 fj:w-full fj:min-w-0 fj:rounded-fuji-panel fj:outline-none fj:focus-visible:outline-2 fj:focus-visible:outline-offset-2 fj:focus-visible:outline-fuji-focus-ring";
 
-/**
- * How long a data change takes to travel to its new shape.
- */
+/** How long a data change takes to travel to its new shape. */
 const UPDATE_MS = 520;
 
 /** Values move; the shape - series names and point labels - does not. */
@@ -394,12 +370,8 @@ function sameValues(a: ChartSeries[], b: ChartSeries[]) {
 }
 
 /**
- * An in-flight value is fractional, and the interpolated figure is not only
- * plotted - it is also what the tooltip, the donut legend and the donut total
- * print. "34.28371" flashing there reads as a bug, so a travelling value is
- * rounded to the precision its own magnitude implies (the same idea the axis
- * ticks use). The quantum stays far finer than a pixel at every scale, so this
- * costs the motion nothing.
+ * Rounding step for an in-flight value, by magnitude: tooltips and donut figures print it, and
+ * "34.28371" flashing reads as a bug. Always far finer than a pixel, so motion is unaffected.
  */
 function stepFor(a: number, b: number) {
   const magnitude = Math.max(Math.abs(a), Math.abs(b));
@@ -421,37 +393,22 @@ function interpolateSeries(from: ChartSeries[], to: ChartSeries[], t: number): C
 }
 
 /**
- * Animates a plot between data sets: the line bends to its new shape, the bars
- * grow or shrink, and the axis rescales with them.
- *
- * Every coordinate the plots draw is derived from `series`, so the entire
- * update animates by handing them an interpolated copy each frame - no element
- * needs an animation of its own. CSS cannot do this job here: a path's `d` is
- * only animatable as a CSS property (`d: path(...)`), never as the attribute
- * React writes, and a bar's `y`/`height` are attributes too. The mount-time
- * entrance keyframes do not cover it either - they never re-run on an element
- * that stays mounted - so before this, re-rolling a chart's data snapped.
- *
- * The raw prop, not this, is what `ChartFrame` puts in its `sr-only` table:
- * assistive technology should read the values, not the frames in between.
+ * Tweens a plot via an interpolated `series` per frame (CSS can't animate `d`/`y`/`height` attributes).
+ * `ChartFrame`'s `sr-only` table gets the raw prop, so AT reads values, not frames.
  */
 function useAnimatedSeries(series: ChartSeries[]): ChartSeries[] {
   const [shown, setShown] = React.useState(series);
-  // What is on screen, readable from inside the frame loop without making the
-  // effect depend on it (which would restart the tween on every frame).
+  // On-screen value, read in the frame loop without making the effect restart every frame.
   const shownRef = React.useRef(series);
 
   React.useEffect(() => {
     const from = shownRef.current;
-    // Consumers routinely pass an inline array, so a new identity is not a new
-    // data set. Compare values, not references.
+    // Inline arrays are routine: compare values, not references.
     if (sameValues(from, series)) return;
 
     const reduced =
       typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    // A change of shape is a different chart, not this one moving: there are
-    // no pairs of points to interpolate between, so it snaps and the entrance
-    // keyframes on the new elements take over.
+    // A shape change has no point pairs to interpolate: snap and let entrance keyframes take over.
     if (reduced || !sameShape(from, series)) {
       shownRef.current = series;
       setShown(series);
@@ -485,9 +442,7 @@ function chartGeometry(series: ChartSeries[]) {
 
 function yTicks(max: number, min: number, range: number) {
   return [0, 1, 2, 3, 4].map((index) => {
-    // Rounded to the precision of the data's own magnitude: a quarter of
-    // 5.4 is 4.050000000000001 in floating point, and a consumer's
-    // `formatValue` should never have to defend against that.
+    // Rounded by magnitude so `formatValue` never sees float noise like 4.050000000000001.
     const raw = max - (range * index) / 4;
     const decimals = range >= 100 ? 0 : range >= 10 ? 1 : 2;
     const value = Number(raw.toFixed(decimals));
@@ -580,17 +535,13 @@ export interface LineChartProps extends ChartBaseProps {
   /** Draws a marker at every data point. */
   showPoints?: boolean;
   /**
-   * Fills the space under each line with a soft fade of its own color. Off by
-   * default - stacked translucent fills read as mud once there is more than
-   * one series, so this is a deliberate choice for the one- or two-series
-   * case rather than something every chart gets.
+   * Fills under each line with a soft fade of its own color. Off by default: stacked translucent
+   * fills read as mud beyond one or two series.
    */
   area?: boolean;
   /**
-   * `"smooth"` (default) draws a monotone cubic curve through the points - the
-   * bold, flowing stroke of the reference dashboards. `"linear"` joins them
-   * with straight segments, which is the honest choice when intermediate
-   * values must not be implied (step data, sparse samples).
+   * `"smooth"` (default) draws a monotone cubic curve through the points. `"linear"` uses straight
+   * segments - the honest choice when intermediate values must not be implied (step, sparse data).
    */
   curve?: "smooth" | "linear";
   /** Stroke width in viewBox units. Default 3.5. */
@@ -598,10 +549,8 @@ export interface LineChartProps extends ChartBaseProps {
 }
 
 /**
- * Monotone cubic interpolation (Fritsch-Carlson). Unlike a Catmull-Rom or a
- * naive bezier it never overshoots: a curve through [1, 5, 5, 1] stays flat
- * between the two 5s rather than bulging above them, so a smoothed chart
- * never draws a value the data does not contain.
+ * Monotone cubic interpolation (Fritsch-Carlson). Unlike Catmull-Rom it never overshoots ([1, 5, 5,
+ * 1] stays flat between the 5s), so a smoothed chart never draws a value the data lacks.
  */
 function monotonePath(pts: Array<[number, number]>): string {
   const n = pts.length;
@@ -653,14 +602,11 @@ export function LineChart({
   ...props
 }: LineChartProps) {
   const formatValue = useFormatValue(formatValueProp, locale);
-  // What is drawn: the same data, interpolated while it changes. `series`
-  // itself still goes to `ChartFrame`, whose `sr-only` table must read the
-  // real values rather than whatever frame the animation is on.
+  // Drawn data is interpolated; `ChartFrame` gets the real `series` for its `sr-only` table.
   const plotted = useAnimatedSeries(series);
   const { points, max, min, range } = chartGeometry(plotted);
-  // Gradient ids have to be unique per chart instance: two LineCharts on one
-  // page sharing an id means the second one's `fill="url(#...)"` resolves to
-  // the first one's gradient. `useId` is SSR-stable, unlike a counter.
+  // Per-instance gradient ids (a shared id resolves to the first chart's gradient); `useId` is
+  // SSR-stable, unlike a counter.
   const gradientId = React.useId();
   const [cursor, setCursor] = React.useState<PlotCursor>(null);
   const clear = (seriesIndex: number, pointIndex: number) =>
@@ -678,9 +624,7 @@ export function LineChart({
       const point = item?.data[pointIndex];
       if (!item || !point) return null;
       return {
-        // Named `pointKey`, not `key` - this object is spread onto
-        // `<ChartTooltip>` below, and a "key" field in a spread props object
-        // triggers React's reserved-prop-name warning.
+        // Not `key`: this is spread onto `<ChartTooltip>`, and a spread "key" triggers a React warning.
         pointKey: `${item.name}-${point.label}`,
         x: x(pointIndex),
         y: y(point.value),
@@ -690,17 +634,15 @@ export function LineChart({
         color: item.color ?? SERIES_COLORS[seriesIndex % SERIES_COLORS.length],
       };
     },
-    // `x`/`y` are recreated each render and close over the same geometry the
-    // deps below describe, so listing the geometry is both correct and stable.
+    // `x`/`y` are recreated each render; listing the geometry they close over is correct and stable.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [plotted, points, max, min, range],
   );
   const hovered = cursor ? pointAt(cursor.series, cursor.point) : null;
   const onKeyDown = usePlotKeyboard(plotted, setCursor);
 
-  // Crosshair: the pointer anywhere over the plot snaps to the nearest x
-  // index and highlights the series whose point is closest vertically, so
-  // the chart is readable without having to land on a 5px dot.
+  // Crosshair: snap to the nearest x index and the vertically closest series, so readers needn't
+  // land on a 5px dot.
   const onMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
     if (points === 0) return;
     const rect = event.currentTarget.getBoundingClientRect();
@@ -721,8 +663,7 @@ export function LineChart({
         best = { series: seriesIndex, point: index };
       }
     });
-    // Only re-render when the snapped point actually changes - every
-    // mousemove otherwise rebuilt the whole SVG.
+    // Re-render only when the snapped point changes, not on every mousemove.
     setCursor((current) =>
       current?.series === best?.series && current?.point === best?.point ? current : best,
     );
@@ -843,16 +784,11 @@ export interface BarChartProps extends ChartBaseProps {
   /** One entry per bar group. Changing the values animates the bars to their new heights. */
   series: ChartSeries[];
   /**
-   * Labels of the bars to emphasise. When set, every other bar is painted in
-   * a muted tint, the highlighted bars take their series colour and carry a
-   * value tag, and their x-axis label sits in a pill - the dashboard look
-   * where one period is "the" number. Omit to colour every bar.
+   * Labels of the bars to emphasise: they keep their series colour, get a value tag and a pilled
+   * x-axis label, and every other bar is muted. Omit to colour every bar.
    */
   highlight?: string | string[];
-  /**
-   * Draws a dotted reference line at this value with a small tag - an
-   * average, a target, a budget.
-   */
+  /** Draws a dotted reference line at this value with a small tag - an average, target, budget. */
   average?: number;
   /** Names the `average` line's tag. Default "Avg". */
   averageLabel?: string;
@@ -892,8 +828,7 @@ export function BarChart({
   ...props
 }: BarChartProps) {
   const formatValue = useFormatValue(formatValueProp, locale);
-  // See `useAnimatedSeries`: what is drawn is the data mid-move, while
-  // `ChartFrame` below still receives the real values for its `sr-only` table.
+  // Drawn data is interpolated; `ChartFrame` gets the real values (see `useAnimatedSeries`).
   const plotted = useAnimatedSeries(series);
   const { points, max, min, range } = chartGeometry(plotted);
   const [cursor, setCursor] = React.useState<PlotCursor>(null);
@@ -906,8 +841,7 @@ export function BarChart({
     highlight === undefined ? [] : Array.isArray(highlight) ? highlight : [highlight],
   );
   const groupWidth = PLOT_WIDTH / Math.max(points, 1);
-  // Thick, pill-shaped bars: most of the slot, capped so a short series
-  // does not turn into slabs.
+  // Thick pill bars: most of the slot, capped so a short series doesn't turn into slabs.
   const totalBarWidth = Math.min(groupWidth * 0.64, 56 * Math.max(plotted.length, 1));
   const gap = plotted.length > 1 ? 4 : 0;
   const barWidth = Math.max((totalBarWidth - gap * (plotted.length - 1)) / Math.max(plotted.length, 1), 6);
@@ -986,9 +920,7 @@ export function BarChart({
                     width={barWidth}
                     height={height}
                     rx={Math.min(barWidth / 2, 8)}
-                    // Muted bars take a theme-tuned neutral rather than a
-                    // faded series colour, so they stay visible on dark
-                    // and glass surfaces too.
+                    // A theme-tuned neutral, not a faded series colour, stays visible on dark/glass.
                     fill={muted ? "var(--fuji-border-strong)" : color}
                     className="fuji-chart-bar"
                     style={
@@ -1062,15 +994,13 @@ export function DonutChart({
 }: DonutChartProps) {
   const formatValue = useFormatValue(formatValueProp, locale);
   const series = React.useMemo(() => [{ name: "Values", data }], [data]);
-  // See `useAnimatedSeries`: the ring, its legend figures and the centre total
-  // all travel to new data. `ChartFrame` still gets `series` - the real values.
+  // Ring, legend figures and total animate; `ChartFrame` gets the real `series`.
   const plotted = useAnimatedSeries(series)[0].data;
   const total = plotted.reduce((sum, point) => sum + point.value, 0);
   const radius = 62;
   const circumference = 2 * Math.PI * radius;
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
-  // Mask ids must be unique per instance - two donuts on one page sharing an
-  // id means the second resolves the first one's mask.
+  // Per-instance mask id, or a second donut resolves the first one's mask.
   const maskId = React.useId();
 
   // Each segment's start fraction and its mid-angle, for the tooltip anchor.
@@ -1083,26 +1013,19 @@ export function DonutChart({
   });
 
   const hovered = hoveredIndex !== null ? segments[hoveredIndex] : null;
-  // The anchor sits just outside the ring at the segment's mid-angle, in
-  // percent of the 160x160 box (12 o'clock is angle -90deg).
+  // Anchor just outside the ring at the segment's mid-angle, in % of the 160x160 box (12 o'clock is
+  // -90deg), clamped so a ~140px tooltip stays inside the card's padding.
   const anchorAngle = hovered ? hovered.mid * 2 * Math.PI - Math.PI / 2 : 0;
-  // Clamped so a ~140px tooltip centred on the anchor stays inside the
-  // card's padding rather than hanging off its edge.
   const anchorX = Math.min(65, Math.max(35, 50 + (Math.cos(anchorAngle) * (radius + 16)) / 1.6));
   const anchorY = Math.min(100, Math.max(0, 50 + (Math.sin(anchorAngle) * (radius + 16)) / 1.6));
 
   return (
-    // No frame legend: the value list beside the ring IS the legend, and the
-    // frame's would only repeat the series' placeholder name.
+    // No frame legend: the value list beside the ring is the legend.
     <ChartFrame series={series} formatValue={formatValue} {...props}>
       <div className="fj:flex fj:min-w-0 fj:flex-wrap fj:items-center fj:justify-center fj:gap-6">
         <div className="fj:relative fj:size-44 fj:shrink-0">
-          {/*
-            Not focusable and not arrow-navigable, unlike the line/bar plots:
-            every segment's label and value is already listed in the visible
-            legend beside it (and again in ChartFrame's `sr-only` table), so a
-            keyboard cursor here would only re-read what is on screen.
-          */}
+          {/* Not focusable, unlike the line/bar plots: every segment is already in the visible
+              legend and the `sr-only` table, so a keyboard cursor would only repeat it. */}
           <svg
             viewBox="0 0 160 160"
             className="fj:size-full fj:-rotate-90 fj:overflow-visible"
@@ -1110,13 +1033,8 @@ export function DonutChart({
             aria-label={props.title ?? "Donut chart"}
             onMouseLeave={() => setHoveredIndex(null)}
           >
-            {/*
-              Draw-in. The segments are painted through a mask whose only
-              content is one ring stroke that sweeps clockwise (the same
-              `.fuji-chart-line` dash animation the line chart uses, via
-              `pathLength="1"`), so the whole donut reveals in order from 12
-              o'clock without each segment needing its own timing.
-            */}
+            {/* Draw-in: segments paint through a mask of one ring stroke sweeping clockwise (the
+                `.fuji-chart-line` dash animation), so the donut reveals from 12 o'clock at once. */}
             <mask id={maskId}>
               <circle
                 className="fuji-chart-line"
@@ -1154,9 +1072,7 @@ export function DonutChart({
                     strokeWidth="22"
                     strokeDasharray={`${length} ${circumference - length}`}
                     strokeDashoffset={-start * circumference}
-                    // The hovered segment thickens outward - the only segment
-                    // state the reference dashboards show, and the cue that the
-                    // tooltip belongs to it.
+                    // The hovered segment thickens outward, tying the tooltip to it.
                     className="fuji-chart-segment"
                     data-active={hoveredIndex === index || undefined}
                     onMouseEnter={() => setHoveredIndex(index)}
@@ -1174,12 +1090,8 @@ export function DonutChart({
             </strong>
             <span className="fj:text-[length:var(--fuji-text-xs)] fj:text-fuji-foreground-muted">Total</span>
           </span>
-          {/*
-            HTML, not SVG: the ring's 160-unit viewBox is far too small for
-            the SVG tooltip the plots use (it was clipped to a sliver), and an
-            HTML tooltip can use the real overlay surface and shadow. Anchored
-            just outside the hovered segment's mid-angle.
-          */}
+          {/* HTML, not SVG: the 160-unit viewBox clipped the plots' SVG tooltip to a sliver, and
+              HTML gets the real overlay surface and shadow. */}
           {hovered && (
             <div
               role="tooltip"
@@ -1203,12 +1115,8 @@ export function DonutChart({
               key={point.label}
               className={cn(
                 "fj:flex fj:cursor-default fj:items-center fj:gap-2 fj:rounded-fuji-control fj:px-1.5 fj:py-0.5 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted fj:transition-colors fj:duration-[var(--fuji-duration-fast)]",
-                // `fuji-hover-raised` rather than a bare fill: this row carries
-                // its label and value text, and under dark glass a fill alone
-                // cannot separate from a near-black panel - the class pairs the
-                // fill with a hairline that reads at any backdrop brightness.
-                // `data-raised` (not just `:hover`) because hovering the chart
-                // segment highlights its legend row too.
+                // `fuji-hover-raised` pairs the fill with a hairline (a bare fill vanishes on dark
+                // glass); `data-raised` lets hovering the segment highlight its row too.
                 "fuji-hover-raised",
               )}
               data-raised={hoveredIndex === index || undefined}

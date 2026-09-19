@@ -101,10 +101,8 @@ const PAGE_SIZE_OPTIONS = [
 ];
 
 /**
- * Search, page-size selection, result count, status indicators, pagination
- * (handled internally by `DataTable`), and a real loading toggle - wired
- * together the way a real order-management screen would, not just a static
- * showcase of props.
+ * Search, page size, result count, status, built-in pagination and a loading toggle, wired like a
+ * real order-management screen rather than a static prop showcase.
  */
 function CompleteDataTable() {
   const [query, setQuery] = React.useState("");
@@ -168,9 +166,7 @@ const meta = {
   title: "Data Display/DataTable",
   component: DataTable,
   tags: ["autodocs"],
-  // Every story below supplies its own real columns/data/rowKey via
-  // `render` - this stub only exists to satisfy the required-prop types; it
-  // is never actually rendered.
+  // Satisfies the required-prop types; every story renders its own columns/data/rowKey.
   args: { columns: [], data: [], rowKey: () => "" },
 } satisfies Meta<typeof DataTable>;
 

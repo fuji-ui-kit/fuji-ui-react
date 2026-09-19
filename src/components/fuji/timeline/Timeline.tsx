@@ -8,9 +8,8 @@ export interface TimelineItem {
   timestamp?: React.ReactNode;
   variant?: StatusTone;
   /**
-   * Overrides the text announced for `variant` (default: "Success",
-   * "Warning", "Error", "Info"). Pass a translated string, or `""` to
-   * suppress it where the title already says what happened.
+   * Overrides the text announced for `variant` (default: "Success", "Warning", "Error", "Info").
+   * Pass a translated string, or `""` to suppress it where the title already says what happened.
    */
   statusLabel?: string;
 }
@@ -28,17 +27,13 @@ export interface TimelineProps extends React.HTMLAttributes<HTMLOListElement> {
   /** The entries, newest first by convention. Optional when `groups` is given instead. */
   items?: TimelineItem[];
   /**
-   * "left" (default): line on the left, content to its right. "right": line on
-   * the right, content to its left. "alternating": a centered line, content
-   * flipping sides per item - collapses to "left" below the `sm` breakpoint,
-   * since alternating needs the width a phone screen doesn't have.
+   * "left" (default): line left, content right. "right": the mirror. "alternating": centered
+   * line, content flipping sides per item; collapses to "left" below `sm` (phones lack the width).
    */
   layout?: "left" | "right" | "alternating";
   /**
-   * A history timeline: each group's `label` sits centred on a vertical axis
-   * with a dot beneath it, its `media` on the left and its `items` listed on
-   * the right (timestamp, then title). Replaces `items`/`layout` when given.
-   * Collapses to a single column below the `sm` breakpoint.
+   * History timeline: each group's `label` centred on a vertical axis above a dot, `media` left,
+   * `items` right (timestamp, then title). Replaces `items`/`layout`; single column below `sm`.
    */
   groups?: TimelineGroup[];
 }
@@ -52,10 +47,8 @@ const DOT_CLASSES: Record<StatusTone, string> = {
 };
 
 /**
- * `variant` paints the dot and nothing else, so "this step failed" was carried
- * entirely by a 10px colored circle - invisible to a screen reader and to
- * anyone who can't separate the red from the green. This is the text half of
- * that signal, read out before the entry's own title.
+ * Text half of the `variant` signal, read before the title: a 10px colored dot alone is invisible
+ * to screen readers and to anyone who can't tell red from green.
  */
 const STATUS_LABELS: Record<StatusTone, string> = {
   default: "",
@@ -114,11 +107,8 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
               className="fj:relative fj:flex fj:flex-col fj:gap-4 fj:pb-10 fj:pl-8 fj:last:pb-0 fj:sm:grid fj:sm:grid-cols-[1fr_1fr] fj:sm:gap-x-12 fj:sm:pl-0"
             >
               {/*
-                The axis column - dot, then the line down to the next group -
-                is positioned over the whole group so the line can stretch to
-                its full height. From `sm` up an invisible copy of the heading
-                sits above the dot so it lands just beneath the real heading,
-                which is centred in the normal flow beside it.
+                Axis column (dot + line) spans the group so the line reaches full height. From `sm`
+                up, an invisible heading copy above the dot lands it just beneath the real heading.
               */}
               <div
                 aria-hidden="true"
@@ -135,14 +125,8 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
                 <div className="fj:flex fj:flex-col fj:sm:items-end fj:sm:text-right">{group.media}</div>
               )}
               {/*
-                Timestamps sit in a shared `auto` grid column sized to the
-                widest one in the group, and each row joins that grid through
-                `subgrid`, so every title still starts on one line. This was a
-                fixed `w-8` (32px) per row, which only fit a two-digit year:
-                "Sep 14" or "9:41 AM" overflowed into the title or wrapped.
-                `min-w-8` keeps the old width as the floor, so short stamps
-                align exactly as before. A group with no timestamps at all
-                skips the column (and its gap) entirely.
+                Timestamps share a `subgrid` `auto` column so titles align (fixed `w-8`/32px
+                overflowed "9:41 AM"); `min-w-8` is the floor. No timestamps = no column or gap.
               */}
               <ol
                 className={cn(
@@ -209,13 +193,9 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
             DOT_CLASSES[item.variant ?? "default"],
           );
           return (
-            // `contents` drops this <li>'s own box so its cells lay out
-            // directly as the parent grid's row (each becomes a genuine grid
-            // item, which is required for the middle cell's connecting line -
-            // a `flex-1` span - to stretch against the grid's own row height;
-            // an extra wrapper div in between would only size to its own
-            // content instead). It still marks up as a real list item for
-            // assistive tech.
+            // `contents` drops the <li>'s box so its cells become real grid items: the middle cell's
+            // `flex-1` line must stretch to the grid row height (a wrapper div would only size to
+            // its content). It is still a real list item for assistive tech.
             <li key={index} className="fj:flex fj:gap-3 fj:sm:contents">
               <div
                 className={cn(
@@ -225,20 +205,15 @@ export const Timeline = React.forwardRef<HTMLOListElement, TimelineProps>(functi
                 )}
               >
                 {/*
-                  Right-aligned, in the LEFT column. Both columns align toward
-                  the centre axis, which is what makes an alternating timeline
-                  read as one thread: aligning each side outward (as this did)
-                  leaves a 300px gap between the text and the dot it belongs
-                  to, and the eye stops connecting them.
+                  Right-aligned in the LEFT column: both sides align toward the axis so the timeline
+                  reads as one thread; outward alignment left a 300px gap between text and its dot.
                 */}
                 {side === "left" && <TimelineContent item={item} align="right" />}
               </div>
               <div className="fj:hidden fj:sm:flex fj:sm:flex-col fj:sm:items-center">
                 {/*
-                  No `pb-5` here, unlike the two content columns. This column's
-                  job is to span the row, and bottom padding on it stopped the
-                  connecting line ~20px short of the next dot - the thread
-                  rendered as a series of disconnected dashes.
+                  No `pb-5` here, unlike the content columns: padding stopped the line ~20px short
+                  of the next dot, rendering the thread as disconnected dashes.
                 */}
                 <span className={dotClasses} />
                 {!isLast && <span className="fj:w-px fj:flex-1 fj:bg-fuji-border-strong" />}

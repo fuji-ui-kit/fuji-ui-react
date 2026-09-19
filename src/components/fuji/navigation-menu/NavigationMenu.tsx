@@ -105,8 +105,7 @@ export function NavigationMenuPortal({ children }: NavigationMenuPortalProps) {
   );
 }
 
-/**
- * `<NavigationMenu><NavigationMenu.List><NavigationMenu.Item>
+/** `<NavigationMenu><NavigationMenu.List><NavigationMenu.Item>
  *   <NavigationMenu.Trigger/><NavigationMenu.Content/>
  * </NavigationMenu.Item></NavigationMenu.List><NavigationMenu.Portal/></NavigationMenu>`
  */

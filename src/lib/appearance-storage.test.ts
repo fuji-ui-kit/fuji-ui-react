@@ -20,10 +20,8 @@ afterEach(() => {
 });
 
 /**
- * `buildAppearanceBootstrapScript` is public API, and its output goes into a
- * `<script>` body via `dangerouslySetInnerHTML` (docs/ssr.md). That makes its
- * argument the one place in this package where an unvalidated string reaches
- * the page as code.
+ * Public API whose output lands in a `<script>` body via `dangerouslySetInnerHTML` (docs/ssr.md) -
+ * the one place in this package where an unvalidated string reaches the page as code.
  */
 describe("buildAppearanceBootstrapScript", () => {
   it("emits the given appearance when it is valid", () => {
@@ -41,9 +39,8 @@ describe("buildAppearanceBootstrapScript", () => {
   });
 
   it("cannot be made to emit markup", () => {
-    // TypeScript rejects this literal; a value that arrived as `string` from a
-    // cookie, a CMS field or a preview query param does not get that check.
-    // `JSON.stringify` escapes quotes but not `</script`.
+    // TypeScript rejects this literal, but a `string` from a cookie/CMS/query param does not get
+    // that check, and `JSON.stringify` escapes quotes but not `</script`.
     const script = buildAppearanceBootstrapScript({
       theme: '</script><script>fetch("//evil")</script>' as never,
       material: "solid",
@@ -55,8 +52,7 @@ describe("buildAppearanceBootstrapScript", () => {
   });
 
   it("falls back per axis rather than wholesale", () => {
-    // `material` is the axis this refactor introduces; an invalid value for
-    // it must revert to its own default without touching the other three
+    // An invalid `material` must revert to its own default without touching the other three
     // (already-valid) axes.
     const script = buildAppearanceBootstrapScript({
       theme: "dark",
@@ -71,14 +67,8 @@ describe("buildAppearanceBootstrapScript", () => {
   });
 
   /**
-   * Legacy coercion, part 1: the runtime branch this function emits. A
-   * returning visitor's `localStorage` can still hold a pre-0.3
-   * `{"theme":"glass"}` value (glass used to be a `theme`, not a
-   * `material`), and this must resolve before first paint or the page flashes
-   * solid then glass once React hydrates and re-reads the same key. Executing
-   * the actual generated script - not just checking its source text - is the
-   * only way to prove the runtime branch itself, not merely that the right
-   * substring is present somewhere in the string.
+   * Legacy coercion, part 1: a pre-0.3 `{"theme":"glass"}` must resolve before first paint or the
+   * page flashes solid then glass on hydration. Runs the real script, not a source-text check.
    */
   it('the emitted script coerces a legacy {theme:"glass"} stored value to dark theme + glass material before paint', () => {
     window.localStorage.setItem(
@@ -87,13 +77,8 @@ describe("buildAppearanceBootstrapScript", () => {
     );
     const script = buildAppearanceBootstrapScript(DEFAULT_APPEARANCE);
 
-    // Test-only, never shipped. The executed string is the deterministic
-    // output of this package's own `buildAppearanceBootstrapScript` fed a
-    // hardcoded constant (`DEFAULT_APPEARANCE`) - no attacker- or
-    // user-controlled value reaches this call. Exercising the real generated
-    // bootstrap script (the exact string a <script> tag would run) is the
-    // point of this test, not a stand-in re-implementation of its coercion
-    // logic.
+    // Test-only: runs this package's own deterministic script output for a hardcoded constant (no
+    // user-controlled input) - executing the real generated script is the point of this test.
     new Function(script)();
 
     expect(document.documentElement).toHaveAttribute("data-fuji-theme", "dark");
@@ -104,9 +89,8 @@ describe("buildAppearanceBootstrapScript", () => {
 });
 
 /**
- * `readStoredAppearance` is the post-mount counterpart to the bootstrap
- * script above - `FujiProvider`'s `persist` hydration effect calls it
- * directly (see FujiProvider.tsx).
+ * `readStoredAppearance` is the bootstrap script's post-mount counterpart, called by
+ * `FujiProvider`'s `persist` hydration effect.
  */
 describe("readStoredAppearance", () => {
   it("returns nothing when storage is empty", () => {
@@ -132,12 +116,8 @@ describe("readStoredAppearance", () => {
   });
 
   /**
-   * Legacy coercion, part 2: the reader. The deployed docs site has real
-   * visitors with a pre-0.3 `{"theme":"glass"}` value already in
-   * `localStorage`, and it never carried light/dark information (glass used
-   * to overwrite that choice) - so this must land on `material:"glass"` with
-   * `theme:"dark"` as the tone that material shipped with, not silently drop
-   * to `light`/`solid`.
+   * Legacy coercion, part 2: a pre-0.3 `{"theme":"glass"}` carried no light/dark choice, so it lands
+   * on `material:"glass"` + `theme:"dark"` (the tone it shipped with), not `light`/`solid`.
    */
   it('coerces a legacy {"theme":"glass"} stored value to theme "dark" + material "glass"', () => {
     window.localStorage.setItem(

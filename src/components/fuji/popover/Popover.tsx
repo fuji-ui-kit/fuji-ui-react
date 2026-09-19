@@ -89,18 +89,9 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentPro
         >
           {showArrow && (
             <Base.Arrow className="fj:data-[side=bottom]:-top-[7px] fj:data-[side=top]:-bottom-[7px] fj:data-[side=left]:-right-[7px] fj:data-[side=right]:-left-[7px]">
-              {/* A clipped triangle, not a rotated square. The square carried a
-                  border on all four sides, and since only half of it is ever
-                  meant to be visible the far two edges showed above the panel -
-                  the caret read as an outlined diamond stuck to the popup
-                  rather than a tail growing out of it. Clipping to a triangle
-                  in the panel's own fill is what ChatBubble does, and it meets
-                  the panel edge with no seam.
-
-                  The arrow is a sibling of the popup, not a child, so it
-                  composites against the page on its own - without the same
-                  material class it read as a lighter, unblurred chip over
-                  anything but a flat backdrop. */}
+              {/* Clipped triangle in the panel fill (as ChatBubble), not a rotated bordered square
+                  whose far edges read as a diamond. It's a sibling of the popup, so it needs the
+                  same material class or it reads as a lighter, unblurred chip. */}
               <div
                 className={cn(
                   // `data-side` lives on Base UI's Arrow, which is this div's

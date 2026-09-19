@@ -21,9 +21,8 @@ export interface DropzoneProps {
   /** Prose inside the target ("PNG or JPG, up to 5 MB"). Not the accessible name - see `label`. */
   description?: string;
   /**
-   * Accessible name for the drop target and its file list. Defaults to
-   * "Upload files"; set it when a page has more than one Dropzone so the two
-   * are distinguishable ("Upload avatar" / "Upload attachments").
+   * Accessible name for the drop target and its file list. Defaults to "Upload files"; set it when
+   * a page has several Dropzones so they are distinguishable ("Upload avatar").
    */
   label?: string;
   /** Extra classes merged onto the drop target. */
@@ -69,11 +68,8 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
         role="button"
         tabIndex={disabled ? -1 : 0}
         aria-disabled={disabled}
-        // `role="button"` computes its name from its contents, which made the
-        // name whatever prose `description` happened to hold - "Drag and drop
-        // files here, or click to browse" as an announced *name*, and two
-        // Dropzones on a page were indistinguishable. The name is now the
-        // purpose; the prose is the description.
+        // Explicit name: `role="button"` otherwise names itself from its contents, announcing the
+        // `description` prose as the name and making two Dropzones indistinguishable.
         aria-label={label}
         aria-describedby={descriptionId}
         onClick={() => !disabled && inputRef.current?.click()}
@@ -114,10 +110,7 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
           className="fj:sr-only"
           onChange={(event) => {
             addFiles(event.target.files);
-            // Without this, the input keeps the selected filename as its value,
-            // so picking the exact same file again fires no `change` event at
-            // all (the browser sees no value change) - including after it was
-            // removed from the list below.
+            // Reset the value so re-picking the same file (e.g. after removing it) still fires `change`.
             event.target.value = "";
           }}
         />
@@ -130,9 +123,7 @@ export const Dropzone = React.forwardRef<HTMLInputElement, DropzoneProps>(functi
         </p>
       </div>
       {files.length > 0 && (
-        // Named and announced: a file appearing here after a drop was
-        // previously a silent DOM change, so a screen-reader user got no
-        // confirmation that the drop had landed.
+        // Named and announced, so screen-reader users get confirmation that a drop landed.
         <ul
           aria-label={`${label}: selected files`}
           aria-live="polite"

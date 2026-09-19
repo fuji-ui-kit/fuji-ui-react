@@ -6,9 +6,8 @@ import { Spinner } from "../spinner/Spinner";
 
 export interface InfiniteScrollProps extends React.HTMLAttributes<HTMLDivElement> {
   /**
-   * Called when the sentinel scrolls into view and there is more to fetch.
-   * Guarded internally, so it will not be called again while a previous call
-   * is still in flight or once `hasMore` is false.
+   * Called when the sentinel scrolls into view and there is more to fetch. Never re-called while a
+   * previous call is in flight or once `hasMore` is false.
    */
   onLoadMore: () => void | Promise<void>;
   /** Whether another page exists. When false the sentinel stops observing. */
@@ -16,9 +15,8 @@ export interface InfiniteScrollProps extends React.HTMLAttributes<HTMLDivElement
   /** Whether a fetch is in flight. Drives the footer and suppresses re-entry. */
   loading?: boolean;
   /**
-   * How far before the sentinel reaches the viewport to fire, e.g. "200px".
-   * Fetching only once the sentinel is actually visible leaves a visible gap
-   * at the bottom on a fast scroll.
+   * How far before the sentinel reaches the viewport to fire, e.g. "200px", so a fast scroll
+   * doesn't show a gap at the bottom.
    */
   rootMargin?: string;
   /** Scroll container, when the list scrolls inside an element rather than the page. */
@@ -30,19 +28,8 @@ export interface InfiniteScrollProps extends React.HTMLAttributes<HTMLDivElement
 }
 
 /**
- * Loads the next page when the bottom of a list comes into view (the reference
- * is motion.dev's infinite-loading example).
- *
- * An IntersectionObserver on a zero-height sentinel, not a scroll handler:
- * a scroll listener fires on every frame of every scroll and has to measure
- * the document to decide anything, which is the usual source of jank on a
- * long list. The observer fires only on the crossing.
- *
- * The guard against re-entry is deliberate and easy to get wrong. The observer
- * can fire several times before React has re-rendered with the new page, so
- * `onLoadMore` is held behind a ref that is cleared only when `loading` goes
- * false again - without it a single scroll to the bottom fires three or four
- * duplicate fetches.
+ * Loads the next page via an IntersectionObserver on a zero-height sentinel (scroll handlers jank).
+ * `onLoadMore` is gated by a ref cleared when `loading` ends, or one scroll fires 3-4 fetches.
  */
 export const InfiniteScroll = React.forwardRef<HTMLDivElement, InfiniteScrollProps>(function InfiniteScroll(
   {
@@ -100,11 +87,8 @@ export const InfiniteScroll = React.forwardRef<HTMLDivElement, InfiniteScrollPro
           aria-live="polite"
           className="fj:flex fj:items-center fj:justify-center fj:gap-2 fj:py-4 fj:text-[length:var(--fuji-text-sm)] fj:text-fuji-foreground-muted"
         >
-          {/* The spinner is decorative here. It carries `role="status"` and
-                its own label of its own accord, which nested a second live
-                region inside this one - a screen reader announced the load
-                twice. This region owns the announcement; the spinner is just
-                the visual. */}
+          {/* The spinner is decorative: its own `role="status"` nested a second live region and
+                the load was announced twice. This region owns the announcement. */}
           {loading ? (
             <span aria-hidden="true" className="fj:flex fj:items-center">
               {loader ?? <Spinner size="sm" />}

@@ -40,9 +40,8 @@ export interface TimePickerProps {
   /** Extra classes merged onto the trigger. */
   className?: string;
   /**
-   * Accessible name for the trigger. Default `"Select time"`. Inside a
-   * `FormField`, the field's label names the trigger instead (its
-   * `aria-labelledby` takes precedence over this).
+   * Accessible name for the trigger. Default `"Select time"`. Inside a `FormField`, the field's
+   * label names it instead (its `aria-labelledby` takes precedence).
    */
   "aria-label"?: string;
   /** Points at an existing visible label's id, as an alternative to `aria-label`. */
@@ -70,9 +69,8 @@ function formatDisplay(value: string | undefined, hourCycle: 12 | 24): string | 
 }
 
 /**
- * Fuji-styled time picker built on Popover with hour and minute lists. Keeps a
- * stable 24-hour "HH:mm" value contract (and an optional hidden input) so it
- * drops into forms, while the display can use 12- or 24-hour format.
+ * Time picker on Popover with hour/minute lists. The value is always 24-hour "HH:mm" (plus an
+ * optional hidden input) for forms; the display can be 12- or 24-hour.
  */
 export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(function TimePicker(
   {
@@ -131,10 +129,8 @@ export const TimePicker = React.forwardRef<HTMLButtonElement, TimePickerProps>(f
     <Popover open={open} onOpenChange={setOpen}>
       <div className={cn("fj:relative fj:inline-flex fj:w-full fj:max-w-[12rem] fj:items-center", className)}>
         {/*
-          Rendered through `Field.Control` so a surrounding `<FormField>`
-          labels, describes, disables and invalidates it like any other Fuji
-          field - see the same wiring (and why) in DatePicker.tsx. `value` is
-          the "HH:mm" string a FormField `validate` function receives.
+          Via `Field.Control` so a `<FormField>` labels, describes, disables and invalidates it (see
+          DatePicker.tsx). `value` is the "HH:mm" string a FormField `validate` receives.
         */}
         <Field.Control
           ref={ref}

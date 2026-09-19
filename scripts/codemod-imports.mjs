@@ -1,12 +1,7 @@
 #!/usr/bin/env node
-// One-time codemod: rewrite website `@/*` alias imports to package-relative
-// imports now that files live under this package's own src/ tree. Mapping
-// mirrors the extraction plan in the project brief:
-//   @/providers/FujiProvider -> <pkg>/provider/FujiProvider
-//   @/hooks/useControllableState -> <pkg>/hooks/useControllableState
-//   @/lib/cn -> <pkg>/lib/cn
-//   @/lib/appearance-storage -> <pkg>/lib/appearance-storage
-//   @/types -> <pkg>/types
+// One-time codemod: rewrite website `@/*` alias imports to relative imports under src/.
+// `@/providers/FujiProvider` -> `provider/FujiProvider`; `@/hooks/*`, `@/lib/*`, `@/types` keep
+// their paths.
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { relative, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

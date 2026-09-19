@@ -1,18 +1,8 @@
 import type { StatusTone } from "../../../types";
 
 /*
- * The shared visual language for a status message, used by both `Alert` (the
- * static, in-page banner) and `Toast` (the transient one). They carry the same
- * four variants, so a success toast and a success alert have to be recognisable
- * as the same thing.
- *
- * The tone is a wash from the leading edge rather than a tint over the whole
- * block. A solid tint has to stay pale enough for body text to sit on it, which
- * left every variant looking like the same faint card; a gradient that fades
- * out before the text can start saturated enough to identify the variant at a
- * glance while the text still sits on the plain surface.
- *
- * Full class strings, never templated - Tailwind's scanner is static.
+ * Shared status styling so `Alert` and `Toast` variants match. A leading-edge wash, not a full tint
+ * (too pale to tell apart), fades before the text. Full class strings - Tailwind's scanner is static.
  */
 export const STATUS_WASH: Record<StatusTone, string> = {
   default: "fj:from-fuji-surface-strong",

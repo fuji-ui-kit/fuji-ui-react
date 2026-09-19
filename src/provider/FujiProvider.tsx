@@ -64,9 +64,8 @@ export interface FujiProviderProps {
   /** Called whenever the elevation changes, however it changed. */
   onElevationChange?: (elevation: FujiElevation) => void;
   /**
-   * When true this provider persists theme/radius/elevation to storage and
-   * hydrates its initial values from it. Only the root app provider should set
-   * this; nested/demo providers stay isolated.
+   * Persist the appearance to storage and hydrate initial values from it. Only the root app
+   * provider should set this; nested/demo providers stay isolated.
    */
   persist?: boolean;
   /** Extra classes merged onto the wrapper element that carries the `data-fuji-*` attributes. */
@@ -74,11 +73,8 @@ export interface FujiProviderProps {
 }
 
 /**
- * Root provider for the Fuji design system. Theme, material, radius, and
- * elevation are global - components never accept their own props for them.
- * Runtime changes only flip the `data-fuji-theme` / `data-fuji-material` /
- * `data-fuji-radius` / `data-fuji-elevation` attributes; children never
- * remount.
+ * Root provider for Fuji. Theme, material, radius and elevation are global (components take no
+ * props for them); runtime changes only flip `data-fuji-*` attributes, so children never remount.
  */
 export function FujiProvider({
   children,
@@ -97,13 +93,9 @@ export function FujiProvider({
   persist = false,
   className,
 }: FujiProviderProps) {
-  // Initial state uses only the SSR-safe defaults - never `readStoredAppearance()`
-  // here. `localStorage` is available on the client's very first render (before
-  // hydration reconciles), so reading it in this initial state computation would
-  // make that first client render disagree with the server's, which is exactly
-  // the mismatch `docs/ssr.md` promises can't happen. The persisted value is
-  // applied afterward, inside the layout effect below, which is the "after
-  // mount" hydration step both the docs and `persist`'s own doc comment describe.
+  // Initial state uses only SSR-safe defaults, never `readStoredAppearance()`: storage is readable
+  // on the first client render, so reading it here would mismatch the server (docs/ssr.md). The
+  // persisted value is applied after mount, in the layout effect below.
   const [activeTheme, setTheme] = useControllableState<FujiTheme>({
     value: theme,
     defaultValue: defaultTheme,
@@ -268,14 +260,10 @@ export function FujiProvider({
     ],
   );
 
-  // The persistent root provider mirrors its state onto <html>. Keeping a
-  // second default-valued attribute scope on the wrapper would override the
-  // bootstrapped appearance before hydration and flatten a persisted glass
-  // material back to solid. Nested, non-persistent providers still get an
-  // isolated attribute scope for documentation previews and component
-  // examples - `data-fuji-material` is stamped unconditionally here even at
-  // its `"solid"` default, because `tokens.css`'s glass `:not()` exclusion
-  // depends on every element carrying an explicit material attribute.
+  // The persistent root mirrors onto <html>; a default-valued wrapper scope would override the
+  // bootstrapped appearance and flatten persisted glass to solid. Nested providers get an isolated
+  // scope, with `data-fuji-material` stamped even at `"solid"` because tokens.css's glass `:not()`
+  // exclusion needs every element to carry an explicit material attribute.
   const scopeAttributes = persist
     ? {}
     : {

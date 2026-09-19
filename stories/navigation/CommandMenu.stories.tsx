@@ -102,8 +102,8 @@ function TwoStepDemo() {
 }
 
 /**
- * `hotkey="k"` binds ⌘K / Ctrl+K, and `closeOnSelect: false` on an item keeps
- * the palette open for a second step. Uncontrolled - no `useState` for `open`.
+ * `hotkey="k"` binds ⌘K / Ctrl+K; `closeOnSelect: false` keeps the palette open for a second
+ * step. Uncontrolled - no `useState` for `open`.
  */
 export const HotkeyAndSecondStep: Story = {
   render: () => <TwoStepDemo />,

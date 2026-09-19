@@ -3,18 +3,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * Guards the two generated artifacts, `dist/props.json` and
- * `dist/registry.json`.
- *
- * Neither had a test, so every property the docs site and the MCP server rely
- * on - defaults read from source, allowed values, compound parts describing
- * their API - was one refactor away from regressing with the build still
- * exiting 0. These are the invariants that failed silently in review.
- *
- * Skipped rather than failed when `dist/` is absent: `npm test` runs before
- * `npm run build` in the CI order, and a test that demands build output would
- * make the suite unrunnable from a clean checkout.
- */
+ * Guards `dist/props.json` and `dist/registry.json`, which the docs site and MCP server rely on and
+ * which regressed silently with the build still exiting 0. Skipped, not failed, when `dist/` is
+ * absent so the suite runs from a clean checkout. */
 const DIST = path.join(__dirname, "..", "dist");
 const has = (file: string) => fs.existsSync(path.join(DIST, file));
 const read = (file: string) => JSON.parse(fs.readFileSync(path.join(DIST, file), "utf8"));
@@ -32,20 +23,13 @@ describe.skipIf(!has("props.json"))("dist/props.json", () => {
   });
 
   it("never scavenges English out of a JSDoc sentence", () => {
-    // Asserts the SHAPE of a default, not membership of a stopword list. The
-    // list version could only catch prose it had been told about, and duly
-    // missed the next one: `(defaults to h3, its semantic role)` shipped a
-    // default of `s to h3, its semantic role` on `CardTitleProps.as`.
-    //
-    // A default is a literal: quoted, backticked, numeric, a keyword, an empty
-    // collection, or a bare identifier naming a constant. Nothing with
-    // unquoted whitespace in it is a value.
+    // Asserts the SHAPE of a default, not a stopword list (which missed `s to h3, its semantic
+    // role` on `CardTitleProps.as`). A default is a literal - quoted, backticked, numeric, a
+    // keyword, an empty collection or a bare identifier; nothing with unquoted whitespace.
     const literal =
       /^(?:"[^"]*"|'[^']*'|`[^`]*`|-?\d+(?:\.\d+)?|true|false|null|undefined|\[\]|\{\}|[A-Za-z_$][\w.$]*(?:\(\))?)$/;
-    // The shape check alone cannot reject a single scavenged word: a bare
-    // identifier is a legitimate default (`DEFAULT_FORMAT`, `document.body`),
-    // and `to` is shaped exactly like one. The two checks cover different
-    // halves, so both stay.
+    // Shape alone can't reject one scavenged word: `to` looks like a legit bare-identifier
+    // default (`DEFAULT_FORMAT`), so both checks stay.
     const connectors = new Set(["to", "is", "the", "a", "an", "follow", "spinner", "of", "in", "on"]);
     const prose = Object.entries(props).flatMap(([table, entry]) =>
       entry.props
@@ -90,9 +74,8 @@ describe.skipIf(!has("registry.json"))("dist/registry.json", () => {
   });
 
   it("describes every compound part's API", () => {
-    // A part that wraps a Base UI primitive has no props of its own. Emitting
-    // an empty list and nothing else reads as "takes no props", which is the
-    // one thing that is certainly untrue.
+    // A part wrapping a Base UI primitive has no own props; an empty list alone reads as "takes
+    // no props", which is certainly untrue.
     const silent = registry.components.flatMap(
       (component: {
         name: string;

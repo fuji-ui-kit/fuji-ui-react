@@ -5,11 +5,8 @@ import type { ComponentSize, ComponentTone } from "../../../types";
 export type IconTone = "default" | "muted" | "subtle" | ComponentTone;
 
 /**
- * Any SVG icon component that accepts standard SVG props (className above
- * all) - every Lucide icon satisfies this already, since `LucideProps`
- * extends `React.SVGProps<SVGSVGElement>` and adds only optional fields. Not
- * pinned to `LucideIcon` specifically so a compatible icon from another set,
- * or a hand-written SVG component, works here too.
+ * Any SVG icon component accepting standard SVG props; every Lucide icon fits. Not pinned to
+ * `LucideIcon`, so icons from other sets or hand-written SVG components work too.
  */
 export type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement>>;
 
@@ -67,10 +64,8 @@ const TONE_SOLID: Record<IconTone, string> = {
 };
 
 /**
- * One reusable icon primitive. Accepts an individually imported Lucide icon
- * component (never a string name, never a dynamic import of the whole set),
- * applies a semantic tone and size, marks the glyph decorative or labeled for
- * assistive tech, and optionally wraps it in a subtle or solid background.
+ * One icon primitive: takes an individually imported Lucide component (never a name string or the
+ * whole set), applies tone and size, marks it decorative or labelled, optionally adds a background.
  */
 export function Icon({
   icon: Glyph,

@@ -1,10 +1,6 @@
 /*
- * Storybook-only typography baseline - pairs with preview-head.html, which
- * loads the actual font files. Real consumers set these `--fuji-font-*`
- * variables themselves (see fuji-ui-website's `next/font` usage); Storybook
- * has no consumer app to inherit that from, so it defines them here instead,
- * pointed at the same three brand fonts the website loads. Preview tooling
- * only - never imported by `src/`, never part of the published `dist/`.
+ * Storybook-only: sets the `--fuji-font-*` variables consumers set themselves, using the website's
+ * three brand fonts (loaded by preview-head.html). Never imported by `src/` or shipped.
  */
 :root {
   --fuji-font-inter: "Inter", sans-serif;
@@ -13,14 +9,8 @@
 }
 
 /*
- * Matches what the website applies on `body` in globals.css.
- *
- * `font-family` matters as much as the smoothing: `.fuji-theme-scope` sets it
- * for everything inside a `FujiProvider`, but Storybook renders plenty of
- * markup outside one - Autodocs prose, prop tables, and any plain element a
- * story puts next to a component. Without this those fall back to the
- * browser's default serif, which is why Storybook read as less polished than
- * the website even though the components themselves are pixel-identical.
+ * Matches the website's `body`. `font-family` too: Autodocs prose and markup outside a
+ * `FujiProvider` would otherwise fall back to the browser's serif.
  */
 body {
   font-family: var(--fuji-font-inter, Inter), system-ui, sans-serif;

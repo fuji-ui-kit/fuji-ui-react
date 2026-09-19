@@ -23,18 +23,13 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
   ref,
 ) {
   const [status, setStatus] = React.useState<"loading" | "loaded" | "error">("loading");
-  // `<HTMLImageElement | null>`, not `<HTMLImageElement>`. React 18 types
-  // `useRef<T>(null)` as a `RefObject<T>` whose `current` is READ-ONLY, so the
-  // ref callback below ("imageRef.current = node") compiles only against React
-  // 19's types. Including `null` in the parameter selects the mutable
-  // overload, which exists in both versions.
+  // `<HTMLImageElement | null>` selects the mutable ref overload in both React 18 and 19; React 18
+  // types `useRef<T>(null).current` as read-only, so the ref callback below would not compile.
   const imageRef = React.useRef<HTMLImageElement | null>(null);
   const portalAttrs = usePortalThemeAttrs();
 
-  // Reset a previous error/loaded state when the caller points the component
-  // at a new source, so a failed image can recover instead of permanently
-  // showing the fallback icon. Adjusting state during render (rather than in
-  // an effect) applies before this render paints the stale status.
+  // Reset error/loaded state when the source changes so a failed image can recover; adjusted during
+  // render so the stale status never paints.
   const [prevSrc, setPrevSrc] = React.useState(props.src);
   if (props.src !== prevSrc) {
     setPrevSrc(props.src);
@@ -66,28 +61,20 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
         // Framework-agnostic package: no next/image here by design.
         <img
           ref={(node) => {
-            // Always tracked so the loaded/cached-image fallback effect below
-            // can resolve `status`, even when `fullscreen` forwards the
-            // consumer's own `ref` to the popup preview image instead.
+            // Always tracked so the fallback effect below can resolve `status`, even when
+            // `fullscreen` forwards the consumer's `ref` to the preview image.
             imageRef.current = node;
             if (fullscreen) return;
             if (typeof ref === "function") ref(node);
-            // Cast to a bare structural type rather than to React's own
-            // `MutableRefObject`: React 19's types made `RefObject.current`
-            // writable, React 18's did not, so the plain assignment compiles
-            // only on 19 ("Cannot assign to 'current' because it is a
-            // read-only property"). This shape is identical on both and
-            // depends on neither version's ref typings. Caught by CI's
-            // `react18` job, which is the only run that resolves React 18.
+            // A bare structural cast, not `MutableRefObject`: `RefObject.current` is writable only
+            // in React 19's types, so plain assignment fails on 18 (caught by CI's `react18` job).
             else if (ref) (ref as { current: HTMLImageElement | null }).current = node;
           }}
           alt={alt}
           loading="lazy"
           decoding="async"
           className={cn(
-            // `block` matches preflight's `img,svg,video{display:block}` -
-            // without it a raw <img> defaults to inline, which can leave a
-            // few px of baseline gap below it.
+            // `block`, as preflight would set: an inline <img> leaves a baseline gap below it.
             "fj:block fj:h-full fj:w-full fj:object-cover fj:transition-opacity fj:duration-[var(--fuji-duration-slow)]",
             status === "loading" && "fj:opacity-0",
           )}
@@ -137,10 +124,8 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
             "fuji-motion-modal fj:fixed fj:inset-0 fj:z-50 fj:flex fj:items-center fj:justify-center fj:p-6 fj:outline-none",
           )}
         >
-          {/* The frame shrink-wraps the image so the close button can anchor
-              to the PICTURE's corner. Anchored to the popup instead, it sat in
-              the far corner of the viewport - metres away from the photo on a
-              wide display, and unrelated to the thing it closes. */}
+          {/* The frame shrink-wraps the image so the close button anchors to the picture's
+              corner, not the far corner of a wide viewport. */}
           <div className="fj:relative fj:flex fj:max-h-full fj:max-w-full">
             {/* fullscreen preview of the same source; no next/image dependency by design. */}
             <img
@@ -153,9 +138,7 @@ export const Image = React.forwardRef<HTMLImageElement, ImageProps>(function Ima
               render={
                 <DismissButton
                   aria-label="Close"
-                  // Just inside the corner, on a scrim of its own: the image
-                  // underneath can be any colour, so the button cannot rely on
-                  // the backdrop for contrast.
+                  // Own scrim: the image beneath can be any colour, so the backdrop can't give contrast.
                   className="fj:absolute fj:top-2 fj:right-2 fj:bg-black/55 fj:text-white fj:backdrop-blur-sm fj:hover:bg-black/70"
                 />
               }

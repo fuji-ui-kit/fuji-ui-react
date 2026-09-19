@@ -33,32 +33,25 @@ export interface CalendarProps {
   /** Called with the picked date. */
   onChange?: (date: Date) => void;
   /**
-   * Earliest selectable date; days before it render disabled. Compared by
-   * calendar day, so the time of day is ignored - `minDate={new Date()}`
-   * keeps today selectable.
+   * Earliest selectable date; days before it render disabled. Compared by calendar day, so
+   * `minDate={new Date()}` keeps today selectable.
    */
   minDate?: Date;
   /** Latest selectable date; days after it render disabled. Compared by calendar day, like `minDate`. */
   maxDate?: Date;
   /**
-   * The date treated as "today": the highlighted cell, its
-   * `aria-current="date"`, and the month shown when nothing is selected. Only
-   * its calendar day is used. Defaults to the visitor's local date, resolved
-   * after mount (the server render and hydration use a UTC-based placeholder
-   * so they match). Pass it for deterministic output - a server-known date, a
-   * fixed demo, or a test.
+   * The date treated as "today" (highlight, `aria-current="date"`). Defaults to the visitor's local
+   * date after mount (SSR uses a UTC placeholder); pass it for deterministic output or tests.
    */
   today?: Date;
   /**
-   * Days to mark with a small dot - for example, days that have tasks or
-   * events. Either a list of dates (matched by calendar day) or a predicate
-   * called for every visible day. Marked days also get `markedDateLabel`
-   * appended to their accessible name, so the mark is not visual-only.
+   * Days to mark with a small dot (e.g. days with tasks): a list of dates matched by calendar day,
+   * or a predicate per visible day. Marked days get `markedDateLabel` in their accessible name.
    */
   markedDates?: Date[] | ((date: Date) => boolean);
   /**
-   * Text appended to a marked day's accessible name, as in "Monday, May 20,
-   * 2024, has tasks". Default "marked". Describe what the mark means.
+   * Text appended to a marked day's accessible name ("Monday, May 20, 2024, has tasks").
+   * Default "marked". Describe what the mark means.
    */
   markedDateLabel?: string;
   /** BCP 47 tag driving the weekday and month names, via `Intl`. */
@@ -96,47 +89,36 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     defaultValue,
     onChange: onChange as (v: Date | null) => void,
   });
-  // SSR-safe stand-in for "today" - see getHydrationSafeToday. Corrected to
-  // the visitor's real local date after mount, below. An explicit `today`
-  // prop replaces both: it is the same on server and client by construction.
+  // SSR-safe "today" (see getHydrationSafeToday), corrected to local date after mount below.
+  // An explicit `today` prop replaces both, being identical on server and client.
   const [clockToday, setClockToday] = React.useState(getHydrationSafeToday);
   const todayTime = todayProp ? startOfDay(todayProp).getTime() : undefined;
   const today = React.useMemo(
     () => (todayTime === undefined ? clockToday : new Date(todayTime)),
     [todayTime, clockToday],
   );
-  // Both start from the same clamped date so the grid never mounts showing a
-  // month that doesn't contain its own roving tab stop (e.g. today falling
-  // outside `minDate`/`maxDate`).
+  // Both start from the same clamped date so the grid never mounts on a month lacking its own
+  // roving tab stop (e.g. today outside `minDate`/`maxDate`).
   const initialActiveDate = clampDate(selected ?? today, minDate, maxDate);
   const [visibleMonth, setVisibleMonth] = React.useState(() => initialActiveDate);
-  // The single date in the grid's roving tab stop (ARIA APG date-grid pattern):
-  // every other day cell is tabIndex=-1, so Tab only ever lands on one date.
+  // The grid's single roving tab stop (APG date grid); every other cell is tabIndex=-1.
   const [activeDate, setActiveDate] = React.useState(() => initialActiveDate);
-  // True once the grid position has been driven by the user (click, arrow
-  // keys, month/year chooser) rather than by the uncontrolled "today" default,
-  // so the post-mount timezone correction below never yanks focus/view away
-  // from somewhere the user already navigated to.
+  // True once the user drove the grid position, so the post-mount timezone correction never
+  // yanks focus/view away from where the user navigated.
   const userMovedRef = React.useRef(false);
   const [chooserOpen, setChooserOpen] = React.useState(false);
   const headerButtonRef = React.useRef<HTMLButtonElement>(null);
   const chooserRef = React.useRef<HTMLDivElement>(null);
   const gridRef = React.useRef<HTMLDivElement>(null);
   const activeCellRef = React.useRef<HTMLButtonElement>(null);
-  // Set right before a keyboard move so the focus-follows-active-date effect
-  // only fires for keyboard navigation, never for clicks (already focused
-  // natively) or unrelated re-renders.
+  // Set just before a keyboard move so focus follows the active date only for keyboard nav.
   const shouldFocusActiveRef = React.useRef(false);
-  // Compared by day (not reference) so a controlled parent re-rendering with
-  // a fresh-but-equal `value` Date doesn't reset in-progress keyboard
-  // navigation on every unrelated render.
+  // Compared by day, not reference, so a fresh-but-equal controlled `value` doesn't reset
+  // in-progress keyboard navigation.
   const lastSyncedValueRef = React.useRef(value);
 
-  // Keep selection, the roving tab stop, and the visible month aligned when a
-  // controlled `value` changes from outside (a "Today" button, another field
-  // bound to the same date, a reset). Uncontrolled usage never runs this:
-  // `value` stays `undefined` and `selected`/`activeDate` already track each
-  // other locally.
+  // Keep selection, roving tab stop and visible month aligned when a controlled `value` changes
+  // from outside (a "Today" button, a reset). Uncontrolled usage never runs this.
   React.useEffect(() => {
     if (value === undefined) return;
     const previous = lastSyncedValueRef.current;
@@ -146,21 +128,17 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     if (unchanged) return;
 
     const next = clampDate(value ?? today, minDate, maxDate);
-    // Only follow focus into the grid if it was already there - an external
-    // value change must not steal focus from wherever the user actually is.
+    // Only follow focus into the grid if it was already there; never steal focus.
     const hadFocusInGrid = !!gridRef.current?.contains(document.activeElement);
     setActiveDate(next);
     setVisibleMonth(new Date(next.getFullYear(), next.getMonth(), 1));
     if (hadFocusInGrid) shouldFocusActiveRef.current = true;
-    // `today` is read only as the fallback for a cleared value; a new "today"
-    // on its own must not move the grid.
+    // `today` is only the cleared-value fallback; a new "today" alone must not move the grid.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, minDate, maxDate]);
 
-  // The SSR-safe "today" above matches the server's render exactly, but it's
-  // UTC-normalized, not the visitor's actual local date. Correct it once after
-  // mount - if the uncontrolled grid was still showing that default position
-  // (no value/defaultValue, never navigated), bring it along too.
+  // The SSR-safe "today" is UTC-normalized, not the visitor's local date. Correct it once after
+  // mount, moving the uncontrolled grid too if it is still at that default position.
   React.useEffect(() => {
     // An explicit `today` prop is already correct on both passes.
     if (todayProp) return;
@@ -243,9 +221,7 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     event.preventDefault();
   };
 
-  // `today` (not `new Date()`) - it's the SSR-safe stand-in defined above, so
-  // this stays identical between server and client on the initial render
-  // instead of depending on each runtime's own wall-clock timezone.
+  // `today`, not `new Date()`: the SSR-safe stand-in keeps server and client renders identical.
   const currentYear = today.getFullYear();
   const maxYear = maxDate ? maxDate.getFullYear() : currentYear;
   const minYear = minDate ? minDate.getFullYear() : currentYear - YEARS_BACK;
@@ -281,19 +257,14 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
     };
   }, [chooserOpen]);
 
-  // Previous/next are disabled once the visible month itself is the boundary
-  // month, so navigation (and the arrow buttons below) can never reach a
-  // month with no in-range days at all.
+  // Disabled at the boundary month, so navigation never reaches a month with no in-range days.
   const atMinMonth =
     !!minDate && isMonthOutOfRange(visibleMonth.getMonth() - 1, visibleMonth.getFullYear(), minDate, maxDate);
   const atMaxMonth =
     !!maxDate && isMonthOutOfRange(visibleMonth.getMonth() + 1, visibleMonth.getFullYear(), minDate, maxDate);
 
-  // Month navigation (header arrows, month/year chooser) keeps the active
-  // date's day-of-month so the roving tab stop stays meaningful, but never
-  // steals focus the way keyboard grid navigation does. Clamped to
-  // minDate/maxDate so it can't land the grid on a month with no valid
-  // roving tab stop.
+  // Month navigation keeps the active day-of-month (clamped to minDate/maxDate) so the roving tab
+  // stop stays valid, but never steals focus the way keyboard grid navigation does.
   const navigateMonth = (amount: number) => {
     userMovedRef.current = true;
     const targetMonth = clampMonth(addMonths(visibleMonth, amount), minDate, maxDate);
@@ -371,11 +342,9 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
           ref={chooserRef}
           role="dialog"
           aria-label="Choose month and year"
-          // `fuji-overlay-panel-nested`, not the blur-based overlay material:
-          // this chooser renders inside the calendar card (which is itself a
-          // glass surface) instead of portaling, and an ancestor with a
-          // backdrop-filter becomes a backdrop root - so a blur here would
-          // never see the date grid it covers. See base.css.
+          // `fuji-overlay-panel-nested`, not blur: this renders inside the glass card rather than
+          // portaling, and a backdrop-filter ancestor is a backdrop root, so a blur here would
+          // never see the grid it covers. See base.css.
           className="fuji-overlay-panel-nested fj:absolute fj:inset-x-3 fj:top-12 fj:z-10 fj:flex fj:gap-2 fj:rounded-fuji-panel fj:border fj:border-fuji-border fj:p-2 fj:shadow-fuji-overlay"
         >
           <div className="fuji-scrollbar fj:grid fj:max-h-52 fj:flex-1 fj:grid-cols-3 fj:gap-1 fj:overflow-y-auto">
@@ -458,17 +427,13 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   type="button"
                   role="gridcell"
                   aria-selected={isSelected}
-                  // The visible label is the day number alone, which announces
-                  // as a bare "14" - no month, no year, no weekday. The full
-                  // date is the accessible name; the number stays the visual.
+                  // The visible label is a bare "14"; the full date is the accessible name.
                   aria-label={
                     marked
                       ? `${formatFullDate(day, locale)}, ${markedDateLabel}`
                       : formatFullDate(day, locale)
                   }
-                  // The standard way to say "this one is today". Previously
-                  // today was conveyed by an accent color and a bolder weight
-                  // and nothing else.
+                  // Announces today, which is otherwise conveyed only by colour and weight.
                   aria-current={isToday ? "date" : undefined}
                   tabIndex={isActive ? 0 : -1}
                   disabled={disabled}
@@ -489,20 +454,10 @@ export const Calendar = React.forwardRef<HTMLDivElement, CalendarProps>(function
                   )}
                 >
                   {day.getDate()}
-                  {/*
-                    A shape, not just a hue. Colour alone fails WCAG 1.4.1, and
-                    the accent used for "today" is the one marker in this grid
-                    that has no other visual form - selected has a filled
-                    background, disabled has reduced opacity, outside-month has
-                    a lighter weight. The dot inherits `currentColor` so it
-                    stays legible on the selected fill too.
-                  */}
-                  {/*
-                    Marked days (`markedDates`) get their own dot in the same
-                    row, so a day that is both today and marked shows two. The
-                    mark is announced through the cell's accessible name above,
-                    which is why both dots stay aria-hidden.
-                  */}
+                  {/* A shape, not just a hue (WCAG 1.4.1): today's accent has no other visual
+                      form. Marked days get a second dot, announced via the cell's accessible
+                      name, so both stay aria-hidden; `currentColor` keeps them legible on the
+                      selected fill. */}
                   {(isToday || marked) && (
                     <span aria-hidden="true" className="fj:absolute fj:bottom-1 fj:flex fj:gap-0.5">
                       {isToday && <span className="fj:size-1 fj:rounded-full fj:bg-current" />}

@@ -75,9 +75,8 @@ function ListDemo() {
 }
 
 /**
- * Infinite loading is what replaces the pager, so `pageSize` has to hold every
- * row fetched so far - otherwise DataTable paginates the rows this has just
- * appended.
+ * Infinite loading replaces the pager, so `pageSize` must hold every fetched row, or DataTable
+ * paginates the rows just appended.
  */
 export const WithDataTable: Story = {
   name: "DataTable (instead of pagination)",

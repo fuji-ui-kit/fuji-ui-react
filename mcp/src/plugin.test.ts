@@ -3,10 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * The Claude Code plugin in `plugins/fuji-ui/` and the marketplace file that
- * lists it. Nothing else in CI loads them: `claude plugin validate` needs the
- * Claude Code CLI, and an agent reading a broken skill fails quietly - it just
- * never uses it. These are the parts that break silently.
+ * The `plugins/fuji-ui/` plugin and its marketplace file. Nothing else in CI loads them (validation
+ * needs the Claude Code CLI), and a broken skill fails silently - agents just never use it.
  */
 const ROOT = path.join(__dirname, "..", "..");
 const read = (file: string) => fs.readFileSync(path.join(ROOT, file), "utf8");
@@ -77,10 +75,8 @@ describe("the fuji-ui plugin", () => {
   });
 
   /**
-   * The skill restates the conventions `review_usage` enforces, so an agent
-   * without the MCP connected still follows them. Each rule carries a
-   * `<!-- rule: id -->` marker; a convention added to the registry without one
-   * fails here instead of silently missing from the skill.
+   * The skill restates `review_usage`'s conventions for agents without the MCP; each needs a
+   * `<!-- rule: id -->` marker, so a new registry convention can't silently miss the skill.
    */
   const registryFile = path.join(ROOT, "dist", "registry.json");
   describe.skipIf(!fs.existsSync(registryFile))("against dist/registry.json", () => {

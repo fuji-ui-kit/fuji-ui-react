@@ -1,93 +1,22 @@
 /*
- * Build-only entry consumed by scripts/build-css.mjs to produce dist/styles.css.
- * Imports Tailwind's theme defaults + utilities layer (NOT preflight - this
- * package must never reset a consumer's global styles), the Fuji token ->
- * Tailwind theme mapping, the raw Fuji tokens, and the hand-written reusable
- * base/component rules. @source tells Tailwind v4 where to scan for classes
- * used by Fuji components so only those utilities are generated.
- *
- * `source(none)` disables Tailwind v4's automatic content detection, which
- * otherwise heuristically walks the whole project (including `stories/` and
- * `.storybook/`, neither of which is gitignored) looking for candidate class
- * names. Without it, a class used only in a Storybook story - e.g. `w-96` -
- * gets compiled into this shipped stylesheet even though `stories/` is not
- * one of the `@source` paths below. The three `@source` lines are the only
- * scan targets once this is set.
- *
- * CSS isolation strategy (see docs/theming.md "CSS isolation" for the
- * consumer-facing explanation):
- *
- * 1. `prefix(fj)` on both Tailwind imports namespaces every class Tailwind
- *    itself generates (`fj:flex`, `fj:bg-fuji-earth`, `fj:hover:...`) AND
- *    every generic theme variable Tailwind's own theme.css defines
- *    (`--spacing` -> `--fj-spacing`, `--radius-sm` -> `--fj-radius-sm`,
- *    `--text-xs` -> `--fj-text-xs`, etc). Every Fuji component's className
- *    strings use the `fj:` form (see the shared `lib/appearance.ts` recipe
- *    and every component source) - a plain `flex`/`p-4`/`text-sm` is never
- *    written or generated. This is a whole-compilation setting: it also
- *    covers the `bg-fuji-*`/`text-fuji-*`/etc utilities generated from
- *    fuji-theme.css's own `@theme inline` block below, even though that
- *    file's import doesn't repeat `prefix()` itself. `fj` was chosen
- *    specifically because it does NOT collide with Fuji's own long-standing
- *    `--fuji-*` token vocabulary (tokens.css, fuji-theme.css) - those files
- *    are untouched by this prefix; only Tailwind's OWN generated variables
- *    and classes are renamed. Verified empirically against the installed
- *    tailwindcss version before adopting (negative values, arbitrary
- *    variants like `[&>button]:`, and data-attribute variants all compile
- *    correctly as `fj:-mt-4`, `fj:[&>button]:...`, `fj:data-[state=open]:...`
- *    - the exact placement isn't fully spelled out in the public docs).
- * 2. Fuji's own hand-written classes (`fuji-glass-surface`, `fuji-toast-title`,
- *    `fuji-scrollbar`, `fuji-theme-scope`, etc. - defined directly in
- *    base.css, never Tailwind-generated) are already namespaced by
- *    construction and are left exactly as-is; they never collide with a
- *    generic `.flex`/`.p-4`-style consumer class because they were never
- *    generic to begin with.
- * 3. An explicit, uniquely-named layer order is declared up front. Naming
- *    every layer under the `fuji.*` namespace (rather than Tailwind's bare
- *    `theme`/`base`/`components`/`utilities`) matters because CSS merges
- *    same-named layers *across stylesheets* - a consumer's own Tailwind
- *    build also declares a bare `utilities` layer, and two same-named layers
- *    from different files are the same layer, resolved by plain source
- *    order (i.e. no real isolation at all). `fuji.utilities` is a distinct
- *    layer from the consumer's `utilities`, so Fuji's rules never merge with
- *    - and can never be silently reordered by - the consumer's own layer.
- * 4. Where the `fuji` group sits relative to the CONSUMER's layers is the
- *    other half, and it decides whether a consumer's `className` can override
- *    a Fuji component. A layer's priority is fixed by the first time its name
- *    is seen on the page, and all four `fuji.*` sublayers rank together as
- *    the single `fuji` group. The only order that works is
- *    `theme, base, fuji, components, utilities`:
- *    - `fuji` first (below the consumer's `base`) lets a Tailwind v4 app's
- *      preflight - `* { padding: 0; margin: 0; border: 0 solid }`,
- *      `button { background-color: transparent }` - beat every Fuji utility,
- *      because layer order is compared before specificity. That is exactly
- *      what happened when this stylesheet loaded before the app's Tailwind
- *      CSS with no declaration of its own: Fuji's `fuji` group was declared
- *      first and the app's preflight flattened every component.
- *    - `fuji` last (above the consumer's `utilities`) - what happens when the
- *      consumer's Tailwind CSS is seen first - makes `<Card className="p-0">`
- *      silently lose to Fuji's own `fj:p-4`.
- *    So the first statement below positions the group between the
- *    consumer's `base` and `components`. It creates the bare
- *    `theme`/`base`/`components`/`utilities` names as EMPTY layers - Fuji
- *    never puts a rule in them (Tailwind's own `properties` layer, which it
- *    hoists above everything, is the one pre-existing exception and only
- *    holds `@property` fallback initial values) - so it only takes effect
- *    when this stylesheet is the first to name those layers. When the
- *    consumer's CSS names them first, `fuji` is appended after `utilities`
- *    instead; docs/theming.md tells consumers to put this same statement at
- *    the top of their own global CSS so the order holds regardless of which
- *    file loads first. Keep the two strings identical, and verify any change
- *    in a real browser (jsdom does not evaluate cascade layers).
- *    Unlayered consumer CSS (plain CSS apps, Tailwind v3) outranks every
- *    layer, so none of this changes anything for them.
+ * Build entry for dist/styles.css. Tailwind preflight is deliberately NOT imported: this package
+ * must never reset a consumer's global styles. Isolation strategy: docs/theming.md "CSS isolation".
  */
 @layer properties, theme, base, fuji, components, utilities;
+/*
+ * Above: `fuji` sits between the consumer's base and components (earlier, their preflight flattens
+ * Fuji; later, `className` can't override). Keep identical to docs/theming.md; verify in a browser.
+ */
 @layer fuji.theme, fuji.base, fuji.utilities, fuji.components;
 
+/*
+ * `fuji.*` layers never merge with a consumer's same-named ones. `prefix(fj)` renames Tailwind's
+ * classes and variables (not `--fuji-*` tokens); `source(none)` stops it scanning `stories/`.
+ */
 @import "tailwindcss/theme.css" layer(fuji.theme) prefix(fj) source(none);
 @import "tailwindcss/utilities.css" layer(fuji.utilities) prefix(fj) source(none);
 
+/* New source dirs need an `@source`: with `source(none)` these are the only scan targets. */
 @source "../src/components/fuji";
 @source "../src/provider";
 @source "../src/lib";

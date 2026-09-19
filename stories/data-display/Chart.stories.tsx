@@ -135,11 +135,8 @@ const BALANCE = [
 ];
 
 /**
- * The dashboard bar card: a `headline` figure with its change pill, thick
- * pill-shaped bars in a muted tint, the `highlight`ed period in the series
- * colour with a value tag and a pilled axis label, and an `average`
- * reference line. Bars grow up from the baseline on mount. Hover any
- * other bar for its value.
+ * Dashboard bar card: `headline` with change pill, muted bars, a `highlight`ed period with value
+ * tag, and an `average` line. Bars grow in on mount; hover any bar for its value.
  */
 export const Bar: Story = {
   name: "Bar (balance)",
@@ -231,10 +228,8 @@ export const BarAnalytics: Story = {
 };
 
 /**
- * The ring draws in clockwise on mount and casts the theme's drop shadow
- * so it stands off the card - switch the toolbar to `floating` and the
- * ring itself lifts, not just the card. Hover a segment (or its legend
- * row) and it thickens with a tooltip showing its value and share.
+ * The ring draws in on mount and casts the theme's shadow (try `floating`). Hover a segment or
+ * legend row to thicken it and show its value and share.
  */
 export const Donut: Story = {
   render: () => (
@@ -265,8 +260,7 @@ const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 /** Hooks live in a component, not in a `render` callback (rules of hooks). */
 function AnimatedUpdateDemo() {
   const roll = () => DAYS.map((label) => ({ label, value: 20 + Math.round(Math.random() * 70) }));
-  // Seeded from fixed values, not a random roll: a random initial state
-  // renders differently on the server and the client and trips hydration.
+  // Fixed seed, not random: a random initial state trips SSR hydration.
   const [data, setData] = React.useState([
     { label: "Mon", value: 84 },
     { label: "Tue", value: 71 },

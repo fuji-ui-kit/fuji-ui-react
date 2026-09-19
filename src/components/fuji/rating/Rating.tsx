@@ -22,9 +22,8 @@ export interface RatingProps {
   /** Greys the control out and blocks input, while keeping it in the tab order's logic. */
   disabled?: boolean;
   /**
-   * Renders a static `role="img"` with the score as its accessible name -
-   * not a set of radios. Use it to display a rating rather than collect one:
-   * an average score is not something the reader can change.
+   * Renders a static `role="img"` named with the score instead of radios. Use it to display a
+   * rating (e.g. an average) rather than collect one.
    */
   readOnly?: boolean;
   /** Icon used for each item - any Lucide (or compatible SVG) component. Pass an individually imported component (default Star). */
@@ -92,15 +91,8 @@ function StarFill({
 }
 
 /**
- * Icon rating input - a row of toggleable icons with radiogroup semantics and
- * arrow-key navigation. The shape (`icon`) and color (`tone`) are configurable
- * through props; supports controlled/uncontrolled value, custom `max`,
- * `readOnly`, and `disabled`. Fractional values (e.g. 4.8) render a partially
- * filled star.
- *
- * `readOnly` renders a static, non-focusable `role="img"` rather than a
- * radiogroup - a read-only rating is a value display, not an input, so it
- * must not expose interactive/radio semantics or take a tab stop.
+ * Icon rating radiogroup with arrow keys; fractions (4.8) partially fill a star. `readOnly` is a
+ * non-focusable `role="img"`: a display must not expose radio semantics or take a tab stop.
  */
 export const Rating = React.forwardRef<HTMLDivElement, RatingProps>(function Rating(
   {

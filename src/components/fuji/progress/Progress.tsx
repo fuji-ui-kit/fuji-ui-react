@@ -22,15 +22,8 @@ const INDICATOR_CLASSES: Partial<Record<StatusTone, string>> = {
 };
 
 /**
- * Linear determinate progress bar (wraps Base UI Progress).
- *
- * The fill is a full-width bar scaled with `transform: scaleX()` on the
- * spring curve (the reference is motion.dev's loading progress bar), so a
- * value that jumps in discrete steps - a chunked upload, a poll - still
- * reads as one smooth, slightly elastic motion. The fill is rendered here
- * rather than through `Base.Indicator`, which hard-codes `width: N%` and
- * cannot be animated on the compositor; the `progressbar` semantics live on
- * the root, so nothing accessible is lost.
+ * Linear progress bar (Base UI). Fill is a spring-eased `scaleX()` so steps glide; not
+ * `Base.Indicator`, whose `width: N%` can't composite. `progressbar` semantics stay on the root.
  */
 export const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(function Progress(
   { label, showValue = false, variant = "default", className, value, min = 0, max = 100, ...props },

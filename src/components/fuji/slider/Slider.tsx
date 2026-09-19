@@ -16,10 +16,8 @@ export interface SliderProps extends React.ComponentPropsWithoutRef<typeof Base.
   /** Track thickness and thumb size. Default "md". */
   size?: ComponentSize;
   /**
-   * Accessible name for the slider when there is no visible `label`. Applied
-   * to the focusable thumb input(s) - the `role="slider"` element a screen
-   * reader actually lands on - not to the wrapping group. For a range slider
-   * every thumb gets the same name; use `getAriaLabel` to tell them apart.
+   * Accessible name when there is no visible `label`. Applied to the focusable `role="slider"`
+   * thumb(s), not the group; range thumbs share it, so use `getAriaLabel` to tell them apart.
    */
   "aria-label"?: string;
   /**
@@ -28,9 +26,8 @@ export interface SliderProps extends React.ComponentPropsWithoutRef<typeof Base.
    */
   "aria-labelledby"?: string;
   /**
-   * Per-thumb accessible name, called with each thumb's index - for a range
-   * slider, e.g. `(index) => (index === 0 ? "Minimum price" : "Maximum price")`.
-   * Takes precedence over `aria-label`.
+   * Per-thumb accessible name by index, e.g.
+   * `(index) => (index === 0 ? "Minimum price" : "Maximum price")`. Overrides `aria-label`.
    */
   getAriaLabel?: (index: number) => string;
 }

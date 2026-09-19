@@ -28,11 +28,9 @@ describe("Pagination", () => {
     expect(screen.getByRole("button", { name: "1" })).not.toHaveAttribute("aria-current");
   });
 
-  // Regression: page-number buttons are raw <button> elements with no
-  // border/background of their own, so without Tailwind preflight they fall
-  // back to native OS button chrome unless native-control-reset is applied.
-  // Checked on a non-active page: the active page's own `bg-fuji-default`
-  // legitimately wins over the reset's `bg-transparent` via tailwind-merge.
+  // Regression: without preflight, raw page <button>s show native OS chrome unless
+  // native-control-reset applies. Checks a non-active page, since the active page's
+  // `bg-fuji-default` legitimately beats the reset's `bg-transparent` via tailwind-merge.
   it("resets native button chrome on page-number buttons", () => {
     render(<Pagination page={1} pageCount={3} onPageChange={vi.fn()} />);
     const pageButton = screen.getByRole("button", { name: "2" });

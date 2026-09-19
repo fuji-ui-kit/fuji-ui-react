@@ -7,13 +7,8 @@ import { usePortalThemeAttrs } from "../lib/use-portal-theme-attrs";
 import { DismissButton } from "../lib/dismiss-button";
 
 /**
- * Base UI's Drawer swipes to dismiss; `swipeDirection` defaults to `"down"`,
- * which is right for `side="bottom"`. For a side drawer pass the matching
- * direction (`<Drawer swipeDirection="right">` for `side="right"`) - the root
- * cannot see which side its content chose.
- *
- * `Drawer.Content` takes `variant="sheet"` for the detached, inset card
- * presentation; the default `"full"` spans its edge.
+ * Base UI's Drawer swipes to dismiss, `swipeDirection` defaulting to `"down"`; side drawers must
+ * pass the matching direction, since the root cannot see the content's side.
  */
 export const DrawerRoot = Base.Root;
 export const DrawerTrigger = Base.Trigger;
@@ -51,27 +46,14 @@ export const DrawerDescription = React.forwardRef<
 export type DrawerSide = "left" | "right" | "top" | "bottom";
 
 /**
- * How the panel meets the edge it slides from.
- *
- * `"full"` (default) is the drawer proper: it spans the edge and is squared
- * off against it, rounded only on the two corners that face into the page -
- * the same shape on all four sides.
- *
- * `"sheet"` is the detached presentation: inset from every edge, rounded all
- * round, width- or height-capped, with the dimmed page still visible around
- * it so it reads as sitting above the content rather than replacing that side
- * of the screen. This is the shape for a short, self-contained task - a share
- * menu, a confirmation - not for navigation or a long form.
+ * How the panel meets its edge: `"full"` (default) spans it, rounded only on the inward corners;
+ * `"sheet"` is an inset card for short, self-contained tasks, not navigation or long forms.
  */
 export type DrawerVariant = "full" | "sheet";
 
 /**
- * Width of a `left`/`right` panel: `sm` 16rem, `md` 20rem (the default, and
- * the only width before this prop existed), `lg` 28rem, `full` the whole
- * viewport less the 3rem strip every side panel leaves showing. Named `width`
- * rather than `size` for the same reason `Container`'s is - `size` everywhere
- * else in the package is a control's height/padding scale. Top and bottom
- * panels already span their edge and ignore it.
+ * Side-panel width: `sm` 16rem, `md` 20rem (default), `lg` 28rem, `full` viewport less 3rem. Named
+ * `width` because `size` elsewhere means a control's height/padding scale. Top/bottom ignore it.
  */
 export type DrawerWidth = "sm" | "md" | "lg" | "full";
 
@@ -93,14 +75,8 @@ const VIEWPORT_JUSTIFY: Record<DrawerSide, string> = {
 };
 
 /*
- * Full class strings per variant and side - never templated, since Tailwind's
- * scanner is static.
- *
- * The safe-area inset on the top and bottom panels is ADDED to the popup's own
- * padding, not substituted for it. Written as a bare `pb-[env(...)]` it
- * overrode `p-6`, and since that env var is `0px` on any desktop browser the
- * panel ended up with no bottom padding at all - its last control sat flush
- * against the screen edge.
+ * Full class strings per variant and side - Tailwind's scanner is static. The top/bottom safe-area
+ * inset is ADDED to the padding: a bare `pb-[env(...)]` overrode `p-6` and is `0px` on desktop.
  */
 const POPUP_SIZE: Record<DrawerVariant, Record<DrawerSide, string>> = {
   full: {
@@ -110,9 +86,8 @@ const POPUP_SIZE: Record<DrawerVariant, Record<DrawerSide, string>> = {
     bottom:
       "fj:w-full fj:max-h-[85vh] fj:border-t fj:border-fuji-border fj:rounded-t-fuji-panel fj:pb-[calc(1.5rem+env(safe-area-inset-bottom))]",
   },
-  // The margins are what inset the card. On the left and right the viewport
-  // stretches its child, so a vertical margin sets the height as well - there
-  // is no need to compute one.
+  // The margins inset the card; on left/right the viewport stretches its child, so the vertical
+  // margin sets the height too.
   sheet: {
     left: "fj:my-3 fj:ml-3 fj:max-w-[calc(100vw-3rem)] fj:border fj:border-fuji-border fj:rounded-fuji-panel",
     right:
@@ -137,10 +112,8 @@ export interface DrawerContentProps extends React.ComponentPropsWithoutRef<typeo
   /** `"full"` (default) spans the edge; `"sheet"` is a detached, inset card. */
   variant?: DrawerVariant;
   /**
-   * Width of a `left` or `right` panel: `"sm"` 16rem, `"md"` 20rem, `"lg"`
-   * 28rem, `"full"` the viewport less a 3rem strip. Default `"md"`. Never wider
-   * than `calc(100vw - 3rem)`. Ignored for `top`/`bottom`, which span their
-   * edge. `className` still wins for a one-off width.
+   * Side-panel width: `"sm"` 16rem, `"md"` 20rem, `"lg"` 28rem, `"full"` viewport less 3rem. Default
+   * `"md"`. Capped at `calc(100vw - 3rem)`; ignored for `top`/`bottom`; `className` still wins.
    */
   width?: DrawerWidth;
   /** Drops the built-in close button. Leave a way out - Escape alone is not enough for a pointer user. */
@@ -167,10 +140,8 @@ export const DrawerContent = React.forwardRef<HTMLDivElement, DrawerContentProps
           {...portalAttrs}
           className={cn(
             "fuji-glass-surface-overlay fuji-motion-sheet fj:relative fj:flex fj:flex-col fj:gap-4 fj:bg-fuji-surface-overlay fj:p-6 fj:shadow-fuji-overlay fj:outline-none",
-            // Side panels are viewport-tall and top/bottom ones cap at 85vh,
-            // but none of them scrolled: a long form or record ran off the
-            // screen with the page scroll-locked behind it. The panel itself
-            // scrolls, without chaining into the locked page at either end.
+            // The panel scrolls (side panels are viewport-tall, top/bottom cap at 85vh), without
+            // chaining into the scroll-locked page, so long forms don't run off screen.
             "fuji-scrollbar fj:overflow-y-auto fj:overscroll-contain",
             POPUP_SIZE[variant][side],
             (side === "left" || side === "right") && SIDE_WIDTH[width],

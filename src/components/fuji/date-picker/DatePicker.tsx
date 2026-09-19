@@ -43,9 +43,8 @@ export interface DatePickerProps {
   /** BCP 47 tag driving the formatted date and the calendar's names, via `Intl`. */
   locale?: string;
   /**
-   * Makes the popover Calendar's month/year label an interactive chooser
-   * (see `Calendar`'s own `interactiveHeader`). Defaults to false, which
-   * keeps the simple non-clickable header with prev/next arrows only.
+   * Makes the popover Calendar's month/year label an interactive chooser (see `Calendar`'s
+   * `interactiveHeader`). Defaults to false: a plain header with prev/next arrows only.
    */
   interactiveHeader?: boolean;
   /** Extra classes merged onto the trigger. */
@@ -89,18 +88,9 @@ export const DatePicker = React.forwardRef<HTMLButtonElement, DatePickerProps>(f
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      {/*
-        The trigger renders through `Field.Control` - the same Field-aware
-        leaf `Input` renders through - so inside a `<FormField>` it gets the
-        field's generated `id` (the label's `htmlFor` target),
-        `aria-labelledby`, `aria-describedby`, `data-invalid`/`aria-invalid`
-        and `disabled`, exactly like every other Fuji field. As a bare
-        `Popover.Trigger` it was invisible to Field: the label pointed at an
-        id nothing rendered, and `<FormField invalid>` never reached it.
-        `value` is the selected day as `YYYY-MM-DD`, which is what a
-        FormField `validate` function receives. Standalone (no FormField),
-        `Field.Control` falls back to its default context and adds nothing.
-      */}
+      {/* Rendered through `Field.Control` so inside a `<FormField>` it gets the field's `id`, aria
+          wiring, invalid state and `disabled` like every Fuji field; `value` (`YYYY-MM-DD`) is what
+          FormField `validate` receives. Standalone, `Field.Control` adds nothing. */}
       <Field.Control
         ref={ref}
         render={<Popover.Trigger />}
