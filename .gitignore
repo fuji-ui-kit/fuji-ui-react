@@ -41,3 +41,7 @@ yarn-error.log*
 
 # Local appearance gallery (scripts/render-gallery.mjs)
 .gallery/
+
+# personal tooling
+skills-lock.json
+.claude/launch.json
