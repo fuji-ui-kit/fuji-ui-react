@@ -1,5 +1,145 @@
 # @fujiui/react
 
+## 0.5.0
+
+### Minor Changes
+
+- f86a656: **Dark mode and glass are easier to get right, for people and coding agents.**
+
+  - **`registry.json` ships appearance recipes** (`appearance`): filling the page
+    in dark mode, a light/dark toggle, following the OS, remembering the choice
+    without a flash, glass and its backdrop, and making your own markup - and
+    Tailwind's `dark:` variant - follow the provider. `@fujiui/mcp` 0.2.0 serves
+    them through its new `get_appearance` tool.
+  - **Fixed: `registry.json` had no glass token values.** The token scope parser
+    still looked for the `data-fuji-glass` attribute removed in the theme/material
+    split, so every `[data-fuji-material="glass"]` value was dropped. Glass and
+    light-glass values are now recorded as the `glass` and `glass+light` scopes.
+  - **`<html>` takes the theme background** once it carries `data-fuji-theme` -
+    set by the root provider's `persist` or by the bootstrap script - so
+    overscroll and a page shorter than the viewport no longer show the browser's
+    white under a dark app. It is a zero-specificity rule, so any page background
+    of your own still wins.
+
+- f86a656: `Keyboard` mirrors the physical keyboard by default, and a mirrored key now
+  presses its cap rather than only lighting it.
+
+  `captureKeys` was off by default and, when switched on, lit a cap for as long
+  as its real key was held. Two keyboards on one screen behaving as one is what
+  people expect of a soft keyboard, so it is now the default, and a mirrored
+  press does what a press on that cap does: the cap travels, and it clicks if the
+  board has a voice. Auto-repeat is excluded - a held key fires keydown over and
+  over, and replaying the strike and the click on each of them turns one held key
+  into a stutter no physical board makes.
+
+  The listener is also scoped, which it was not before. A board captures only
+  while it is **engaged**: a floating board while it is open, an in-flow board
+  while focus is inside it. Defaulting a global `window` listener to on would
+  have meant every board on a page reacting at once - the documentation page
+  carries eight, so one keystroke aimed at the search field would have lit all
+  eight boards and clicked eight times. Click or tab into an in-flow board to
+  engage it; `captureKeys={false}` opts out entirely.
+
+  A mirrored press deliberately does **not** call `onKeyPress`. The real key has
+  already been delivered to whatever had focus, so reporting it again would type
+  every character twice.
+
+- f86a656: **`Keyboard`: held caps repeat, and ⌘/Ctrl/Alt work as shortcut modifiers.**
+
+  - **Hold to repeat.** Holding a cap - Backspace, a letter, an arrow - now repeats
+    it like a real key: one press, a 400ms pause, then twenty a second until it is
+    released or the pointer slides off. Previously a cap reported once, on
+    release, however long it was held. Modifiers and toggles never repeat, and the
+    click that ends a hold reports nothing extra.
+  - **Shortcut modifiers.** ⌘, Ctrl and Alt caps now latch like Shift: click ⌘,
+    then A, and the board reports ⌘A. The latched cap lights and announces
+    `aria-pressed`; the next ordinary cap spends it. A physically held modifier
+    counts too while the board is engaged.
+  - **`onKeyPress(key, modifiers)`.** The callback gains a second argument,
+    `{ shift, meta, ctrl, alt }` (exported as `KeyboardModifiers`). Under ⌘ or
+    Ctrl a cap reports no `value`, since a shortcut types nothing - a handler that
+    only appends `key.value` no longer types an "a" for ⌘A.
+
+  Non-breaking at runtime: existing one-argument handlers keep working. A test
+  asserting `toHaveBeenCalledWith(objectContaining(...))` on `onKeyPress` needs a
+  second matcher, e.g. `expect.anything()`.
+
+- f86a656: Give `Keyboard` its own sound toggle.
+
+  `sound` was a one-way prop: a board either clicked or it did not, and the only
+  way to let someone silence one was for the app to build a control and wire it
+  up. Every app that wanted the obvious affordance built the same switch.
+
+  `soundToggle` now renders that control on the board itself, in a strip above
+  the caps: a speaker glyph plus a lamp lit in the board's own `tone` - the same
+  signal a latched Caps Lock gives, for the same reason (state on this board is a
+  light, never a redrawn legend). Two channels carry the state, and the icon
+  changes shape rather than only colour. The strip is row 1 of the cap grid, so
+  it inherits the deck's width and padding, and everything in it is sized from
+  `--fuji-key-unit` with pixel floors, so it stays in proportion from a 30px-cap
+  diagram to a 92px-cap docked board. The control clears the 24px touch-target
+  floor at every board size.
+
+  It defaults to `interactive`, so a board you can press has the control and the
+  static diagram of a shortcut - which has nothing to sound and no business
+  growing chrome - does not. Pass `soundToggle={false}` where the app already
+  offers the preference itself, so it is not presented twice. Because the strip
+  is drawn above the caps, it is also the board's first tab stop; focus order
+  follows visual order.
+
+  `sound` keeps working unchanged, and now has the usual uncontrolled half -
+  `defaultSound` plus `onSoundChange` - so an app that already owns a "keyboard
+  sounds" preference can keep owning it while the board draws the control.
+
+  In development the board also calls out the one wiring that produces a dead
+  control: a visible toggle against a controlled `sound` with no `onSoundChange`
+  reports every press to nobody, so the button moves nothing and the board keeps
+  clicking. `useControllableState` cannot catch that on its own - controlled with
+  no handler is legitimate for a read-only value, and only becomes a defect once
+  the component draws a control for it. The symptom is a toggle that works on
+  some boards and not others, which reads as a flaky component rather than as a
+  miswired prop.
+
+### Patch Changes
+
+- f86a656: **Fixed: `BottomNavigation` reported the wrong index for items after a centre
+  `action`.** With an `action`, the bar splits its items around the raised
+  button, and the second half was numbered from 0 again - so in a four-item bar
+  `onItemSelect` reported "Friends" as index 1 and "Playing" as index 0, and an
+  app switching screens by index opened the wrong one. Each item now reports its
+  own position in `items`.
+- f86a656: `Card effect="tilt"` leans more gently: at most 3deg at the corners (was 7deg), under a 1200px perspective (was 500px), with a 4px push-back (was 10px). A large card no longer swings visibly out of plane.
+- f86a656: Align `ChatBubble`'s avatar with the bubble instead of with the metadata under
+  it.
+
+  The row was `flex items-end`, so the avatar bottom-aligned with the whole
+  message column - sender, bubble, and the timestamp/status line together. Any
+  bubble carrying metadata therefore pushed its avatar down past the bubble and
+  level with the timestamp, which reads as a layout bug at every avatar size and
+  gets worse as the avatar gets smaller: a 32px `size="sm"` avatar beside a
+  timestamp row ended up almost entirely below the bubble it belonged to.
+
+  The row is now a grid with the avatar in its own column on the bubble's row, so
+  it is pinned to the bubble's bottom edge whatever else the column holds. The
+  vertical rhythm moved from a `gap-y` to margins on the sender and metadata rows,
+  because a grid gap is paid between tracks even when one of them renders nothing.
+
+  Grouped bubbles also keep the avatar in the DOM and hide it, rather than
+  swapping in a fixed 32px placeholder. The slot takes an arbitrary node, so the
+  avatar's own box is the only footprint certain to match the rest of the run -
+  the old placeholder silently misaligned every run built with the default 40px
+  `Avatar`.
+
+  The tail no longer seams against the bubble either. The two are separate boxes
+  carrying the same opaque fill, and they used to meet exactly on the bubble's
+  edge - so wherever that edge landed on a fractional pixel, both were
+  antialiased against it and composited in turn, bleeding roughly a quarter of
+  the page colour through the join. Against light's near-identical page and
+  bubble that is invisible; in dark it drew a visible hairline between the tail
+  and the bubble, which is why the same build could look clean in one layout and
+  seamed in another. The tail now runs 1px under the bubble, so the two never
+  share an antialiased edge. Its visible silhouette is unchanged.
+
 ## 0.4.0
 
 ### Minor Changes
