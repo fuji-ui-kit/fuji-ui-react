@@ -9,6 +9,7 @@ const COMPOUNDS: Record<string, string[]> = {
   Card: ["Media", "Overlay", "Header", "Title", "Description", "Content", "Footer"],
   ChatBubble: ["Attachment"],
   Collapsible: ["Root", "Trigger", "Panel"],
+  ContextMenu: ["Trigger", "Content", "Item", "Separator", "Group", "GroupLabel"],
   Dialog: ["Trigger", "Content", "Close", "Title", "Description"],
   Drawer: ["Trigger", "Content", "Close", "Title", "Description"],
   DropdownMenu: ["Trigger", "Content", "Item", "Separator", "Group", "GroupLabel"],
@@ -46,6 +47,7 @@ describe("public API", () => {
     for (const name of [
       "AlertDialogRoot",
       "CardRoot",
+      "ContextMenuRoot",
       "DialogRoot",
       "DrawerRoot",
       "DropdownMenuRoot",

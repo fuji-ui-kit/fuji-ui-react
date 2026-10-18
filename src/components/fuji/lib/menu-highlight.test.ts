@@ -8,6 +8,7 @@ import { describe, expect, it } from "vitest";
  */
 const MENUS = {
   DropdownMenu: "dropdown-menu/DropdownMenu.tsx",
+  ContextMenu: "context-menu/ContextMenu.tsx",
   Select: "select/Select.tsx",
   Combobox: "combobox/Combobox.tsx",
   MultiSelect: "multi-select/MultiSelect.tsx",

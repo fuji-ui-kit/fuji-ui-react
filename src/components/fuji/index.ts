@@ -45,6 +45,7 @@ export * from "./dropzone";
 export * from "./dialog";
 export * from "./command-menu";
 export * from "./dropdown-menu";
+export * from "./context-menu";
 export * from "./tabs";
 export * from "./segmented-control";
 export * from "./breadcrumb";

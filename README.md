@@ -12,7 +12,7 @@ combination rendered.
 
 Fuji is a themeable, accessible React component system: light or dark theme,
 an optional glass material, cornered or soft radius, and regular or floating
-elevation - all driven by a single provider. It ships 86 components (Button
+elevation - all driven by a single provider. It ships 87 components (Button
 through DataTable, Dialog, Carousel, BarChart...), a compiled stylesheet, and
 full TypeScript types.
 
@@ -213,7 +213,7 @@ import type {
 Full `.d.ts` declarations ship with the package - no separate `@types`
 package needed. Every component's prop type is exported (e.g. `ButtonProps`,
 `DialogContentProps`), alongside the shared types above. Compound components
-(`Dialog`, `Popover`, `Tabs`, `Select`, `DropdownMenu`, ...) expose named
+(`Dialog`, `Popover`, `Tabs`, `Select`, `DropdownMenu`, `ContextMenu`, ...) expose named
 sub-exports (`DialogContent`, `DialogTrigger`, ...) in addition to the
 dot-access form (`Dialog.Content`) - see [docs/nextjs.md](docs/nextjs.md) for
 why the named form matters in a Server Component.
@@ -225,7 +225,7 @@ Interactive components follow one consistent convention throughout: a
 `onChange` if you just want to observe changes) for uncontrolled usage -
 exactly like a native `<input>`. This applies to form controls (`Input`,
 `Select`, `Checkbox`, `Slider`, ...), navigational state (`Tabs`, `Carousel`'s
-`index`/`defaultIndex`), and overlays (`Dialog`/`Drawer`'s `open`/`defaultOpen`
+`index`/`defaultIndex`), and overlays (`Dialog`/`Drawer`/`ContextMenu`'s `open`/`defaultOpen`
 via Base UI's own root components).
 
 ```tsx

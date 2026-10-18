@@ -383,8 +383,8 @@ for twenty of them, for a blur nobody can see behind a control that small.
 - **Chrome** - `Sidebar`, `BottomNavigation`, `Pagination`, and `Tabs` in its
   `pill` variant.
 - **Overlays** - `Dialog`, `AlertDialog`, `Drawer`, `Popover`, `Select`,
-  `Combobox`, `MultiSelect`, `DropdownMenu`, `NavigationMenu`, `CommandMenu`,
-  `Toast`, and `Keyboard` when `floating`.
+  `Combobox`, `MultiSelect`, `DropdownMenu`, `ContextMenu`, `NavigationMenu`,
+  `CommandMenu`, `Toast`, and `Keyboard` when `floating`.
 - **Controls stay solid.** A `contained` Button under `dark` + `glass` is a
   92%-opaque cream fill with a cast shadow, not a blurred panel - the top of the
   depth scale, an object reading as sitting _on_ the surface rather than painted

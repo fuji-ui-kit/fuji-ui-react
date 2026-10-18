@@ -203,6 +203,12 @@
       "summary": "Trigger-based menu for actions, groups, disabled items, and keyboard navigation.",
       "keywords": ["menu", "actions"]
     },
+    "context-menu": {
+      "name": "Context Menu",
+      "category": "Navigation",
+      "summary": "Pointer-anchored menu triggered on right-click or long-press, paired with visible action fallbacks.",
+      "keywords": ["context menu", "right click", "long press", "menu", "actions"]
+    },
     "navigation-menu": {
       "name": "Navigation Menu",
       "category": "Navigation",
