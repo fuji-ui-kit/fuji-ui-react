@@ -378,7 +378,7 @@ instead of competing with it. Cost is part of the reason: `backdrop-filter`
 creates a compositing layer per element, so a form with twenty glass inputs pays
 for twenty of them, for a blur nobody can see behind a control that small.
 
-- **Cards and panels** - `Card`, `Collapsible`, `Fieldset`, `List`, `Table`,
+- **Cards and panels** - `Accordion`, `Card`, `Collapsible`, `Fieldset`, `List`, `Table`,
   `CodeBlock`, `Chart`, `Calendar`, `Dropzone`.
 - **Chrome** - `Sidebar`, `BottomNavigation`, `Pagination`, and `Tabs` in its
   `pill` variant.

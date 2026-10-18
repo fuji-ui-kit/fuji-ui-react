@@ -12,7 +12,7 @@ combination rendered.
 
 Fuji is a themeable, accessible React component system: light or dark theme,
 an optional glass material, cornered or soft radius, and regular or floating
-elevation - all driven by a single provider. It ships 86 components (Button
+elevation - all driven by a single provider. It ships 87 components (Button
 through DataTable, Dialog, Carousel, BarChart...), a compiled stylesheet, and
 full TypeScript types.
 
@@ -214,17 +214,17 @@ Full `.d.ts` declarations ship with the package - no separate `@types`
 package needed. Every component's prop type is exported (e.g. `ButtonProps`,
 `DialogContentProps`), alongside the shared types above. Compound components
 (`Dialog`, `Popover`, `Tabs`, `Select`, `DropdownMenu`, ...) expose named
-sub-exports (`DialogContent`, `DialogTrigger`, ...) in addition to the
+sub-exports (`AccordionTrigger`, `DialogContent`, `DialogTrigger`, ...) in addition to the
 dot-access form (`Dialog.Content`) - see [docs/nextjs.md](docs/nextjs.md) for
 why the named form matters in a Server Component.
 
 ## Controlled vs. uncontrolled
 
 Interactive components follow one consistent convention throughout: a
-`value`/`onChange` pair for controlled usage, or `defaultValue` (plus
-`onChange` if you just want to observe changes) for uncontrolled usage -
-exactly like a native `<input>`. This applies to form controls (`Input`,
-`Select`, `Checkbox`, `Slider`, ...), navigational state (`Tabs`, `Carousel`'s
+controlled value plus its matching callback (`onChange` for native-like inputs,
+`onValueChange` for Base UI composites), or `defaultValue` for uncontrolled
+usage. This applies to form controls (`Input`, `Select`, `Checkbox`, `Slider`,
+...), disclosure and navigational state (`Accordion`, `Tabs`, `Carousel`'s
 `index`/`defaultIndex`), and overlays (`Dialog`/`Drawer`'s `open`/`defaultOpen`
 via Base UI's own root components).
 

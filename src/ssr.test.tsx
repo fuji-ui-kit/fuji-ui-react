@@ -11,6 +11,7 @@ import { Card } from "./components/fuji/card";
 import { Carousel } from "./components/fuji/carousel";
 import { Keyboard } from "./components/fuji/keyboard";
 import { Kbd } from "./components/fuji/kbd";
+import { Accordion } from "./components/fuji/accordion";
 import { Check } from "lucide-react";
 
 // This file runs under Node (no window/document - see the environment pragma
@@ -43,6 +44,21 @@ describe("SSR (no DOM globals)", () => {
       </Carousel>,
     );
     expect(html).toContain("Slide 1");
+  });
+
+  it("renders an Accordion to a string without touching window", () => {
+    const html = renderToString(
+      <Accordion defaultValue={["first"]}>
+        <Accordion.Item value="first">
+          <Accordion.Header>
+            <Accordion.Trigger>First header</Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Panel>First content</Accordion.Panel>
+        </Accordion.Item>
+      </Accordion>,
+    );
+    expect(html).toContain("First header");
+    expect(html).toContain("First content");
   });
 
   it("falls back to light/cornered/regular defaults with no provider", () => {

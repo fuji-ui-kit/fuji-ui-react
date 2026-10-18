@@ -17,6 +17,7 @@ export * from "./stack";
 export * from "./grid";
 export * from "./aspect-ratio";
 export * from "./scroll-area";
+export * from "./accordion";
 export * from "./collapsible";
 export * from "./label";
 export * from "./form-field";

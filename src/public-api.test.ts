@@ -5,6 +5,7 @@ import * as fuji from "./index";
 // `Dialog.Content` fails across a "use client" boundary - yet they were once never exported.
 // Asserting every compound's parts keeps the dot-access and named forms from drifting.
 const COMPOUNDS: Record<string, string[]> = {
+  Accordion: ["Root", "Item", "Header", "Trigger", "Panel"],
   AlertDialog: ["Trigger", "Content", "Close", "Title", "Description", "Footer"],
   Card: ["Media", "Overlay", "Header", "Title", "Description", "Content", "Footer"],
   ChatBubble: ["Attachment"],
@@ -44,6 +45,7 @@ describe("public API", () => {
 
   it("exports the compound roots used as the Root element", () => {
     for (const name of [
+      "AccordionRoot",
       "AlertDialogRoot",
       "CardRoot",
       "DialogRoot",

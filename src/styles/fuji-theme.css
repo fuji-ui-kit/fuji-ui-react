@@ -13,6 +13,7 @@
   --color-fuji-foreground: var(--fuji-foreground);
   --color-fuji-foreground-muted: var(--fuji-foreground-muted);
   --color-fuji-foreground-subtle: var(--fuji-foreground-subtle);
+  --color-fuji-focus-ring: var(--fuji-focus-ring);
   --color-fuji-border: var(--fuji-border);
   --color-fuji-border-strong: var(--fuji-border-strong);
   --color-fuji-default: var(--fuji-default);

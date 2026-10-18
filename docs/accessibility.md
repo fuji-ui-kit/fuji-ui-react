@@ -1,9 +1,9 @@
 # Accessibility
 
-Fuji's overlay and form primitives build on
+Fuji's interactive primitives build on
 [Base UI](https://base-ui.com) (`@base-ui/react`) for focus management, ARIA
-roles/attributes, and keyboard behavior - Dialog, Drawer, Popover, Menu,
-Select, Combobox, Tooltip, Toast, Tabs, and more all inherit Base UI's
+roles/attributes, and keyboard behavior - Accordion, Dialog, Drawer, Popover,
+Menu, Select, Combobox, Tooltip, Toast, Tabs, and more all inherit Base UI's
 accessibility work rather than reimplementing it.
 
 ## Icon-only controls require an accessible name

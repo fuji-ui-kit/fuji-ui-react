@@ -59,8 +59,8 @@ Fuji ships two kinds of components:
 
 ## The compound-component boundary rule
 
-Compound components - `Dialog`, `Drawer`, `Popover`, `Tabs`, `Select`,
-`Combobox`, `MultiSelect`, `DropdownMenu`, `NavigationMenu`,
+Compound components - `Accordion`, `Dialog`, `Drawer`, `Popover`, `Tabs`,
+`Select`, `Combobox`, `MultiSelect`, `DropdownMenu`, `NavigationMenu`,
 `RadioGroup`, `SegmentedControl` - expose **named sub-exports** in addition to
 dot-access:
 

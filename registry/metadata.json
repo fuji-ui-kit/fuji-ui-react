@@ -50,6 +50,12 @@
       "summary": "Themed scroll container with controlled overflow and lightweight scrollbars.",
       "keywords": ["scrollbar", "overflow"]
     },
+    "accordion": {
+      "name": "Accordion",
+      "category": "Foundation & Layout",
+      "summary": "Vertically stacked collapsible panels with headings, item dividers, single or multiple expansion, and smooth height reveals.",
+      "keywords": ["accordion", "collapse", "expand", "disclosure", "panel"]
+    },
     "collapsible": {
       "name": "Collapsible",
       "category": "Foundation & Layout",
